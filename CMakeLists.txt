@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(node_image_painter)
+project(the_sdoajalizer)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 

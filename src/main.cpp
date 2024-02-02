@@ -2,11 +2,10 @@
 
 #include <iostream>
 #include <cuda_runtime.h>
-#include "ImGui/imgui.h"
-#include "ImGui/imgui_impl_glfw.h"
-#include "ImGui/imgui_impl_opengl3.h"
+#include "gui.hpp"
 
-GLFWwindow* window;
+GLFWwindow* window = nullptr;
+Gui gui;
 
 int width = 960;
 int height = 540;
@@ -65,6 +64,8 @@ int main(int argc, char* argv[])
     printf("OpenGL version: %s\n", glGetString(GL_VERSION));
     std::cout << "------------------------------------------------------------" << std::endl;
 
+    gui.init(window);
+
     mainLoop();
 
     return 0;
@@ -77,14 +78,14 @@ void mainLoop()
 
         glfwPollEvents();
 
-        // TODO
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        gui.render();
 
         glfwSwapBuffers(window);
     }
 
-    //ImGui_ImplOpenGL3_Shutdown();
-    //ImGui_ImplGlfw_Shutdown();
-    //ImGui::DestroyContext();
+    gui.deinit();
 
     glfwDestroyWindow(window);
     glfwTerminate();
