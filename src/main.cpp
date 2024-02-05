@@ -57,6 +57,8 @@ int main(int argc, char* argv[])
     glfwSetCursorPosCallback(window, mousePositionCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
+    glfwSwapInterval(1);
+
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {

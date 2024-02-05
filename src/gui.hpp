@@ -13,5 +13,7 @@ public:
     void init(GLFWwindow* window);
     void deinit();
 
+    void setupStyle();
+
     void render();
 };
