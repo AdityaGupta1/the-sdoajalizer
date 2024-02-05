@@ -45,6 +45,7 @@ int main(int argc, char* argv[])
     }
 
     window = glfwCreateWindow(width, height, "the sdoajalizer", NULL, NULL);
+    glfwMaximizeWindow(window);
     if (!window)
     {
         glfwTerminate();

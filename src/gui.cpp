@@ -8,11 +8,12 @@ void Gui::init(GLFWwindow* window)
     ImGui::CreateContext();
     io = &ImGui::GetIO();
     ImGui::StyleColorsLight();
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 120");
 
-	io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io->ConfigDockingWithShift = false;
+    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io->ConfigDockingWithShift = false;
 }
 
 void Gui::deinit()
@@ -24,74 +25,74 @@ void Gui::deinit()
 
 void Gui::render()
 {
-	static bool firstRender = true;
+    static bool firstRender = true;
 
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 
-	// https://gist.github.com/AidanSun05/953f1048ffe5699800d2c92b88c36d9f
-	if (firstRender)
-	{
-		ImVec2 workCenter = ImGui::GetMainViewport()->GetWorkCenter();
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
 
-		ImGuiID id = ImGui::GetID("MainWindowGroup");
-		ImGui::DockBuilderRemoveNode(id);
-		ImGui::DockBuilderAddNode(id);
+    ImGui::Begin("DockSpace", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
 
-		ImVec2 nodeSize{ 960, 540 }; // TODO: support resizing?
-		ImVec2 nodePos{ workCenter.x - nodeSize.x * 0.5f, workCenter.y - nodeSize.y * 0.5f };
+    ImGuiDockNodeFlags dockSpaceFlags = ImGuiDockNodeFlags_PassthruCentralNode;
 
-		ImGui::DockBuilderSetNodeSize(id, nodeSize);
-		ImGui::DockBuilderSetNodePos(id, nodePos);
+    ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+    ImGui::DockSpace(dockspace_id, ImVec2(0, 0), dockSpaceFlags);
 
-		ImGuiID dock1 = ImGui::DockBuilderSplitNode(id, ImGuiDir_Left, 0.5f, nullptr, &id);
-		ImGuiID dock2 = ImGui::DockBuilderSplitNode(id, ImGuiDir_Right, 0.5f, nullptr, &id);
-		ImGuiID dock3 = ImGui::DockBuilderSplitNode(dock2, ImGuiDir_Down, 0.5f, nullptr, &dock2);
+    if (firstRender)
+    {
+        firstRender = false;
 
-		ImGui::DockBuilderDockWindow("One", dock1);
-		ImGui::DockBuilderDockWindow("Two", dock2);
-		ImGui::DockBuilderDockWindow("Three", dock3);
+        ImGui::DockBuilderRemoveNode(dockspace_id);
+        ImGui::DockBuilderAddNode(dockspace_id, dockSpaceFlags | ImGuiDockNodeFlags_DockSpace);
 
-		ImGui::DockBuilderFinish(id);
-	}
+        ImGuiID viewer1 = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Up, 0.5f, nullptr, &dockspace_id);
+        ImGuiID viewer2 = ImGui::DockBuilderSplitNode(viewer1, ImGuiDir_Right, 0.5f, nullptr, &viewer1);
 
-	ImGui::Begin("One");
+        ImGui::DockBuilderDockWindow("Viewer 1", viewer1);
+        ImGui::DockBuilderDockWindow("Viewer 2", viewer2);
+        ImGui::DockBuilderDockWindow("Node Editor", dockspace_id);
 
-	ImGui::Text("The FitnessGram™ Pacer Test is a multistage aerobic capacity test that progressively gets more difficult as it continues. The 20 meter pacer test will begin in 30 seconds. Line up at the start. The running speed starts slowly, but gets faster each minute after you hear this signal. [beep] A single lap should be completed each time you hear this sound. [ding] Remember to run in a straight line, and run as long as possible. The second time you fail to complete a lap before the sound, your test is over. The test will begin on the word start. On your mark, get ready, start.");
+        ImGui::DockBuilderFinish(dockspace_id);
+    }
 
-	//ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-	//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-	//ImGui::Checkbox("Another Window", &show_another_window);
+    ImGui::End();
 
-	//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-	//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove;
 
-	//if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-	//	counter++;
-	//ImGui::SameLine();
-	//ImGui::Text("counter = %d", counter);
-	//ImGui::Text("Traced Depth %d", imguiData->TracedDepth);
-	//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-	ImGui::End();
+    ImGui::Begin("Viewer 1", nullptr, windowFlags);
+    ImGui::Text("joe");
+    ImGui::End();
 
-	ImGui::Begin("Two");
+    ImGui::Begin("Viewer 2", nullptr, windowFlags);
+    ImGui::Text("joe");
+    ImGui::End();
 
-	ImGui::Text("Hello, I am currently 16 years old and I want to become a walrus. I know there’s a million people out there just like me, but I promise you I’m different. On December 14th, I’m moving to Antarctica; home of the greatest walruses. I’ve already cut off my arms, and now slide on my stomach everywhere I go as training. I may not be a walrus yet, but I promise you if you give me a chance and the support I need, I will become the greatest walrus ever.");
+    ImGui::Begin("Node Editor", nullptr, windowFlags);
+    ImGui::Text("joe");
+    ImGui::End();
 
-	ImGui::End();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-	ImGui::Begin("Three");
-
-	ImGui::Text("Hello, I am currently 16 years old and I want to become a walrus. I know there’s a million people out there just like me, but I promise you I’m different. On December 14th, I’m moving to Antarctica; home of the greatest walruses. I’ve already cut off my arms, and now slide on my stomach everywhere I go as training. I may not be a walrus yet, but I promise you if you give me a chance and the support I need, I will become the greatest walrus ever.");
-
-	ImGui::End();
-
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-	if (firstRender)
-	{
-		firstRender = false;
-	}
+    if (firstRender)
+    {
+        firstRender = false;
+    }
 }
+
+//ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+//ImGui::Checkbox("Another Window", &show_another_window);
+
+//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+//if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+//    counter++;
+//ImGui::SameLine();
+//ImGui::Text("counter = %d", counter);
+//ImGui::Text("Traced Depth %d", imguiData->TracedDepth);
+//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
