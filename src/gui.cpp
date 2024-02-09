@@ -35,7 +35,7 @@ void Gui::init(GLFWwindow* window)
 
     this->nodeEvaluator.setOutputNode(this->outputNode);
 
-    // TODO: temporary
+    // TODO: temporary until node creation UI is added
     addNode(std::make_unique<NodeUvGradient>());
     addNode(std::make_unique<NodeNoise>());
     addNode(std::make_unique<NodeInvert>());
@@ -409,11 +409,7 @@ void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
 }
 
 void Gui::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
-{
-    // TODO
-}
+{}
 
 void Gui::mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
-{
-    // TODO
-}
+{}
