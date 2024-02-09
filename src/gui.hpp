@@ -35,6 +35,8 @@ private:
 
     void deleteNode(int nodeId);
     void deleteEdge(int edgeId);
+    void deleteEdge(Edge* edge);
+    void deletePinEdges(Pin& pin);
 
     void drawNodeEditor();
 

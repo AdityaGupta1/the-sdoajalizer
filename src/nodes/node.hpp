@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_set>
 
 class Edge;
 class Node;
@@ -14,18 +15,19 @@ class Pin
 {
 private:
     Node* node;
-    Edge* edge{ nullptr };
+    std::unordered_set<Edge*> edges;
 
 public:
     const int id;
 
     Pin(int id, Node* node);
 
-    Node* getNode();
-    Edge* getEdge();
+    Node* getNode() const;
+    const std::unordered_set<Edge*>& getEdges() const;
 
-    void setEdge(Edge* edge);
-    void clearEdge();
+    void addEdge(Edge* edge);
+    void removeEdge(Edge* edge);
+    void clearEdges();
 };
 
 class Node

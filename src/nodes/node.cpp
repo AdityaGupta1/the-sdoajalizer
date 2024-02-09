@@ -7,24 +7,29 @@ Pin::Pin(int id, Node* node)
     : id(id), node(node)
 {}
 
-Node* Pin::getNode()
+Node* Pin::getNode() const
 {
     return this->node;
 }
 
-Edge* Pin::getEdge()
+const std::unordered_set<Edge*>& Pin::getEdges() const
 {
-    return this->edge;
+    return this->edges;
 }
 
-void Pin::setEdge(Edge* edge)
+void Pin::addEdge(Edge* edge)
 {
-    this->edge = edge;
+    this->edges.insert(edge);
 }
 
-void Pin::clearEdge()
+void Pin::removeEdge(Edge* edge)
 {
-    this->edge = nullptr;
+    this->edges.erase(edge);
+}
+
+void Pin::clearEdges()
+{
+    this->edges.clear();
 }
 
 int Node::nextId = 0;

@@ -31,6 +31,7 @@ void Gui::init(GLFWwindow* window)
     addNode(std::make_unique<NodePassthrough>());
     addNode(std::make_unique<NodePassthrough>());
     addNode(std::make_unique<NodePassthrough>());
+    addNode(std::make_unique<NodePassthrough>());
 }
 
 void Gui::setupStyle()
@@ -144,31 +145,64 @@ void Gui::addNode(std::unique_ptr<Node> node)
 
 void Gui::addEdge(int startPinId, int endPinId)
 {
-    Pin* startPin = &getPin(startPinId);
-    Pin* endPin = &getPin(endPinId);
+    Pin& startPin = getPin(startPinId);
+    Pin& endPin = getPin(endPinId);
 
-    if (endPin->getEdge() != nullptr)
-    {
-        deleteEdge(endPin->getEdge()->id);
-    }
+    deletePinEdges(endPin);
 
-    auto edgePtr = std::make_unique<Edge>(startPin, endPin);
-    startPin->setEdge(edgePtr.get());
-    endPin->setEdge(edgePtr.get());
+    auto edgePtr = std::make_unique<Edge>(&startPin, &endPin);
+    startPin.addEdge(edgePtr.get());
+    endPin.addEdge(edgePtr.get());
     this->edges[edgePtr->id] = std::move(edgePtr);
 }
 
 void Gui::deleteNode(int nodeId)
 {
-    // TODO: delete node and associated edges
+    const auto& node = this->nodes[nodeId];
+
+    for (auto& inputPin : node->inputPins)
+    {
+        deletePinEdges(inputPin);
+    }
+
+    for (auto& outputPin : node->outputPins)
+    {
+        deletePinEdges(outputPin);
+    }
+
+    this->nodes.erase(nodeId);
 }
 
 void Gui::deleteEdge(int edgeId)
 {
-    const auto& edge = this->edges[edgeId];
-    edge->startPin->clearEdge();
-    edge->endPin->clearEdge();
+    const auto edge = this->edges[edgeId].get();
+    edge->startPin->removeEdge(edge);
+    edge->endPin->removeEdge(edge);
     this->edges.erase(edgeId);
+}
+
+void Gui::deleteEdge(Edge* edge)
+{
+    edge->startPin->removeEdge(edge);
+    edge->endPin->removeEdge(edge);
+    this->edges.erase(edge->id);
+}
+
+void Gui::deletePinEdges(Pin& pin)
+{
+    std::vector<int> edgesToDelete;
+
+    for (const auto& edge : pin.getEdges())
+    {
+        edgesToDelete.push_back(edge->id);
+    }
+
+    for (int edgeId : edgesToDelete)
+    {
+        deleteEdge(edgeId);
+    }
+
+    pin.clearEdges();
 }
 
 void Gui::render()
@@ -284,7 +318,17 @@ void Gui::drawNodeEditor()
             }
         }
 
-        // TODO: delete selected nodes if delete/backspace pressed
+        const int numSelectedNodes = ImNodes::NumSelectedNodes();
+        if (numSelectedNodes > 0)
+        {
+            std::vector<int> selectedNodes;
+            selectedNodes.resize(numSelectedNodes);
+            ImNodes::GetSelectedNodes(selectedNodes.data());
+            for (const auto nodeId : selectedNodes)
+            {
+                deleteNode(nodeId);
+            }
+        }
     }
 }
 
