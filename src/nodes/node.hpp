@@ -3,6 +3,7 @@
 #define NODE_ID_STRIDE 32
 
 #include "node.hpp"
+#include "../ImGui/imgui.h"
 
 #include <vector>
 #include <string>
@@ -41,6 +42,9 @@ protected:
     Node(std::string name);
 
     void addPins(int numInput, int numOutput);
+
+    virtual unsigned int getTitleBarColor() const;
+    virtual unsigned int getTitleBarSelectedColor() const;
 
 public:
     const int id;

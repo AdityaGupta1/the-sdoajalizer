@@ -19,7 +19,9 @@ private:
     std::unordered_map<int, std::unique_ptr<Node>> nodes;
     std::unordered_map<int, std::unique_ptr<Edge>> edges;
 
+    bool isFirstRender{ true };
     bool isDeleteQueued{ false };
+    bool isNetworkDirty{ false };
 
 public:
     void init(GLFWwindow* window);

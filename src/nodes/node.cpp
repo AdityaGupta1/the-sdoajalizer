@@ -2,7 +2,6 @@
 
 #include "../ImGui/imnodes.h"
 
-
 Pin::Pin(int id, Node* node)
     : id(id), node(node)
 {}
@@ -55,6 +54,16 @@ void Node::addPins(int numInput, int numOutput)
     }
 }
 
+unsigned int Node::getTitleBarColor() const
+{
+    return IM_COL32(11, 109, 191, 255);
+}
+
+unsigned int Node::getTitleBarSelectedColor() const
+{
+    return IM_COL32(81, 148, 204, 255);
+}
+
 Pin& Node::getPin(int pinId)
 {
     int localPinId = pinId - this->id - 1;
@@ -71,6 +80,10 @@ Pin& Node::getPin(int pinId)
 
 void Node::draw() const
 {
+    ImNodes::PushColorStyle(ImNodesCol_TitleBar, this->getTitleBarColor());
+    ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, this->getTitleBarSelectedColor());
+    ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, this->getTitleBarSelectedColor());
+
     ImNodes::BeginNode(this->id);
 
     ImNodes::BeginNodeTitleBar();
@@ -92,4 +105,8 @@ void Node::draw() const
     }
 
     ImNodes::EndNode();
+
+    ImNodes::PopColorStyle();
+    ImNodes::PopColorStyle();
+    ImNodes::PopColorStyle();
 }

@@ -28,8 +28,7 @@ void Gui::init(GLFWwindow* window)
     io->ConfigDockingWithShift = false;
 
     // TODO: temp
-    addNode(std::make_unique<NodePassthrough>());
-    addNode(std::make_unique<NodePassthrough>());
+    addNode(std::make_unique<NodeOutput>());
     addNode(std::make_unique<NodePassthrough>());
     addNode(std::make_unique<NodePassthrough>());
 }
@@ -207,8 +206,6 @@ void Gui::deletePinEdges(Pin& pin)
 
 void Gui::render()
 {
-    static bool firstRender = true;
-
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -238,10 +235,8 @@ void Gui::render()
     ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
     ImGui::DockSpace(dockspace_id, ImVec2(0, 0), dockSpaceFlags);
 
-    if (firstRender)
+    if (isFirstRender)
     {
-        firstRender = false;
-
         ImGui::DockBuilderRemoveNode(dockspace_id);
         ImGui::DockBuilderAddNode(dockspace_id, dockSpaceFlags | ImGuiDockNodeFlags_DockSpace);
 
@@ -268,15 +263,22 @@ void Gui::render()
     ImGui::End();
 
     ImGui::Begin("Node Editor", nullptr, windowFlags);
+
+    if (isFirstRender)
+    {
+        ImVec2 windowSize = ImGui::GetWindowSize();
+        ImNodes::SetNodeEditorSpacePos(0, ImVec2(4 * windowSize.x / 5, windowSize.y / 4));
+    }
+
     drawNodeEditor();
     ImGui::End();
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    if (firstRender)
+    if (isFirstRender)
     {
-        firstRender = false;
+        isFirstRender = false;
     }
 }
 
