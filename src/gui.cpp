@@ -36,7 +36,7 @@ void Gui::init(GLFWwindow* window)
     this->nodeEvaluator.setOutputNode(this->outputNode);
 
     // TODO: temporary
-    addNode(std::make_unique<NodeNoise>());
+    addNode(std::make_unique<NodeUvGradient>());
     addNode(std::make_unique<NodeNoise>());
     addNode(std::make_unique<NodeInvert>());
     addNode(std::make_unique<NodeInvert>());
