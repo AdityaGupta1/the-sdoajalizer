@@ -24,7 +24,8 @@ private:
     Texture* outputTexture{ nullptr };
 
 public:
-    GLuint textureID; // TODO: initialize to default value and make private
+    GLuint viewerTex1;
+    GLuint viewerTex2;
 
     const glm::ivec2 outputResolution;
 

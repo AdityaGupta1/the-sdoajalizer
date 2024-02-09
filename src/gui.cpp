@@ -284,34 +284,14 @@ void Gui::render()
     // ================================================================================
 
     ImGui::Begin("Viewer 1", nullptr, windowFlags);
+    drawImageViewer(nodeEvaluator.viewerTex1, nodeEvaluator.outputResolution); // TODO: get resolution from selected node's first output?
     ImGui::End();
 
     // VIEWER 2
     // ================================================================================
 
     ImGui::Begin("Viewer 2", nullptr, windowFlags);
-
-    ImVec2 contentSize = ImGui::GetContentRegionAvail();
-    float contentAspectRatio = contentSize.y / contentSize.x;
-
-    const glm::ivec2 outputResolution = nodeEvaluator.outputResolution;
-    float imageAspectRatio = outputResolution.y / (float)outputResolution.x;
-
-    ImVec2 imageSize;
-    if (contentAspectRatio < imageAspectRatio)
-    {
-        imageSize.y = contentSize.y;
-        imageSize.x = imageSize.y / imageAspectRatio;
-    }
-    else
-    {
-        imageSize.x = contentSize.x;
-        imageSize.y = imageSize.x * imageAspectRatio;
-    }
-
-    ImGui::SetCursorPosX((contentSize.x - imageSize.x) * 0.5f);
-    ImGui::Image((void*)(intptr_t)nodeEvaluator.textureID, imageSize);
-
+    drawImageViewer(nodeEvaluator.viewerTex2, nodeEvaluator.outputResolution);
     ImGui::End();
 
     // NODE EDITOR
@@ -337,6 +317,29 @@ void Gui::render()
     {
         isFirstRender = false;
     }
+}
+
+void Gui::drawImageViewer(GLuint tex, glm::ivec2 resolution)
+{
+    ImVec2 contentSize = ImGui::GetContentRegionAvail();
+    float contentAspectRatio = contentSize.y / contentSize.x;
+
+    float imageAspectRatio = resolution.y / (float)resolution.x;
+
+    ImVec2 imageSize;
+    if (contentAspectRatio < imageAspectRatio)
+    {
+        imageSize.y = contentSize.y;
+        imageSize.x = imageSize.y / imageAspectRatio;
+    }
+    else
+    {
+        imageSize.x = contentSize.x;
+        imageSize.y = imageSize.x * imageAspectRatio;
+    }
+
+    ImGui::SetCursorPosX((contentSize.x - imageSize.x) * 0.5f);
+    ImGui::Image((void*)(intptr_t)tex, imageSize);
 }
 
 void Gui::drawNodeEditor()
