@@ -167,6 +167,11 @@ void Gui::addEdge(int startPinId, int endPinId)
 
 void Gui::deleteNode(int nodeId)
 {
+    if (nodeId == 0) // deleting output node isn't allowed
+    {
+        return;
+    }
+
     const auto& node = this->nodes[nodeId];
 
     for (auto& inputPin : node->inputPins)

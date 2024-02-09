@@ -76,6 +76,7 @@ void NodeEvaluator::evaluate()
 
     for (const auto& node : topoSortedNodes)
     {
+        node->evaluate();
         printf("%s\n", node->name.c_str());
     }
     printf("\n");
