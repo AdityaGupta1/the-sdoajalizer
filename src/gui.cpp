@@ -34,10 +34,10 @@ void Gui::init(GLFWwindow* window)
     this->nodeEvaulator.setOutputNode(this->outputNode);
 
     // TODO: temporary
-    addNode(std::make_unique<NodePassthrough>());
-    addNode(std::make_unique<NodePassthrough>());
-    addNode(std::make_unique<NodePassthrough>());
-    addNode(std::make_unique<NodePassthrough>());
+    addNode(std::make_unique<NodeDebug>());
+    addNode(std::make_unique<NodeDebug>());
+    addNode(std::make_unique<NodeDebug>());
+    addNode(std::make_unique<NodeDebug>());
 }
 
 void Gui::setupStyle()

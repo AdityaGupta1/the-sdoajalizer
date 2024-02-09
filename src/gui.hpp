@@ -25,7 +25,7 @@ private:
 
     bool isFirstRender{ true };
     bool isDeleteQueued{ false };
-    bool isNetworkDirty{ false };
+    bool isNetworkDirty{ true };
 
 public:
     void init(GLFWwindow* window);

@@ -1,5 +1,6 @@
 #include "node_evaluator.hpp"
 
+#include <stack>
 #include <queue>
 #include <unordered_map>
 
@@ -15,7 +16,8 @@ void NodeEvaluator::setOutputNode(Node* outputNode)
 
 void NodeEvaluator::evaluate()
 {
-    std::queue<Node*> nodesWithIndegreeZero;
+    std::stack<Node*> nodesWithIndegreeZero; // using a stack to allow for a more depth-first topological sort?
+                                             // might mean better memory usage during evaluation, idk
     std::unordered_map<Node*, int> indegrees;
 
     std::queue<Node*> frontier;
@@ -49,9 +51,32 @@ void NodeEvaluator::evaluate()
         }
     }
 
-    for (const auto& [node, indegree] : indegrees)
+    // TODO: check for cycles in the above search (probably need to convert to DFS)
+
+    std::vector<Node*> topoSortedNodes;
+    while (!nodesWithIndegreeZero.empty())
     {
-        printf("indegree: %d\n", indegree);
+        Node* node = nodesWithIndegreeZero.top();
+        nodesWithIndegreeZero.pop();
+
+        topoSortedNodes.push_back(node);
+
+        for (const auto& outputPin : node->outputPins)
+        {
+            for (const auto& edge : outputPin.getEdges())
+            {
+                Node* otherNode = edge->endPin->getNode();
+                if (--indegrees[otherNode] == 0)
+                {
+                    nodesWithIndegreeZero.push(otherNode);
+                }
+            }
+        }
+    }
+
+    for (const auto& node : topoSortedNodes)
+    {
+        printf("%s\n", node->name.c_str());
     }
     printf("\n");
 }

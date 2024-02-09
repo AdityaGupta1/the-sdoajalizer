@@ -2,10 +2,13 @@
 
 #include "../node.hpp"
 
-class NodePassthrough : public Node
+class NodeDebug : public Node
 {
+private:
+    static int debugNum;
+
 public:
-    NodePassthrough();
+    NodeDebug();
 
 protected:
     void evaluate() override;
