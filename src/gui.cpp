@@ -1,13 +1,17 @@
 #include "gui.hpp"
 
 #include "ImGui/imgui_internal.h"
+#include "ImGui/imnodes.h"
 
 #include <iostream>
+
+#include "nodes/all_nodes.hpp"
 
 void Gui::init(GLFWwindow* window)
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImNodes::CreateContext();
     io = &ImGui::GetIO();
     setupStyle();
 
@@ -18,6 +22,26 @@ void Gui::init(GLFWwindow* window)
 
     io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io->ConfigDockingWithShift = false;
+
+    // TODO: temp
+    addNode(std::make_unique<NodePassthrough>());
+    addNode(std::make_unique<NodePassthrough>());
+}
+
+Pin& Gui::getPin(int pinId)
+{
+    return this->nodes[pinId - (pinId % NODE_ID_STRIDE)]->getPin(pinId);
+}
+
+void Gui::addNode(std::unique_ptr<Node> node)
+{
+    this->nodes[node->id] = std::move(node);
+}
+
+void Gui::addEdge(int startPinId, int endPinId)
+{
+    auto edgePtr = std::make_unique<Edge>(&getPin(startPinId), &getPin(endPinId));
+    this->edges[edgePtr->id] = std::move(edgePtr);
 }
 
 void Gui::setupStyle()
@@ -115,6 +139,7 @@ void Gui::deinit()
 {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    ImNodes::DestroyContext();
     ImGui::DestroyContext();
 }
 
@@ -181,7 +206,27 @@ void Gui::render()
     ImGui::End();
 
     ImGui::Begin("Node Editor", nullptr, windowFlags);
-    ImGui::Text("joe");
+
+    ImNodes::BeginNodeEditor();
+
+    for (const auto& [nodeId, node] : nodes)
+    {
+        node->draw();
+    }
+
+    for (const auto& [edgeId, edge] : edges)
+    {
+        ImNodes::Link(edgeId, edge->startPin->id, edge->endPin->id);
+    }
+
+    ImNodes::EndNodeEditor();
+
+    int startPinId, endPinId;
+    if (ImNodes::IsLinkCreated(&startPinId, &endPinId))
+    {
+        addEdge(startPinId, endPinId);
+    }
+
     ImGui::End();
 
     ImGui::Render();
