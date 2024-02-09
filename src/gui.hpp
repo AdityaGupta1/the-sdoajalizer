@@ -9,6 +9,7 @@
 
 #include "nodes/node.hpp"
 #include "nodes/edge.hpp"
+#include "nodes/node_evaluator.hpp"
 
 class Gui
 {
@@ -18,6 +19,9 @@ private:
 
     std::unordered_map<int, std::unique_ptr<Node>> nodes;
     std::unordered_map<int, std::unique_ptr<Edge>> edges;
+
+    Node* outputNode;
+    NodeEvaluator nodeEvaulator;
 
     bool isFirstRender{ true };
     bool isDeleteQueued{ false };

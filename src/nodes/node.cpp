@@ -78,6 +78,11 @@ Pin& Node::getPin(int pinId)
     }
 }
 
+void Node::setNodeEvaluator(NodeEvaluator* nodeEvaluator)
+{
+    this->nodeEvaluator = nodeEvaluator;
+}
+
 void Node::draw() const
 {
     ImNodes::PushColorStyle(ImNodesCol_TitleBar, this->getTitleBarColor());

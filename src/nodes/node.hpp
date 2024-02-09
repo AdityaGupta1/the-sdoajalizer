@@ -3,6 +3,8 @@
 #define NODE_ID_STRIDE 32
 
 #include "node.hpp"
+#include "node_evaluator.hpp"
+
 #include "../ImGui/imgui.h"
 
 #include <vector>
@@ -11,6 +13,7 @@
 
 class Edge;
 class Node;
+class NodeEvaluator;
 
 class Pin
 {
@@ -33,11 +36,15 @@ public:
 
 class Node
 {
+    friend class NodeEvaluator;
+
 private:
     static int nextId;
 
 protected:
     const std::string name;
+
+    NodeEvaluator* nodeEvaluator;
 
     Node(std::string name);
 
@@ -46,6 +53,8 @@ protected:
     virtual unsigned int getTitleBarColor() const;
     virtual unsigned int getTitleBarSelectedColor() const;
 
+    virtual void evaluate() = 0;
+
 public:
     const int id;
 
@@ -53,6 +62,8 @@ public:
     std::vector<Pin> outputPins;
 
     Pin& getPin(int pinId);
+
+    void setNodeEvaluator(NodeEvaluator* nodeEvaluator);
 
     void draw() const;
 };

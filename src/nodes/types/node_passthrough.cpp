@@ -3,5 +3,10 @@
 NodePassthrough::NodePassthrough()
     : Node("passthrough")
 {
-    addPins(1, 1);
+    addPins(4, 4);
+}
+
+void NodePassthrough::evaluate()
+{
+    // do nothing
 }

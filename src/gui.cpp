@@ -27,8 +27,15 @@ void Gui::init(GLFWwindow* window)
     io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io->ConfigDockingWithShift = false;
 
-    // TODO: temp
-    addNode(std::make_unique<NodeOutput>());
+    auto outputNodeUptr = std::make_unique<NodeOutput>();
+    this->outputNode = outputNodeUptr.get();
+    addNode(std::move(outputNodeUptr));
+
+    this->nodeEvaulator.setOutputNode(this->outputNode);
+
+    // TODO: temporary
+    addNode(std::make_unique<NodePassthrough>());
+    addNode(std::make_unique<NodePassthrough>());
     addNode(std::make_unique<NodePassthrough>());
     addNode(std::make_unique<NodePassthrough>());
 }
@@ -139,6 +146,7 @@ Pin& Gui::getPin(int pinId)
 
 void Gui::addNode(std::unique_ptr<Node> node)
 {
+    node->setNodeEvaluator(&this->nodeEvaulator);
     this->nodes[node->id] = std::move(node);
 }
 
@@ -153,6 +161,8 @@ void Gui::addEdge(int startPinId, int endPinId)
     startPin.addEdge(edgePtr.get());
     endPin.addEdge(edgePtr.get());
     this->edges[edgePtr->id] = std::move(edgePtr);
+
+    this->isNetworkDirty = true;
 }
 
 void Gui::deleteNode(int nodeId)
@@ -206,6 +216,13 @@ void Gui::deletePinEdges(Pin& pin)
 
 void Gui::render()
 {
+    if (isNetworkDirty)
+    {
+        isNetworkDirty = false;
+
+        nodeEvaulator.evaluate();
+    }
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -267,7 +284,7 @@ void Gui::render()
     if (isFirstRender)
     {
         ImVec2 windowSize = ImGui::GetWindowSize();
-        ImNodes::SetNodeEditorSpacePos(0, ImVec2(4 * windowSize.x / 5, windowSize.y / 4));
+        ImNodes::SetNodeEditorSpacePos(0, ImVec2(4 * windowSize.x / 5, windowSize.y / 4)); // 0 = output node
     }
 
     drawNodeEditor();

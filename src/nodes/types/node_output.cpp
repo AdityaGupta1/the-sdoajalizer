@@ -15,3 +15,8 @@ unsigned int NodeOutput::getTitleBarSelectedColor() const
 {
     return IM_COL32(255, 128, 0, 255);
 }
+
+void NodeOutput::evaluate()
+{
+    // TODO: set output image?
+}

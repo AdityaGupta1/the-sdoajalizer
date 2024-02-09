@@ -10,4 +10,6 @@ public:
 protected:
     unsigned int getTitleBarColor() const override;
     unsigned int getTitleBarSelectedColor() const override;
+
+    void evaluate() override;
 };

@@ -6,4 +6,7 @@ class NodePassthrough : public Node
 {
 public:
     NodePassthrough();
+
+protected:
+    void evaluate() override;
 };
