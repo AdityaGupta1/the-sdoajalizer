@@ -1,14 +1,14 @@
-#include "node_noise.hpp"
+#include "node_invert.hpp"
 
 #include "../../cuda_includes.hpp"
 
-NodeNoise::NodeNoise()
-    : Node("noise")
+NodeInvert::NodeInvert()
+    : Node("invert")
 {
-    addPins(0, 1);
+    addPins(1, 1);
 }
 
-__global__ void kernNoise(Texture texture)
+__global__ void kernInvert(Texture texture)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
@@ -18,17 +18,18 @@ __global__ void kernNoise(Texture texture)
         return;
     }
 
-    glm::vec2 uv = glm::vec2(x, y) / glm::vec2(texture.resolution);
-    texture.dev_pixels[y * texture.resolution.x + x] = glm::vec4(uv, 0, 1);
+    int idx = y * texture.resolution.x + x;
+    glm::vec4 col = texture.dev_pixels[idx];
+    texture.dev_pixels[idx] = glm::vec4(1.f - glm::vec3(col), col.a);
 }
 
-void NodeNoise::evaluate()
+void NodeInvert::evaluate()
 {
-    Texture* texture = nodeEvaluator->requestTexture();
+    Texture* texture = inputPins[0].getSingleTexture();
 
     const dim3 blockSize(16, 16);
     const dim3 blocksPerGrid(texture->resolution.x / 16 + 1, texture->resolution.y / 16 + 1);
-    kernNoise<<<blocksPerGrid, blockSize>>>(*texture);
+    kernInvert<<<blocksPerGrid, blockSize>>>(*texture);
 
     outputPins[0].propagateTexture(texture);
 }
