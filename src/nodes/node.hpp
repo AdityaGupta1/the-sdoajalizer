@@ -18,14 +18,9 @@ class NodeEvaluator;
 
 class Pin
 {
-    friend class Node;
-
 private:
     Node* node;
     std::unordered_set<Edge*> edges;
-
-    void propagateTexture(Texture* texture);
-    void clearTextures();
 
 public:
     const int id;
@@ -41,6 +36,9 @@ public:
 
     // utility function to get single texture for input pins (nullptr if no connected edge)
     Texture* getSingleTexture() const;
+
+    void propagateTexture(Texture* texture);
+    void clearTextures();
 };
 
 class Node

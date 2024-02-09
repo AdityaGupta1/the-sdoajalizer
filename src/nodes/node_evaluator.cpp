@@ -8,7 +8,8 @@
 
 #include <iostream>
 
-NodeEvaluator::NodeEvaluator()
+NodeEvaluator::NodeEvaluator(glm::ivec2 outputResolution)
+    : outputResolution(outputResolution)
 {}
 
 NodeEvaluator::~NodeEvaluator()
@@ -17,8 +18,8 @@ NodeEvaluator::~NodeEvaluator()
     {
         for (const auto& texture : resTextures)
         {
-            CUDA_CHECK(cudaDestroyTextureObject(texture.textureObj));
-            CUDA_CHECK(cudaFreeArray(texture.pixelArray));
+            CUDA_CHECK(cudaDestroyTextureObject(texture->textureObj));
+            CUDA_CHECK(cudaFreeArray(texture->pixelArray));
         }
     }
 }
@@ -28,34 +29,39 @@ void NodeEvaluator::setOutputNode(Node* outputNode)
     this->outputNode = outputNode;
 }
 
-Texture NodeEvaluator::requestTexture(glm::ivec2 resolution)
+Texture* NodeEvaluator::requestTexture()
+{
+    return this->requestTexture(this->outputResolution);
+}
+
+Texture* NodeEvaluator::requestTexture(glm::ivec2 resolution)
 {
     if (this->textures.contains(resolution))
     {
         for (const auto& texture : this->textures[resolution])
         {
-            if (texture.numReferences == 0)
+            if (texture->numReferences == 0)
             {
-                return texture;
+                return texture.get();
             }
         }
     }
     else
     {
-        this->textures[resolution] = std::vector<Texture>();
+        this->textures[resolution] = std::vector<std::unique_ptr<Texture>>();
     }
 
-    Texture tex;
-    tex.resolution = resolution;
+    auto tex = std::make_unique<Texture>();
+    tex->resolution = resolution;
 
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float4>();
     int pitch = resolution.x * 4 * sizeof(float);
 
-    CUDA_CHECK(cudaMallocArray(&tex.pixelArray, &channelDesc, resolution.x, resolution.y));
+    CUDA_CHECK(cudaMallocArray(&tex->pixelArray, &channelDesc, resolution.x, resolution.y));
 
     cudaResourceDesc res_desc = {};
     res_desc.resType = cudaResourceTypeArray;
-    res_desc.res.array.array = tex.pixelArray;
+    res_desc.res.array.array = tex->pixelArray;
 
     cudaTextureDesc tex_desc = {};
     tex_desc.addressMode[0] = cudaAddressModeWrap;
@@ -70,10 +76,11 @@ Texture NodeEvaluator::requestTexture(glm::ivec2 resolution)
     tex_desc.borderColor[0] = 1.0f;
     tex_desc.sRGB = 0;
 
-    CUDA_CHECK(cudaCreateTextureObject(&tex.textureObj, &res_desc, &tex_desc, nullptr));
+    CUDA_CHECK(cudaCreateTextureObject(&tex->textureObj, &res_desc, &tex_desc, nullptr));
 
-    this->textures[resolution].push_back(tex);
-    return tex;
+    Texture* texPtr = tex.get();
+    this->textures[resolution].push_back(std::move(tex));
+    return texPtr;
 }
 
 void NodeEvaluator::evaluate()

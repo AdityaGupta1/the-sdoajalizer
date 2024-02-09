@@ -6,22 +6,6 @@ Pin::Pin(int id, Node* node)
     : id(id), node(node)
 {}
 
-void Pin::propagateTexture(Texture* texture)
-{
-    for (auto& edge : this->edges)
-    {
-        edge->setTexture(texture);
-    }
-}
-
-void Pin::clearTextures()
-{
-    for (auto& edge : this->edges)
-    {
-        edge->clearTexture();
-    }
-}
-
 Node* Pin::getNode() const
 {
     return this->node;
@@ -55,6 +39,22 @@ Texture* Pin::getSingleTexture() const
     }
 
     return (*edges.begin())->getTexture();
+}
+
+void Pin::propagateTexture(Texture* texture)
+{
+    for (auto& edge : this->edges)
+    {
+        edge->setTexture(texture);
+    }
+}
+
+void Pin::clearTextures()
+{
+    for (auto& edge : this->edges)
+    {
+        edge->clearTexture();
+    }
 }
 
 int Node::nextId = 0;

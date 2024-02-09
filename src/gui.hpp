@@ -21,7 +21,7 @@ private:
     std::unordered_map<int, std::unique_ptr<Edge>> edges;
 
     Node* outputNode;
-    NodeEvaluator nodeEvaulator;
+    NodeEvaluator nodeEvaulator{ glm::ivec2(1080, 1350) }; // TODO: allow user to set this
 
     bool isFirstRender{ true };
     bool isDeleteQueued{ false };
