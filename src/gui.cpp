@@ -1,5 +1,7 @@
 #include "gui.hpp"
 
+#include <GLFW/glfw3.h>
+
 #include "ImGui/imgui_internal.h"
 #include "ImGui/imnodes.h"
 
@@ -9,6 +11,8 @@
 
 void Gui::init(GLFWwindow* window)
 {
+    this->window = window;
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImNodes::CreateContext();
@@ -26,22 +30,7 @@ void Gui::init(GLFWwindow* window)
     // TODO: temp
     addNode(std::make_unique<NodePassthrough>());
     addNode(std::make_unique<NodePassthrough>());
-}
-
-Pin& Gui::getPin(int pinId)
-{
-    return this->nodes[pinId - (pinId % NODE_ID_STRIDE)]->getPin(pinId);
-}
-
-void Gui::addNode(std::unique_ptr<Node> node)
-{
-    this->nodes[node->id] = std::move(node);
-}
-
-void Gui::addEdge(int startPinId, int endPinId)
-{
-    auto edgePtr = std::make_unique<Edge>(&getPin(startPinId), &getPin(endPinId));
-    this->edges[edgePtr->id] = std::move(edgePtr);
+    addNode(std::make_unique<NodePassthrough>());
 }
 
 void Gui::setupStyle()
@@ -143,6 +132,45 @@ void Gui::deinit()
     ImGui::DestroyContext();
 }
 
+Pin& Gui::getPin(int pinId)
+{
+    return this->nodes[pinId - (pinId % NODE_ID_STRIDE)]->getPin(pinId);
+}
+
+void Gui::addNode(std::unique_ptr<Node> node)
+{
+    this->nodes[node->id] = std::move(node);
+}
+
+void Gui::addEdge(int startPinId, int endPinId)
+{
+    Pin* startPin = &getPin(startPinId);
+    Pin* endPin = &getPin(endPinId);
+
+    if (endPin->getEdge() != nullptr)
+    {
+        deleteEdge(endPin->getEdge()->id);
+    }
+
+    auto edgePtr = std::make_unique<Edge>(startPin, endPin);
+    startPin->setEdge(edgePtr.get());
+    endPin->setEdge(edgePtr.get());
+    this->edges[edgePtr->id] = std::move(edgePtr);
+}
+
+void Gui::deleteNode(int nodeId)
+{
+    // TODO: delete node and associated edges
+}
+
+void Gui::deleteEdge(int edgeId)
+{
+    const auto& edge = this->edges[edgeId];
+    edge->startPin->clearEdge();
+    edge->endPin->clearEdge();
+    this->edges.erase(edgeId);
+}
+
 void Gui::render()
 {
     static bool firstRender = true;
@@ -206,7 +234,20 @@ void Gui::render()
     ImGui::End();
 
     ImGui::Begin("Node Editor", nullptr, windowFlags);
+    drawNodeEditor();
+    ImGui::End();
 
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    if (firstRender)
+    {
+        firstRender = false;
+    }
+}
+
+void Gui::drawNodeEditor()
+{
     ImNodes::BeginNodeEditor();
 
     for (const auto& [nodeId, node] : nodes)
@@ -227,27 +268,46 @@ void Gui::render()
         addEdge(startPinId, endPinId);
     }
 
-    ImGui::End();
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    if (firstRender)
+    if (isDeleteQueued)
     {
-        firstRender = false;
+        isDeleteQueued = false;
+
+        const int numSelectedEdges = ImNodes::NumSelectedLinks();
+        if (numSelectedEdges > 0)
+        {
+            std::vector<int> selectedEdges;
+            selectedEdges.resize(numSelectedEdges);
+            ImNodes::GetSelectedLinks(selectedEdges.data());
+            for (const auto edgeId : selectedEdges)
+            {
+                deleteEdge(edgeId);
+            }
+        }
+
+        // TODO: delete selected nodes if delete/backspace pressed
     }
 }
 
-//ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-//ImGui::Checkbox("Another Window", &show_another_window);
+void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (action == GLFW_PRESS)
+    {
+        switch (key)
+        {
+        case GLFW_KEY_BACKSPACE:
+        case GLFW_KEY_DELETE:
+            this->isDeleteQueued = true;
+            break;
+        }
+    }
+}
 
-//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+void Gui::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    // TODO
+}
 
-//if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-//    counter++;
-//ImGui::SameLine();
-//ImGui::Text("counter = %d", counter);
-//ImGui::Text("Traced Depth %d", imguiData->TracedDepth);
-//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+void Gui::mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    // TODO
+}

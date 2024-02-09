@@ -13,21 +13,35 @@
 class Gui
 {
 private:
+    GLFWwindow* window;
     ImGuiIO* io{ nullptr };
 
     std::unordered_map<int, std::unique_ptr<Node>> nodes;
     std::unordered_map<int, std::unique_ptr<Edge>> edges;
+
+    bool isDeleteQueued{ false };
+
+public:
+    void init(GLFWwindow* window);
+    void deinit();
+
+private:
+    void setupStyle();
 
     Pin& getPin(int pinId);
 
     void addNode(std::unique_ptr<Node> node);
     void addEdge(int startPinId, int endPinId);
 
+    void deleteNode(int nodeId);
+    void deleteEdge(int edgeId);
+
+    void drawNodeEditor();
+
 public:
-    void init(GLFWwindow* window);
-    void deinit();
-
-    void setupStyle();
-
     void render();
+
+    void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    void mousePositionCallback(GLFWwindow* window, double xpos, double ypos);
+    void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 };

@@ -13,8 +13,8 @@ private:
 public:
     const int id;
 
-    const Pin* startPin;
-    const Pin* endPin;
+    Pin* const startPin;
+    Pin* const endPin;
 
     Edge(Pin* startPin, Pin* endPin);
 };

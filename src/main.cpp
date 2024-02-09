@@ -102,17 +102,19 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         {
         case GLFW_KEY_ESCAPE:
             glfwSetWindowShouldClose(window, GL_TRUE);
-            break;
+            return;
         }
     }
+
+    gui.keyCallback(window, key, scancode, action, mods);
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-    // TODO
+    gui.mouseButtonCallback(window, button, action, mods);
 }
 
 void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
 {
-    // TODO
+    gui.mousePositionCallback(window, xpos, ypos);
 }
