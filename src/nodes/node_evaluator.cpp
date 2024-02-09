@@ -6,6 +6,7 @@
 
 #include "../common.hpp"
 
+#include <glm/gtx/string_cast.hpp>
 #include <iostream>
 
 NodeEvaluator::NodeEvaluator(glm::ivec2 outputResolution)
@@ -18,10 +19,19 @@ NodeEvaluator::~NodeEvaluator()
     {
         for (const auto& texture : resTextures)
         {
-            CUDA_CHECK(cudaDestroyTextureObject(texture->textureObj));
-            CUDA_CHECK(cudaFreeArray(texture->pixelArray));
+            CUDA_CHECK(cudaFree(texture->dev_pixels));
         }
     }
+}
+
+void NodeEvaluator::init()
+{
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTextureParameteri(textureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(textureID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(textureID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTextureParameteri(textureID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 }
 
 void NodeEvaluator::setOutputNode(Node* outputNode)
@@ -52,35 +62,17 @@ Texture* NodeEvaluator::requestTexture(glm::ivec2 resolution)
     }
 
     auto tex = std::make_unique<Texture>();
+    CUDA_CHECK(cudaMalloc(&tex->dev_pixels, resolution.x * resolution.y * sizeof(glm::vec4)));
     tex->resolution = resolution;
-
-    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float4>();
-    int pitch = resolution.x * 4 * sizeof(float);
-
-    CUDA_CHECK(cudaMallocArray(&tex->pixelArray, &channelDesc, resolution.x, resolution.y));
-
-    cudaResourceDesc res_desc = {};
-    res_desc.resType = cudaResourceTypeArray;
-    res_desc.res.array.array = tex->pixelArray;
-
-    cudaTextureDesc tex_desc = {};
-    tex_desc.addressMode[0] = cudaAddressModeWrap;
-    tex_desc.addressMode[1] = cudaAddressModeWrap;
-    tex_desc.filterMode = cudaFilterModeLinear;
-    tex_desc.readMode = cudaReadModeElementType;
-    tex_desc.normalizedCoords = 1;
-    tex_desc.maxAnisotropy = 1;
-    tex_desc.maxMipmapLevelClamp = 99;
-    tex_desc.minMipmapLevelClamp = 0;
-    tex_desc.mipmapFilterMode = cudaFilterModeLinear;
-    tex_desc.borderColor[0] = 1.0f;
-    tex_desc.sRGB = 0;
-
-    CUDA_CHECK(cudaCreateTextureObject(&tex->textureObj, &res_desc, &tex_desc, nullptr));
 
     Texture* texPtr = tex.get();
     this->textures[resolution].push_back(std::move(tex));
     return texPtr;
+}
+
+void NodeEvaluator::setOutputTexture(Texture* texture)
+{
+    this->outputTexture = texture;
 }
 
 void NodeEvaluator::evaluate()
@@ -147,7 +139,20 @@ void NodeEvaluator::evaluate()
     {
         node->evaluate();
         node->clearInputTextures();
-        printf("%s\n", node->name.c_str());
     }
-    printf("\n");
+
+    cudaDeviceSynchronize();
+
+    if (outputTexture == nullptr)
+    {
+        return;
+    }
+
+    float* host_pixels;
+    int sizeBytes = outputResolution.x * outputResolution.y * sizeof(glm::vec4);
+    CUDA_CHECK(cudaMallocHost(&host_pixels, sizeBytes));
+    CUDA_CHECK(cudaMemcpy(host_pixels, outputTexture->dev_pixels, sizeBytes, cudaMemcpyDeviceToHost));
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, outputResolution.x, outputResolution.y, false, GL_RGBA, GL_FLOAT, host_pixels);
+    CUDA_CHECK(cudaFreeHost(host_pixels));
 }

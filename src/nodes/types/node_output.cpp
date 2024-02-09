@@ -18,5 +18,5 @@ unsigned int NodeOutput::getTitleBarSelectedColor() const
 
 void NodeOutput::evaluate()
 {
-    // TODO: set output image?
+    nodeEvaluator->setOutputTexture(inputPins[0].getSingleTexture());
 }

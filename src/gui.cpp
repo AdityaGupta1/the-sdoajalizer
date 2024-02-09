@@ -27,11 +27,13 @@ void Gui::init(GLFWwindow* window)
     io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io->ConfigDockingWithShift = false;
 
+    nodeEvaluator.init();
+
     auto outputNodeUptr = std::make_unique<NodeOutput>();
     this->outputNode = outputNodeUptr.get();
     addNode(std::move(outputNodeUptr));
 
-    this->nodeEvaulator.setOutputNode(this->outputNode);
+    this->nodeEvaluator.setOutputNode(this->outputNode);
 
     // TODO: temporary
     addNode(std::make_unique<NodeNoise>());
@@ -148,7 +150,7 @@ Pin& Gui::getPin(int pinId)
 
 void Gui::addNode(std::unique_ptr<Node> node)
 {
-    node->setNodeEvaluator(&this->nodeEvaulator);
+    node->setNodeEvaluator(&this->nodeEvaluator);
     this->nodes[node->id] = std::move(node);
 }
 
@@ -227,7 +229,7 @@ void Gui::render()
     {
         isNetworkDirty = false;
 
-        nodeEvaulator.evaluate();
+        nodeEvaluator.evaluate();
     }
 
     ImGui_ImplOpenGL3_NewFrame();
@@ -278,13 +280,42 @@ void Gui::render()
 
     ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove;
 
+    // VIEWER 1
+    // ================================================================================
+
     ImGui::Begin("Viewer 1", nullptr, windowFlags);
-    ImGui::Text("joe");
     ImGui::End();
 
+    // VIEWER 2
+    // ================================================================================
+
     ImGui::Begin("Viewer 2", nullptr, windowFlags);
-    ImGui::Text("joe");
+
+    ImVec2 contentSize = ImGui::GetContentRegionAvail();
+    float contentAspectRatio = contentSize.y / contentSize.x;
+
+    const glm::ivec2 outputResolution = nodeEvaluator.outputResolution;
+    float imageAspectRatio = outputResolution.y / (float)outputResolution.x;
+
+    ImVec2 imageSize;
+    if (contentAspectRatio < imageAspectRatio)
+    {
+        imageSize.y = contentSize.y;
+        imageSize.x = imageSize.y / imageAspectRatio;
+    }
+    else
+    {
+        imageSize.x = contentSize.x;
+        imageSize.y = imageSize.x * imageAspectRatio;
+    }
+
+    ImGui::SetCursorPosX((contentSize.x - imageSize.x) * 0.5f);
+    ImGui::Image((void*)(intptr_t)nodeEvaluator.textureID, imageSize);
+
     ImGui::End();
+
+    // NODE EDITOR
+    // ================================================================================
 
     ImGui::Begin("Node Editor", nullptr, windowFlags);
 
@@ -296,6 +327,8 @@ void Gui::render()
 
     drawNodeEditor();
     ImGui::End();
+
+    // ================================================================================
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

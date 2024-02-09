@@ -78,7 +78,6 @@ void mainLoop()
 {
     while (!glfwWindowShouldClose(window))
     {
-
         glfwPollEvents();
 
         glClear(GL_COLOR_BUFFER_BIT);

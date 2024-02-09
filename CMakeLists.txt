@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(the_sdoajalizer)
+project(the_sdoajalizer LANGUAGES CXX CUDA)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
