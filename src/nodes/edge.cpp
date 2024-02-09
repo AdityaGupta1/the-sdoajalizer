@@ -14,11 +14,17 @@ Texture* Edge::getTexture() const
 void Edge::setTexture(Texture* texture)
 {
     this->texture = texture;
-    ++this->texture->numReferences;
+    if (this->texture != nullptr)
+    {
+        ++this->texture->numReferences;
+    }
 }
 
 void Edge::clearTexture()
 {
-    --this->texture->numReferences;
-    this->texture = nullptr;
+    if (this->texture != nullptr)
+    {
+        --this->texture->numReferences;
+        this->texture = nullptr;
+    }
 }

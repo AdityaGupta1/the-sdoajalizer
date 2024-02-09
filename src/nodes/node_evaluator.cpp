@@ -152,6 +152,7 @@ void NodeEvaluator::evaluate()
 
     cudaDeviceSynchronize();
 
+    // TODO: check separately for outputTexture and currently selected node
     if (outputTexture == nullptr)
     {
         return;
