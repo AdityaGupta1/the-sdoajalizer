@@ -35,6 +35,7 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, Texture outTex)
     outTex.dev_pixels[idx1] = glm::mix(col1, col2, 0.5f);
 }
 
+// should work for differing resolutions but not tested yet
 void NodeMix::evaluate()
 {
     Texture* inTex1 = inputPins[0].getSingleTexture();
