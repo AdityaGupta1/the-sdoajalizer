@@ -34,10 +34,12 @@ void Gui::init(GLFWwindow* window)
     this->nodeEvaulator.setOutputNode(this->outputNode);
 
     // TODO: temporary
-    addNode(std::make_unique<NodeDebug>());
-    addNode(std::make_unique<NodeDebug>());
-    addNode(std::make_unique<NodeDebug>());
-    addNode(std::make_unique<NodeDebug>());
+    addNode(std::make_unique<NodeNoise>());
+    addNode(std::make_unique<NodeNoise>());
+    addNode(std::make_unique<NodeInvert>());
+    addNode(std::make_unique<NodeInvert>());
+    addNode(std::make_unique<NodeMix>());
+    addNode(std::make_unique<NodeMix>());
 }
 
 void Gui::setupStyle()
@@ -167,7 +169,7 @@ void Gui::addEdge(int startPinId, int endPinId)
 
 void Gui::deleteNode(int nodeId)
 {
-    if (nodeId == 0) // deleting output node isn't allowed
+    if (nodeId == 0) // prevent deletion of output node
     {
         return;
     }

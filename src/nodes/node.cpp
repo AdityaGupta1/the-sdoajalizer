@@ -6,6 +6,22 @@ Pin::Pin(int id, Node* node)
     : id(id), node(node)
 {}
 
+void Pin::propagateTexture(Texture* texture)
+{
+    for (auto& edge : this->edges)
+    {
+        edge->setTexture(texture);
+    }
+}
+
+void Pin::clearTextures()
+{
+    for (auto& edge : this->edges)
+    {
+        edge->clearTexture();
+    }
+}
+
 Node* Pin::getNode() const
 {
     return this->node;
@@ -29,6 +45,16 @@ void Pin::removeEdge(Edge* edge)
 void Pin::clearEdges()
 {
     this->edges.clear();
+}
+
+Texture* Pin::getSingleTexture() const
+{
+    if (this->edges.empty())
+    {
+        return nullptr;
+    }
+
+    return (*edges.begin())->getTexture();
 }
 
 int Node::nextId = 0;
@@ -62,6 +88,14 @@ unsigned int Node::getTitleBarColor() const
 unsigned int Node::getTitleBarSelectedColor() const
 {
     return IM_COL32(81, 148, 204, 255);
+}
+
+void Node::clearInputTextures()
+{
+    for (auto& inputPin : this->inputPins)
+    {
+        inputPin.clearTextures();
+    }
 }
 
 Pin& Node::getPin(int pinId)

@@ -4,6 +4,7 @@
 
 #include "node.hpp"
 #include "node_evaluator.hpp"
+#include "../texture.hpp"
 
 #include "../ImGui/imgui.h"
 
@@ -17,9 +18,14 @@ class NodeEvaluator;
 
 class Pin
 {
+    friend class Node;
+
 private:
     Node* node;
     std::unordered_set<Edge*> edges;
+
+    void propagateTexture(Texture* texture);
+    void clearTextures();
 
 public:
     const int id;
@@ -32,6 +38,9 @@ public:
     void addEdge(Edge* edge);
     void removeEdge(Edge* edge);
     void clearEdges();
+
+    // utility function to get single texture for input pins (nullptr if no connected edge)
+    Texture* getSingleTexture() const;
 };
 
 class Node
@@ -44,7 +53,7 @@ private:
 protected:
     const std::string name;
 
-    NodeEvaluator* nodeEvaluator;
+    NodeEvaluator* nodeEvaluator{ nullptr };
 
     Node(std::string name);
 
@@ -54,6 +63,7 @@ protected:
     virtual unsigned int getTitleBarSelectedColor() const;
 
     virtual void evaluate() = 0;
+    void clearInputTextures();
 
 public:
     const int id;
