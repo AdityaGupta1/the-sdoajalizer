@@ -50,6 +50,6 @@ public:
     void evaluateFrom(Node* node);
     void evaluate();
 
-    void setGlTexture(Texture* texture, GLenum glTexture);
+    void setGlTexture(Texture* texture, GLenum glTexture1, GLenum glTexture2 = 0);
     void cleanupTextureReferences();
 };

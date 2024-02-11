@@ -64,6 +64,7 @@ void NodeEvaluator::setSelectedNode(Node* selectedNode)
 
     if (this->selectedNode == nullptr)
     {
+        selectedTexture = nullptr;
         return;
     }
 
@@ -76,6 +77,8 @@ void NodeEvaluator::setSelectedNode(Node* selectedNode)
     {
         setGlTexture(selectedTexture, GL_TEXTURE0);
     }
+
+    cleanupTextureReferences();
 }
 
 Texture* NodeEvaluator::requestTexture()
@@ -161,8 +164,6 @@ void NodeEvaluator::evaluateFrom(Node* node)
         }
     }
 
-    // TODO: check for cycles in the above search (probably need to convert to DFS)
-
     std::vector<Node*> topoSortedNodes;
     while (!nodesWithIndegreeZero.empty())
     {
@@ -199,23 +200,32 @@ void NodeEvaluator::evaluate()
 
     evaluateFrom(outputNode);
 
-    if (outputTexture != nullptr)
-    {
-        setGlTexture(outputTexture, GL_TEXTURE1);
-    }
-
     if (selectedTexture == nullptr && selectedNode != nullptr)
     {
         evaluateFrom(this->selectedNode);
     }
 
-    if (selectedTexture != nullptr)
+    if (outputTexture == selectedTexture && outputTexture != nullptr)
     {
-        setGlTexture(selectedTexture, GL_TEXTURE0);
+        setGlTexture(outputTexture, GL_TEXTURE1, GL_TEXTURE0);
     }
+    else
+    {
+        if (outputTexture != nullptr)
+        {
+            setGlTexture(outputTexture, GL_TEXTURE1);
+        }
+
+        if (selectedTexture != nullptr)
+        {
+            setGlTexture(selectedTexture, GL_TEXTURE0);
+        }
+    }
+
+    cleanupTextureReferences();
 }
 
-void NodeEvaluator::setGlTexture(Texture* texture, GLenum glTexture)
+void NodeEvaluator::setGlTexture(Texture* texture, GLenum glTexture1, GLenum glTexture2)
 {
     float* host_pixels;
     int sizeBytes = texture->resolution.x * texture->resolution.y * sizeof(glm::vec4);
@@ -230,12 +240,16 @@ void NodeEvaluator::setGlTexture(Texture* texture, GLenum glTexture)
 
     // TODO: CUDA/OpenGL interop (at least for the output node; that node may need to request a special texture from NodeEvaluator)
     // TODO: replace with glTexSubImage2D?
-    glActiveTexture(glTexture);
+    glActiveTexture(glTexture1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, texture->resolution.x, texture->resolution.y, false, GL_RGBA, GL_FLOAT, host_pixels);
 
-    CUDA_CHECK(cudaFreeHost(host_pixels));
+    if (glTexture2 != 0)
+    {
+        glActiveTexture(glTexture2);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, texture->resolution.x, texture->resolution.y, false, GL_RGBA, GL_FLOAT, host_pixels);
+    }
 
-    cleanupTextureReferences();
+    CUDA_CHECK(cudaFreeHost(host_pixels));
 }
 
 void NodeEvaluator::cleanupTextureReferences()
