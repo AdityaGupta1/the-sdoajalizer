@@ -18,4 +18,6 @@ struct Texture
     glm::vec4* dev_pixels;
     glm::ivec2 resolution;
     int numReferences{ 0 };
+
+    static Texture nullCheck(Texture* inTex);
 };

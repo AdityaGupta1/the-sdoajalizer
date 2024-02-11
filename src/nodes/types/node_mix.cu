@@ -24,7 +24,7 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, Texture outTex)
     glm::vec4 col1 = inTex1.dev_pixels[idx1];
 
     glm::vec4 col2;
-    if (x < inTex2.resolution.x && y < inTex2.resolution.y)
+    if (inTex2.dev_pixels != nullptr && x < inTex2.resolution.x && y < inTex2.resolution.y)
     {
         int idx2 = y * inTex2.resolution.x + x;
         col2 = inTex2.dev_pixels[idx2];
@@ -37,7 +37,7 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, Texture outTex)
     outTex.dev_pixels[idx1] = glm::mix(col1, col2, 0.5f);
 }
 
-// should work for differing resolutions but not tested yet
+// should work for differing resolutions but that hasn't been tested yet
 void NodeMix::evaluate()
 {
     Texture* inTex1 = inputPins[0].getSingleTexture();
@@ -58,7 +58,7 @@ void NodeMix::evaluate()
 
     const dim3 blockSize(16, 16);
     const dim3 blocksPerGrid(inTex1->resolution.x / 16 + 1, inTex1->resolution.y / 16 + 1);
-    kernMix<<<blocksPerGrid, blockSize>>>(*inTex1, *inTex2, *outTex);
+    kernMix<<<blocksPerGrid, blockSize>>>(*inTex1, Texture::nullCheck(inTex2), *outTex);
 
     outputPins[0].propagateTexture(outTex);
 }
