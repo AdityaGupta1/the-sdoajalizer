@@ -48,6 +48,36 @@ void NodeEvaluator::setOutputNode(Node* outputNode)
     this->outputNode = outputNode;
 }
 
+void NodeEvaluator::setSelectedNode(Node* selectedNode)
+{
+    if (this->selectedNode == selectedNode)
+    {
+        return;
+    }
+
+    if (this->selectedNode != nullptr)
+    {
+        this->selectedNode->setIsSelected(false);
+    }
+
+    this->selectedNode = selectedNode;
+
+    if (this->selectedNode == nullptr)
+    {
+        return;
+    }
+
+    this->selectedNode->setIsSelected(true);
+
+    selectedTexture = nullptr;
+    evaluateFrom(this->selectedNode);
+
+    if (selectedTexture != nullptr)
+    {
+        setGlTexture(selectedTexture, GL_TEXTURE0);
+    }
+}
+
 Texture* NodeEvaluator::requestTexture()
 {
     return this->requestTexture(this->outputResolution);
@@ -84,7 +114,17 @@ void NodeEvaluator::setOutputTexture(Texture* texture)
     this->outputTexture = texture;
 }
 
-void NodeEvaluator::evaluate()
+void NodeEvaluator::setSelectedTexture(Texture* texture)
+{
+    this->selectedTexture = texture;
+}
+
+Texture* NodeEvaluator::getSelectedTexture()
+{
+    return this->selectedTexture;
+}
+
+void NodeEvaluator::evaluateFrom(Node* node)
 {
     std::stack<Node*> nodesWithIndegreeZero; // using a stack to allow for a more depth-first topological sort?
                                              // might mean better memory usage during evaluation, idk
@@ -92,8 +132,8 @@ void NodeEvaluator::evaluate()
 
     std::queue<Node*> frontier;
     std::unordered_set<Node*> visited;
-    frontier.push(this->outputNode);
-    visited.insert(this->outputNode);
+    frontier.push(node);
+    visited.insert(node);
     while (!frontier.empty())
     {
         Node* node = frontier.front();
@@ -151,26 +191,60 @@ void NodeEvaluator::evaluate()
     }
 
     cudaDeviceSynchronize();
+}
 
-    // TODO: check separately for outputTexture and currently selected node
-    if (outputTexture == nullptr)
+void NodeEvaluator::evaluate()
+{
+    selectedTexture = nullptr;
+
+    evaluateFrom(outputNode);
+
+    if (outputTexture != nullptr)
     {
-        return;
+        setGlTexture(outputTexture, GL_TEXTURE1);
     }
 
+    if (selectedTexture == nullptr && selectedNode != nullptr)
+    {
+        evaluateFrom(this->selectedNode);
+    }
+
+    if (selectedTexture != nullptr)
+    {
+        setGlTexture(selectedTexture, GL_TEXTURE0);
+    }
+}
+
+void NodeEvaluator::setGlTexture(Texture* texture, GLenum glTexture)
+{
     float* host_pixels;
-    int sizeBytes = outputResolution.x * outputResolution.y * sizeof(glm::vec4);
+    int sizeBytes = texture->resolution.x * texture->resolution.y * sizeof(glm::vec4);
     CUDA_CHECK(cudaMallocHost(&host_pixels, sizeBytes));
-    CUDA_CHECK(cudaMemcpy(host_pixels, outputTexture->dev_pixels, sizeBytes, cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK(cudaMemcpy(
+        host_pixels,
+        texture->dev_pixels,
+        sizeBytes,
+        cudaMemcpyDeviceToHost
+    ));
 
     // TODO: CUDA/OpenGL interop (at least for the output node; that node may need to request a special texture from NodeEvaluator)
-    // TODO: viewer 1 should show the currently selected node's image, not the output image
     // TODO: replace with glTexSubImage2D?
-    glActiveTexture(GL_TEXTURE0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, outputResolution.x, outputResolution.y, false, GL_RGBA, GL_FLOAT, host_pixels);
-
-    glActiveTexture(GL_TEXTURE1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, outputResolution.x, outputResolution.y, false, GL_RGBA, GL_FLOAT, host_pixels);
+    glActiveTexture(glTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, texture->resolution.x, texture->resolution.y, false, GL_RGBA, GL_FLOAT, host_pixels);
 
     CUDA_CHECK(cudaFreeHost(host_pixels));
+
+    cleanupTextureReferences();
+}
+
+void NodeEvaluator::cleanupTextureReferences()
+{
+    for (const auto& [res, resTextures] : this->textures)
+    {
+        for (const auto& tex : resTextures)
+        {
+            tex->numReferences = 0;
+        }
+    }
 }

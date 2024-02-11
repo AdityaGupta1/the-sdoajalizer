@@ -19,9 +19,11 @@ class NodeEvaluator
 {
 private:
     Node* outputNode{ nullptr };
+    Node* selectedNode{ nullptr };
 
     std::unordered_map<glm::ivec2, std::vector<std::unique_ptr<Texture>>, ResolutionHash> textures;
     Texture* outputTexture{ nullptr };
+    Texture* selectedTexture{ nullptr };
 
 public:
     GLuint viewerTex1;
@@ -35,11 +37,19 @@ public:
     void init();
 
     void setOutputNode(Node* outputNode);
+    void setSelectedNode(Node* selectedNode);
 
     Texture* requestTexture(); // defaults to output resolution
     Texture* requestTexture(glm::ivec2 resolution);
 
     void setOutputTexture(Texture* texture);
+    void setSelectedTexture(Texture* texture);
 
+    Texture* getSelectedTexture();
+
+    void evaluateFrom(Node* node);
     void evaluate();
+
+    void setGlTexture(Texture* texture, GLenum glTexture);
+    void cleanupTextureReferences();
 };

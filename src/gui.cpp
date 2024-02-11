@@ -284,7 +284,11 @@ void Gui::render()
     // ================================================================================
 
     ImGui::Begin("Viewer 1", nullptr, windowFlags);
-    drawImageViewer(nodeEvaluator.viewerTex1, nodeEvaluator.outputResolution); // TODO: get resolution from selected node's first output?
+    Texture* selectedTexture = nodeEvaluator.getSelectedTexture();
+    if (selectedTexture != nullptr)
+    {
+        drawImageViewer(nodeEvaluator.viewerTex1, selectedTexture->resolution);
+    }
     ImGui::End();
 
     // VIEWER 2
@@ -364,6 +368,14 @@ void Gui::drawNodeEditor()
         addEdge(startPinId, endPinId);
     }
 
+    const int numSelectedNodes = ImNodes::NumSelectedNodes();
+    std::vector<int> selectedNodes;
+    if (numSelectedNodes > 0)
+    {
+        selectedNodes.resize(numSelectedNodes);
+        ImNodes::GetSelectedNodes(selectedNodes.data());
+    }
+
     if (isDeleteQueued)
     {
         isDeleteQueued = false;
@@ -380,16 +392,22 @@ void Gui::drawNodeEditor()
             }
         }
 
-        const int numSelectedNodes = ImNodes::NumSelectedNodes();
-        if (numSelectedNodes > 0)
+        for (const auto nodeId : selectedNodes)
         {
-            std::vector<int> selectedNodes;
-            selectedNodes.resize(numSelectedNodes);
-            ImNodes::GetSelectedNodes(selectedNodes.data());
-            for (const auto nodeId : selectedNodes)
-            {
-                deleteNode(nodeId);
-            }
+            deleteNode(nodeId);
+        }
+
+        nodeEvaluator.setSelectedNode(nullptr);
+    }
+    else
+    {
+        if (selectedNodes.size() == 1)
+        {
+            nodeEvaluator.setSelectedNode(nodes[selectedNodes[0]].get());
+        }
+        else
+        {
+            nodeEvaluator.setSelectedNode(nullptr);
         }
     }
 }

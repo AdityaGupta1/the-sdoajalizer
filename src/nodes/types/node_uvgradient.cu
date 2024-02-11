@@ -31,4 +31,9 @@ void NodeUvGradient::evaluate()
     kernUvGradient<<<blocksPerGrid, blockSize>>>(*outTex);
 
     outputPins[0].propagateTexture(outTex);
+
+    if (getIsSelected())
+    {
+        nodeEvaluator->setSelectedTexture(outTex);
+    }
 }

@@ -48,6 +48,10 @@ class Node
 private:
     static int nextId;
 
+    bool isSelected{ false };
+
+    void setIsSelected(bool isSelected);
+
 protected:
     const std::string name;
 
@@ -62,6 +66,8 @@ protected:
 
     virtual void evaluate() = 0;
     void clearInputTextures();
+
+    bool getIsSelected() const;
 
 public:
     const int id;

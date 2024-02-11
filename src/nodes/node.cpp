@@ -98,6 +98,16 @@ void Node::clearInputTextures()
     }
 }
 
+bool Node::getIsSelected() const
+{
+    return this->isSelected;
+}
+
+void Node::setIsSelected(bool isSelected)
+{
+    this->isSelected = isSelected;
+}
+
 Pin& Node::getPin(int pinId)
 {
     int localPinId = pinId - this->id - 1;

@@ -40,4 +40,9 @@ void NodeInvert::evaluate()
     kernInvert<<<blocksPerGrid, blockSize>>>(*inTex, *outTex);
 
     outputPins[0].propagateTexture(outTex);
+
+    if (getIsSelected())
+    {
+        nodeEvaluator->setSelectedTexture(outTex);
+    }
 }

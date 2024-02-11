@@ -59,4 +59,9 @@ void NodeMix::evaluate()
     kernMix<<<blocksPerGrid, blockSize>>>(*inTex1, *inTex2, *outTex);
 
     outputPins[0].propagateTexture(outTex);
+
+    if (getIsSelected())
+    {
+        nodeEvaluator->setSelectedTexture(outTex);
+    }
 }

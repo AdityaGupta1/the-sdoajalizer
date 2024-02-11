@@ -18,5 +18,11 @@ unsigned int NodeOutput::getTitleBarSelectedColor() const
 
 void NodeOutput::evaluate()
 {
-    nodeEvaluator->setOutputTexture(inputPins[0].getSingleTexture());
+    Texture* outputTex = inputPins[0].getSingleTexture();
+    nodeEvaluator->setOutputTexture(outputTex);
+
+    if (getIsSelected())
+    {
+        nodeEvaluator->setSelectedTexture(outputTex);
+    }
 }

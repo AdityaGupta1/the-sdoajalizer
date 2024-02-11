@@ -33,4 +33,9 @@ void NodeNoise::evaluate()
     kernNoise<<<blocksPerGrid, blockSize>>>(*outTex);
 
     outputPins[0].propagateTexture(outTex);
+
+    if (getIsSelected())
+    {
+        nodeEvaluator->setSelectedTexture(outTex);
+    }
 }
