@@ -1,6 +1,6 @@
 #include "node_mix.hpp"
 
-#include "../../cuda_includes.hpp"
+#include "cuda_includes.hpp"
 
 NodeMix::NodeMix()
     : Node("mix")

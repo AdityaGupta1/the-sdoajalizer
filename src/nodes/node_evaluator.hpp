@@ -2,7 +2,7 @@
 
 #include "node.hpp"
 #include "edge.hpp"
-#include "../texture.hpp"
+#include "texture.hpp"
 
 #include <unordered_map>
 #include <memory>

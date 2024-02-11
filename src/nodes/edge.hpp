@@ -2,7 +2,7 @@
 
 #include "node.hpp"
 #include "node_evaluator.hpp"
-#include "../texture.hpp"
+#include "texture.hpp"
 
 class Node;
 class Pin;
@@ -13,7 +13,7 @@ class Edge
 private:
     static int nextId;
 
-    Texture* texture;
+    Texture* texture{ nullptr };
 
 public:
     const int id;

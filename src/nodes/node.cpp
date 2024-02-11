@@ -1,6 +1,6 @@
 #include "node.hpp"
 
-#include "../ImGui/imnodes.h"
+#include "ImGui/imnodes.h"
 
 Pin::Pin(int id, Node* node)
     : id(id), node(node)

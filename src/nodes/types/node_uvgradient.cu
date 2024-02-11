@@ -1,6 +1,6 @@
 #include "node_uvgradient.hpp"
 
-#include "../../cuda_includes.hpp"
+#include "cuda_includes.hpp"
 
 NodeUvGradient::NodeUvGradient()
     : Node("uv gradient")

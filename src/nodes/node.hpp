@@ -19,7 +19,7 @@ class NodeEvaluator;
 class Pin
 {
 private:
-    Node* node;
+    Node* node{ nullptr };
     std::unordered_set<Edge*> edges;
 
 public:

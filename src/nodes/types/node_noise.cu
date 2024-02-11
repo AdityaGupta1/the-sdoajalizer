@@ -1,6 +1,6 @@
 #include "node_noise.hpp"
 
-#include "../../cuda_includes.hpp"
+#include "cuda_includes.hpp"
 
 #include <glm/gtc/noise.hpp>
 

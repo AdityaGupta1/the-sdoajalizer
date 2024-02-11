@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../node.hpp"
+#include "nodes/node.hpp"
 
 class NodeInvert : public Node
 {

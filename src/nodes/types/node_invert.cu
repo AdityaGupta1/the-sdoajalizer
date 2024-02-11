@@ -1,6 +1,6 @@
 #include "node_invert.hpp"
 
-#include "../../cuda_includes.hpp"
+#include "cuda_includes.hpp"
 
 NodeInvert::NodeInvert()
     : Node("invert")

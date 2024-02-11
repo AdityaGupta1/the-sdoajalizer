@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../node.hpp"
-#include "../../texture.hpp"
+#include "nodes/node.hpp"
+#include "texture.hpp"
 
 class NodeOutput : public Node
 {
