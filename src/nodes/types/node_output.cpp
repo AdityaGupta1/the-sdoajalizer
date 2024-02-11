@@ -3,7 +3,7 @@
 NodeOutput::NodeOutput()
     : Node("output")
 {
-    addPins(1, 0);
+    addPin(PinType::INPUT);
 }
 
 unsigned int NodeOutput::getTitleBarColor() const

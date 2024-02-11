@@ -5,7 +5,11 @@ int NodeDebug::debugNum = 0;
 NodeDebug::NodeDebug()
     : Node("debug " + std::to_string(NodeDebug::debugNum++))
 {
-    addPins(4, 4);
+    for (int i = 0; i < 4; ++i)
+    {
+        addPin(PinType::INPUT);
+        addPin(PinType::OUTPUT);
+    }
 }
 
 void NodeDebug::evaluate()

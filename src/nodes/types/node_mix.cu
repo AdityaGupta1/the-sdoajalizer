@@ -5,7 +5,9 @@
 NodeMix::NodeMix()
     : Node("mix")
 {
-    addPins(2, 1);
+    addPin(PinType::INPUT, "input 1");
+    addPin(PinType::INPUT, "input 2");
+    addPin(PinType::OUTPUT);
 }
 
 __global__ void kernMix(Texture inTex1, Texture inTex2, Texture outTex)

@@ -5,7 +5,8 @@
 NodeInvert::NodeInvert()
     : Node("invert")
 {
-    addPins(1, 1);
+    addPin(PinType::INPUT);
+    addPin(PinType::OUTPUT);
 }
 
 __global__ void kernInvert(Texture inTex, Texture outTex)

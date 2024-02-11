@@ -7,7 +7,7 @@
 NodeNoise::NodeNoise()
     : Node("noise")
 {
-    addPins(0, 1);
+    addPin(PinType::OUTPUT);
 }
 
 __global__ void kernNoise(Texture outTex)

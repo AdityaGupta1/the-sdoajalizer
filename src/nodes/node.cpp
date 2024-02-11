@@ -2,8 +2,8 @@
 
 #include "ImGui/imnodes.h"
 
-Pin::Pin(int id, Node* node)
-    : id(id), node(node)
+Pin::Pin(int id, Node* node, PinType pinType, const std::string& name)
+    : id(id), node(node), pinType(pinType), name(name)
 {}
 
 Node* Pin::getNode() const
@@ -57,6 +57,31 @@ void Pin::clearTextures()
     }
 }
 
+bool Pin::draw()
+{
+    if (pinType == PinType::INPUT)
+    {
+        ImNodes::BeginInputAttribute(this->id);
+    }
+    else
+    {
+        ImNodes::BeginOutputAttribute(this->id);
+    }
+
+    ImGui::Text(name.c_str());
+
+    if (pinType == PinType::INPUT)
+    {
+        ImNodes::EndInputAttribute();
+    }
+    else
+    {
+        ImNodes::EndOutputAttribute();
+    }
+
+    return false;
+}
+
 int Node::nextId = 0;
 
 Node::Node(std::string name)
@@ -65,19 +90,16 @@ Node::Node(std::string name)
     Node::nextId += NODE_ID_STRIDE;
 }
 
-void Node::addPins(int numInput, int numOutput)
+void Node::addPin(PinType type, const std::string& name)
 {
-    int nextPinId = this->id + 1;
+    int pinId = this->id + inputPins.size() + outputPins.size() + 1;
+    auto& pinVector = (type == PinType::INPUT) ? inputPins : outputPins;
+    pinVector.emplace_back(pinId, this, type, name);
+}
 
-    for (int i = 0; i < numInput; ++i)
-    {
-        this->inputPins.push_back(Pin(nextPinId++, this));
-    }
-
-    for (int i = 0; i < numOutput; ++i)
-    {
-        this->outputPins.push_back(Pin(nextPinId++, this));
-    }
+void Node::addPin(PinType type)
+{
+    addPin(type, type == PinType::INPUT ? "input" : "output");
 }
 
 unsigned int Node::getTitleBarColor() const
@@ -117,7 +139,7 @@ void Node::setNodeEvaluator(NodeEvaluator* nodeEvaluator)
     this->nodeEvaluator = nodeEvaluator;
 }
 
-void Node::draw() const
+bool Node::draw()
 {
     ImNodes::PushColorStyle(ImNodesCol_TitleBar, this->getTitleBarColor());
     ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, this->getTitleBarSelectedColor());
@@ -129,18 +151,15 @@ void Node::draw() const
     ImGui::TextUnformatted(this->name.c_str());
     ImNodes::EndNodeTitleBar();
 
-    for (const auto& inputPin : inputPins)
+    bool didParameterChange = false;
+    for (auto& inputPin : inputPins)
     {
-        ImNodes::BeginInputAttribute(inputPin.id);
-        ImGui::Text("input");
-        ImNodes::EndInputAttribute();
+        didParameterChange |= inputPin.draw();
     }
 
-    for (const auto& outputPin : outputPins)
+    for (auto& outputPin : outputPins)
     {
-        ImNodes::BeginOutputAttribute(outputPin.id);
-        ImGui::Text("output");
-        ImNodes::EndOutputAttribute();
+        didParameterChange |= outputPin.draw();
     }
 
     ImNodes::EndNode();
@@ -148,4 +167,6 @@ void Node::draw() const
     ImNodes::PopColorStyle();
     ImNodes::PopColorStyle();
     ImNodes::PopColorStyle();
+
+    return didParameterChange;
 }

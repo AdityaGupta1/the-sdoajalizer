@@ -343,7 +343,11 @@ void Gui::drawNodeEditor()
 
     for (const auto& [nodeId, node] : nodes)
     {
-        node->draw();
+        bool wasParameterChanged = node->draw();
+        if (wasParameterChanged)
+        {
+            isNetworkDirty = true;
+        }
     }
 
     for (const auto& [edgeId, edge] : edges)

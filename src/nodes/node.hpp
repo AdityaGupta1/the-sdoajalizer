@@ -16,16 +16,23 @@ class Edge;
 class Node;
 class NodeEvaluator;
 
+enum class PinType
+{
+    INPUT, OUTPUT
+};
+
 class Pin
 {
 private:
     Node* node{ nullptr };
     std::unordered_set<Edge*> edges;
+    const PinType pinType;
+    const std::string name;
 
 public:
     const int id;
 
-    Pin(int id, Node* node);
+    Pin(int id, Node* node, PinType pinType, const std::string& name);
 
     Node* getNode() const;
     const std::unordered_set<Edge*>& getEdges() const;
@@ -39,6 +46,8 @@ public:
 
     void propagateTexture(Texture* texture);
     void clearTextures();
+
+    bool draw();
 };
 
 class Node
@@ -55,7 +64,8 @@ protected:
 
     Node(std::string name);
 
-    void addPins(int numInput, int numOutput);
+    void addPin(PinType type, const std::string& name);
+    void addPin(PinType type);
 
     virtual unsigned int getTitleBarColor() const;
     virtual unsigned int getTitleBarSelectedColor() const;
@@ -73,5 +83,5 @@ public:
 
     void setNodeEvaluator(NodeEvaluator* nodeEvaluator);
 
-    void draw() const;
+    bool draw();
 };
