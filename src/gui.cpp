@@ -51,7 +51,7 @@ void Gui::setupStyle()
 
     style.Alpha = 1.0f;
     style.DisabledAlpha = 0.4000000059604645f;
-    style.WindowPadding = ImVec2(10.0f, 10.0f);
+    style.WindowPadding = ImVec2(3.0f, 3.0f);
     style.WindowRounding = 4.0f;
     style.WindowBorderSize = 0.0f;
     style.WindowMinSize = ImVec2(50.0f, 50.0f);
@@ -266,11 +266,9 @@ void Gui::render()
         ImGui::DockBuilderRemoveNode(dockspace_id);
         ImGui::DockBuilderAddNode(dockspace_id, dockSpaceFlags | ImGuiDockNodeFlags_DockSpace);
 
-        ImGuiID viewer1 = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Up, 0.5f, nullptr, &dockspace_id);
-        ImGuiID viewer2 = ImGui::DockBuilderSplitNode(viewer1, ImGuiDir_Right, 0.5f, nullptr, &viewer1);
+        ImGuiID viewer = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.5f, nullptr, &dockspace_id);
 
-        ImGui::DockBuilderDockWindow("Viewer 1", viewer1);
-        ImGui::DockBuilderDockWindow("Viewer 2", viewer2);
+        ImGui::DockBuilderDockWindow("Viewer", viewer);
         ImGui::DockBuilderDockWindow("Node Editor", dockspace_id);
 
         ImGui::DockBuilderFinish(dockspace_id);
@@ -280,17 +278,10 @@ void Gui::render()
 
     ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove;
 
-    // VIEWER 1
+    // VIEWER
     // ================================================================================
 
-    ImGui::Begin("Viewer 1", nullptr, windowFlags);
-    drawImageViewer(nodeEvaluator.viewerTex1, nodeEvaluator.outputResolution); // TODO: get resolution from selected node's first output?
-    ImGui::End();
-
-    // VIEWER 2
-    // ================================================================================
-
-    ImGui::Begin("Viewer 2", nullptr, windowFlags);
+    ImGui::Begin("Viewer", nullptr, windowFlags);
     drawImageViewer(nodeEvaluator.viewerTex2, nodeEvaluator.outputResolution);
     ImGui::End();
 
@@ -338,7 +329,11 @@ void Gui::drawImageViewer(GLuint tex, glm::ivec2 resolution)
         imageSize.y = imageSize.x * imageAspectRatio;
     }
 
-    ImGui::SetCursorPosX((contentSize.x - imageSize.x) * 0.5f);
+    ImVec2 oldCursorPos = ImGui::GetCursorScreenPos();
+    ImVec2 newCursorPos = (contentSize - imageSize) * 0.5f;
+    newCursorPos.y += oldCursorPos.y;
+    ImGui::SetCursorScreenPos(newCursorPos);
+
     ImGui::Image((void*)(intptr_t)tex, imageSize);
 }
 
