@@ -57,31 +57,6 @@ void Pin::clearTextures()
     }
 }
 
-bool Pin::draw()
-{
-    if (pinType == PinType::INPUT)
-    {
-        ImNodes::BeginInputAttribute(this->id);
-    }
-    else
-    {
-        ImNodes::BeginOutputAttribute(this->id);
-    }
-
-    ImGui::Text(name.c_str());
-
-    if (pinType == PinType::INPUT)
-    {
-        ImNodes::EndInputAttribute();
-    }
-    else
-    {
-        ImNodes::EndOutputAttribute();
-    }
-
-    return false;
-}
-
 int Node::nextId = 0;
 
 Node::Node(std::string name)
@@ -152,14 +127,18 @@ bool Node::draw()
     ImNodes::EndNodeTitleBar();
 
     bool didParameterChange = false;
-    for (auto& inputPin : inputPins)
+    for (const auto& inputPin : inputPins)
     {
-        didParameterChange |= inputPin.draw();
+        ImNodes::BeginInputAttribute(inputPin.id);
+        ImGui::Text(inputPin.name.c_str());
+        ImNodes::EndInputAttribute();
     }
 
-    for (auto& outputPin : outputPins)
+    for (const auto& outputPin : outputPins)
     {
-        didParameterChange |= outputPin.draw();
+        ImNodes::BeginOutputAttribute(outputPin.id);
+        ImGui::Text(outputPin.name.c_str());
+        ImNodes::EndOutputAttribute();
     }
 
     ImNodes::EndNode();

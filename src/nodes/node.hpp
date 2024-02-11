@@ -27,10 +27,10 @@ private:
     Node* node{ nullptr };
     std::unordered_set<Edge*> edges;
     const PinType pinType;
-    const std::string name;
 
 public:
     const int id;
+    const std::string name;
 
     Pin(int id, Node* node, PinType pinType, const std::string& name);
 
@@ -46,8 +46,6 @@ public:
 
     void propagateTexture(Texture* texture);
     void clearTextures();
-
-    bool draw();
 };
 
 class Node
