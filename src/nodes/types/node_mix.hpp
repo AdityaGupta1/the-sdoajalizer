@@ -5,9 +5,9 @@
 class NodeMix : public Node
 {
 private:
-    glm::vec4 backupCol1{ 0.5f, 0.5f, 0.5f, 1.0f };
-    glm::vec4 backupCol2{ 0.5f, 0.5f, 0.5f, 1.0f };
-    float factor{ 0.5f };
+    glm::vec4 backupCol1{ Node::defaultBackupVec4 };
+    glm::vec4 backupCol2{ Node::defaultBackupVec4 };
+    float factor{ Node::defaultBackupFloat };
 
 public:
     NodeMix();

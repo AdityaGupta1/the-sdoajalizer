@@ -59,6 +59,11 @@ void Pin::clearTextures()
 
 int Node::nextId = 0;
 
+const float Node::defaultBackupFloat = 0.5f;
+const glm::vec2 Node::defaultBackupVec2 = { 0.5f, 0.5f };
+const glm::vec3 Node::defaultBackupVec3 = { 0.5f, 0.5f, 0.5f };
+const glm::vec4 Node::defaultBackupVec4 = { 0.5f, 0.5f, 0.5f, 1.f };
+
 Node::Node(std::string name)
     : name(name), id(Node::nextId)
 {
@@ -85,6 +90,19 @@ unsigned int Node::getTitleBarColor() const
 unsigned int Node::getTitleBarSelectedColor() const
 {
     return IM_COL32(81, 148, 204, 255);
+}
+
+Texture* Node::getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col)
+{
+    Texture* tex = pin.getSingleTexture();
+
+    if (tex == nullptr)
+    {
+        tex = nodeEvaluator->requestSingleColorTexture();
+        tex->setColor(col);
+    }
+
+    return tex;
 }
 
 void Node::clearInputTextures()

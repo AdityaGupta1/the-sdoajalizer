@@ -9,6 +9,11 @@ NodeInvert::NodeInvert()
     addPin(PinType::OUTPUT);
 }
 
+__host__ __device__ glm::vec4 invertCol(glm::vec4 col)
+{
+    return glm::vec4(1.f - glm::vec3(col), col.a);
+}
+
 __global__ void kernInvert(Texture inTex, Texture outTex)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -21,16 +26,18 @@ __global__ void kernInvert(Texture inTex, Texture outTex)
 
     int idx = y * inTex.resolution.x + x;
     glm::vec4 col = inTex.dev_pixels[idx];
-    outTex.dev_pixels[idx] = glm::vec4(1.f - glm::vec3(col), col.a);
+    outTex.dev_pixels[idx] = invertCol(col);
 }
 
 void NodeInvert::evaluate()
 {
-    Texture* inTex = inputPins[0].getSingleTexture();
+    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], backupCol);
 
-    if (inTex == nullptr)
+    if (inTex->isSingleColor())
     {
-        outputPins[0].propagateTexture(nullptr);
+        Texture* outTex = nodeEvaluator->requestSingleColorTexture();
+        outTex->setColor(invertCol(inTex->singleColor));
+        outputPins[0].propagateTexture(outTex);
         return;
     }
 

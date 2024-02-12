@@ -56,6 +56,11 @@ private:
     static int nextId;
 
 protected:
+    static const float defaultBackupFloat;
+    static const glm::vec2 defaultBackupVec2;
+    static const glm::vec3 defaultBackupVec3;
+    static const glm::vec4 defaultBackupVec4;
+
     const std::string name;
 
     NodeEvaluator* nodeEvaluator{ nullptr };
@@ -69,6 +74,7 @@ protected:
     virtual unsigned int getTitleBarSelectedColor() const;
 
     virtual void evaluate() = 0;
+    Texture* getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col);
     void clearInputTextures();
 
     virtual bool drawInputPinExtras(const Pin* pin, int pinNumber);

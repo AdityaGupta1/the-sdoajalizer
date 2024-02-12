@@ -12,6 +12,11 @@ NodeMix::NodeMix()
     addPin(PinType::OUTPUT);
 }
 
+__host__ __device__ glm::vec4 mixCols(glm::vec4 col1, glm::vec4 col2, float factor)
+{
+    return glm::mix(col1, col2, factor);
+}
+
 __global__ void kernMix(Texture inTex1, Texture inTex2, float factor, Texture outTex)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -44,7 +49,7 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, float factor, Texture ou
         }
     }
 
-    outTex.dev_pixels[idx1] = glm::mix(col1, col2, factor);
+    outTex.dev_pixels[idx1] = mixCols(col1, col2, factor);
 }
 
 bool NodeMix::drawInputPinExtras(const Pin* pin, int pinNumber)
@@ -68,26 +73,14 @@ bool NodeMix::drawInputPinExtras(const Pin* pin, int pinNumber)
 // should work for differing resolutions but that hasn't been tested yet
 void NodeMix::evaluate()
 {
-    Texture* inTex1 = inputPins[0].getSingleTexture();
-    Texture* inTex2 = inputPins[1].getSingleTexture();
-
-    // TODO: extract to function
-    if (inTex1 == nullptr)
-    {
-        inTex1 = nodeEvaluator->requestSingleColorTexture();
-        inTex1->setColor(backupCol1);
-    }
-
-    if (inTex2 == nullptr)
-    {
-        inTex2 = nodeEvaluator->requestSingleColorTexture();
-        inTex2->setColor(backupCol2);
-    }
+    Texture* inTex1 = getPinTextureOrSingleColor(inputPins[0], backupCol1);
+    Texture* inTex2 = getPinTextureOrSingleColor(inputPins[1], backupCol2);
 
     if (inTex1->isSingleColor() && inTex2->isSingleColor())
     {
-        inTex1->setColor(glm::mix(inTex1->singleColor, inTex2->singleColor, factor));
-        outputPins[0].propagateTexture(inTex1); // inTex1 and inTex2 have numReferences = 0 before this call so neither needs to be cleaned up by this node
+        Texture* outTex = nodeEvaluator->requestSingleColorTexture();
+        outTex->setColor(mixCols(inTex1->singleColor, inTex2->singleColor, factor));
+        outputPins[0].propagateTexture(outTex);
         return;
     }
 
