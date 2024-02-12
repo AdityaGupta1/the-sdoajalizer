@@ -29,6 +29,23 @@ __global__ void kernInvert(Texture inTex, Texture outTex)
     outTex.dev_pixels[idx] = invertCol(col);
 }
 
+bool NodeInvert::drawPinExtras(const Pin* pin, int pinNumber)
+{
+    if (pin->pinType == PinType::OUTPUT || pin->hasEdge())
+    {
+        return false;
+    }
+
+    switch (pinNumber)
+    {
+    case 0: // input
+        ImGui::SameLine();
+        return NodeUI::ColorEdit4(backupCol);
+    default:
+        throw std::runtime_error("invalid pin number");
+    }
+}
+
 void NodeInvert::evaluate()
 {
     Texture* inTex = getPinTextureOrSingleColor(inputPins[0], backupCol);

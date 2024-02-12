@@ -7,8 +7,8 @@
 #include <unordered_map>
 #include <memory>
 
+#include "cuda_includes.hpp"
 #include <glm/glm.hpp>
-#include <cuda_runtime.h>
 #include <GL/glew.h>
 
 class Node;

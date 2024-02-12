@@ -4,11 +4,6 @@
 #include <queue>
 #include <unordered_map>
 
-#include "common.hpp"
-
-#include <glm/gtx/string_cast.hpp>
-#include <iostream>
-
 NodeEvaluator::NodeEvaluator(glm::ivec2 outputResolution)
     : outputResolution(outputResolution), viewerTex(-1)
 {}

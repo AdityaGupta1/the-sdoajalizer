@@ -26,6 +26,7 @@ void Gui::init(GLFWwindow* window)
 
     io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io->ConfigDockingWithShift = false;
+    io->ConfigDragClickToInputText = true;
 
     nodeEvaluator.init();
 
@@ -53,7 +54,7 @@ void Gui::setupStyle()
     style.Alpha = 1.0f;
     style.DisabledAlpha = 0.4000000059604645f;
     style.WindowPadding = ImVec2(3.0f, 3.0f);
-    style.WindowRounding = 4.0f;
+    style.WindowRounding = 0.0f;
     style.WindowBorderSize = 0.0f;
     style.WindowMinSize = ImVec2(50.0f, 50.0f);
     style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
@@ -414,7 +415,7 @@ void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     {
         switch (key)
         {
-        case GLFW_KEY_BACKSPACE:
+        //case GLFW_KEY_BACKSPACE:
         case GLFW_KEY_DELETE:
             this->isDeleteQueued = true;
             break;

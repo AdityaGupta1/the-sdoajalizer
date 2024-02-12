@@ -5229,10 +5229,20 @@ bool ImGui::ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flag
             SetNextItemWidth(ImMax(next_split - prev_split, 1.0f));
             prev_split = next_split;
 
-            // FIXME: When ImGuiColorEditFlags_HDR flag is passed HS values snap in weird ways when SV values go below 0.
             if (flags & ImGuiColorEditFlags_Float)
             {
-                value_changed |= DragFloat(ids[n], &f[n], 1.0f / 255.0f, 0.0f, hdr ? 0.0f : 1.0f, fmt_table_float[fmt_idx][n]);
+                float maxValue;
+                if (hdr)
+                {
+                    // cap at 1.0 for alpha, and hue/saturation
+                    // no upper cap for RGB and value
+                    maxValue = (n == 3 || ((flags & ImGuiColorEditFlags_DisplayHSV) != 0 && n != 2)) ? 1.f : FLT_MAX;
+                }
+                else
+                {
+                    maxValue = 1.f;
+                }
+                value_changed |= DragFloat(ids[n], &f[n], 1.0f / 255.0f, 0.0f, maxValue, fmt_table_float[fmt_idx][n], ImGuiSliderFlags_AlwaysClamp);
                 value_changed_as_float |= value_changed;
             }
             else

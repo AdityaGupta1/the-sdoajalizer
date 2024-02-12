@@ -138,7 +138,7 @@ bool Node::draw()
     ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, this->getTitleBarSelectedColor());
     ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, this->getTitleBarSelectedColor());
 
-    ImGui::PushItemWidth(200);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5.f, 5.f)); // for padding inside popups
 
     ImNodes::BeginNode(this->id);
 
@@ -167,7 +167,7 @@ bool Node::draw()
 
     ImNodes::EndNode();
 
-    ImGui::PopItemWidth();
+    ImGui::PopStyleVar();
 
     ImNodes::PopColorStyle();
     ImNodes::PopColorStyle();
