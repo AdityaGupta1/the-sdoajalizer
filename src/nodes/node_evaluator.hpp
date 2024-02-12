@@ -24,8 +24,7 @@ private:
     Texture* outputTexture{ nullptr };
 
 public:
-    GLuint viewerTex1;
-    GLuint viewerTex2;
+    GLuint viewerTex;
 
     const glm::ivec2 outputResolution;
 
@@ -40,6 +39,7 @@ public:
     Texture* requestTexture(glm::ivec2 resolution);
 
     void setOutputTexture(Texture* texture);
+    bool hasOutputTexture();
 
     void evaluate();
 };

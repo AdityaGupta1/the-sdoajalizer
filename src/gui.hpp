@@ -45,7 +45,7 @@ private:
     void deleteEdge(Edge* edge);
     void deletePinEdges(Pin& pin);
 
-    void drawImageViewer(GLuint tex, glm::ivec2 resolution);
+    void drawOutputImageViewer();
     void drawNodeEditor();
 
 public:

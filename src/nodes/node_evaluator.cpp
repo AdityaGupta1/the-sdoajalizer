@@ -10,7 +10,7 @@
 #include <iostream>
 
 NodeEvaluator::NodeEvaluator(glm::ivec2 outputResolution)
-    : outputResolution(outputResolution), viewerTex1(-1), viewerTex2(-1)
+    : outputResolution(outputResolution), viewerTex(-1)
 {}
 
 NodeEvaluator::~NodeEvaluator()
@@ -27,16 +27,8 @@ NodeEvaluator::~NodeEvaluator()
 void NodeEvaluator::init()
 {
     glActiveTexture(GL_TEXTURE0);
-    glGenTextures(1, &viewerTex1);
-    glBindTexture(GL_TEXTURE_2D, viewerTex1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-    glActiveTexture(GL_TEXTURE1);
-    glGenTextures(1, &viewerTex2);
-    glBindTexture(GL_TEXTURE_2D, viewerTex2);
+    glGenTextures(1, &viewerTex);
+    glBindTexture(GL_TEXTURE_2D, viewerTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -82,6 +74,11 @@ Texture* NodeEvaluator::requestTexture(glm::ivec2 resolution)
 void NodeEvaluator::setOutputTexture(Texture* texture)
 {
     this->outputTexture = texture;
+}
+
+bool NodeEvaluator::hasOutputTexture()
+{
+    return this->outputTexture != nullptr;
 }
 
 void NodeEvaluator::evaluate()
@@ -152,7 +149,6 @@ void NodeEvaluator::evaluate()
 
     cudaDeviceSynchronize();
 
-    // TODO: check separately for outputTexture and currently selected node
     if (outputTexture == nullptr)
     {
         return;
@@ -163,13 +159,9 @@ void NodeEvaluator::evaluate()
     CUDA_CHECK(cudaMallocHost(&host_pixels, sizeBytes));
     CUDA_CHECK(cudaMemcpy(host_pixels, outputTexture->dev_pixels, sizeBytes, cudaMemcpyDeviceToHost));
 
-    // TODO: CUDA/OpenGL interop (at least for the output node; that node may need to request a special texture from NodeEvaluator)
-    // TODO: viewer 1 should show the currently selected node's image, not the output image
+    // TODO: CUDA/OpenGL interop (may need to request a special texture from NodeEvaluator)
     // TODO: replace with glTexSubImage2D?
     glActiveTexture(GL_TEXTURE0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, outputResolution.x, outputResolution.y, false, GL_RGBA, GL_FLOAT, host_pixels);
-
-    glActiveTexture(GL_TEXTURE1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, outputResolution.x, outputResolution.y, false, GL_RGBA, GL_FLOAT, host_pixels);
 
     CUDA_CHECK(cudaFreeHost(host_pixels));

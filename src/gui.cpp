@@ -282,7 +282,7 @@ void Gui::render()
     // ================================================================================
 
     ImGui::Begin("Viewer", nullptr, windowFlags);
-    drawImageViewer(nodeEvaluator.viewerTex2, nodeEvaluator.outputResolution);
+    drawOutputImageViewer();
     ImGui::End();
 
     // NODE EDITOR
@@ -310,12 +310,17 @@ void Gui::render()
     }
 }
 
-void Gui::drawImageViewer(GLuint tex, glm::ivec2 resolution)
+void Gui::drawOutputImageViewer()
 {
+    if (!nodeEvaluator.hasOutputTexture())
+    {
+        return;
+    }
+
     ImVec2 contentSize = ImGui::GetContentRegionAvail();
     float contentAspectRatio = contentSize.y / contentSize.x;
 
-    float imageAspectRatio = resolution.y / (float)resolution.x;
+    float imageAspectRatio = nodeEvaluator.outputResolution.y / (float)nodeEvaluator.outputResolution.x;
 
     ImVec2 imageSize;
     if (contentAspectRatio < imageAspectRatio)
@@ -334,7 +339,7 @@ void Gui::drawImageViewer(GLuint tex, glm::ivec2 resolution)
     newCursorPos.y += oldCursorPos.y;
     ImGui::SetCursorScreenPos(newCursorPos);
 
-    ImGui::Image((void*)(intptr_t)tex, imageSize);
+    ImGui::Image((void*)(intptr_t)nodeEvaluator.viewerTex, imageSize);
 }
 
 void Gui::drawNodeEditor()
