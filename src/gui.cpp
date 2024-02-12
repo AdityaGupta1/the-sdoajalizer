@@ -42,6 +42,7 @@ void Gui::init(GLFWwindow* window)
     addNode(std::make_unique<NodeInvert>());
     addNode(std::make_unique<NodeMix>());
     addNode(std::make_unique<NodeMix>());
+    addNode(std::make_unique<NodeColor>());
 }
 
 void Gui::setupStyle()

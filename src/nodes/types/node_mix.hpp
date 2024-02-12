@@ -5,14 +5,14 @@
 class NodeMix : public Node
 {
 private:
-    glm::vec4 backupCol1{ Node::defaultBackupVec4 };
-    glm::vec4 backupCol2{ Node::defaultBackupVec4 };
-    float factor{ Node::defaultBackupFloat };
+    glm::vec4 backupCol1{ NodeUI::defaultBackupVec4 };
+    glm::vec4 backupCol2{ NodeUI::defaultBackupVec4 };
+    float factor{ NodeUI::defaultBackupFloat };
 
 public:
     NodeMix();
 
 protected:
-    bool drawInputPinExtras(const Pin* pin, int pinNumber) override;
+    bool drawPinExtras(const Pin* pin, int pinNumber) override;
     void evaluate() override;
 };

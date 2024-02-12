@@ -3,6 +3,7 @@
 #define NODE_ID_STRIDE 32
 
 #include "node_evaluator.hpp"
+#include "node_ui_elements.hpp"
 #include "texture.hpp"
 
 #include "ImGui/imgui.h"
@@ -10,8 +11,7 @@
 #include <vector>
 #include <string>
 #include <unordered_set>
-
-#include <glm/gtc/type_ptr.hpp>
+#include <stdexcept>
 
 class Edge;
 class Node;
@@ -27,10 +27,10 @@ class Pin
 private:
     Node* node{ nullptr };
     std::unordered_set<Edge*> edges;
-    const PinType pinType;
 
 public:
     const int id;
+    const PinType pinType;
     const std::string name;
 
     Pin(int id, Node* node, PinType pinType, const std::string& name);
@@ -58,11 +58,6 @@ private:
     static int nextId;
 
 protected:
-    static const float defaultBackupFloat;
-    static const glm::vec2 defaultBackupVec2;
-    static const glm::vec3 defaultBackupVec3;
-    static const glm::vec4 defaultBackupVec4;
-
     const std::string name;
 
     NodeEvaluator* nodeEvaluator{ nullptr };
@@ -79,7 +74,7 @@ protected:
     Texture* getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col);
     void clearInputTextures();
 
-    virtual bool drawInputPinExtras(const Pin* pin, int pinNumber);
+    virtual bool drawPinExtras(const Pin* pin, int pinNumber);
 
 public:
     const int id;

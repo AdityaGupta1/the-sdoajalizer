@@ -64,11 +64,6 @@ void Pin::clearTextures()
 
 int Node::nextId = 0;
 
-const float Node::defaultBackupFloat = 0.5f;
-const glm::vec2 Node::defaultBackupVec2 = { 0.5f, 0.5f };
-const glm::vec3 Node::defaultBackupVec3 = { 0.5f, 0.5f, 0.5f };
-const glm::vec4 Node::defaultBackupVec4 = { 0.5f, 0.5f, 0.5f, 1.f };
-
 Node::Node(std::string name)
     : name(name), id(Node::nextId)
 {
@@ -157,14 +152,16 @@ bool Node::draw()
         const auto& inputPin = inputPins[i];
         ImNodes::BeginInputAttribute(inputPin.id);
         ImGui::Text(inputPin.name.c_str());
-        didParameterChange |= drawInputPinExtras(&inputPin, i);
+        didParameterChange |= drawPinExtras(&inputPin, i);
         ImNodes::EndInputAttribute();
     }
 
-    for (const auto& outputPin : outputPins)
+    for (int i = 0; i < outputPins.size(); ++i)
     {
+        const auto& outputPin = outputPins[i];
         ImNodes::BeginOutputAttribute(outputPin.id);
         ImGui::Text(outputPin.name.c_str());
+        didParameterChange |= drawPinExtras(&outputPin, i);
         ImNodes::EndOutputAttribute();
     }
 
@@ -179,7 +176,7 @@ bool Node::draw()
     return didParameterChange;
 }
 
-bool Node::drawInputPinExtras(const Pin* pin, int pinNumber)
+bool Node::drawPinExtras(const Pin* pin, int pinNumber)
 {
     // do nothing, should be overridden by nodes with parameters
     return false;

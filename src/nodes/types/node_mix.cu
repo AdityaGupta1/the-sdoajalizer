@@ -2,8 +2,6 @@
 
 #include "cuda_includes.hpp"
 
-#include <stdexcept>
-
 NodeMix::NodeMix()
     : Node("mix")
 {
@@ -52,9 +50,9 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, float factor, Texture ou
     outTex.dev_pixels[idx1] = mixCols(col1, col2, factor);
 }
 
-bool NodeMix::drawInputPinExtras(const Pin* pin, int pinNumber)
+bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
 {
-    if (pin->hasEdge())
+    if (pin->pinType == PinType::OUTPUT || pin->hasEdge())
     {
         return false;
     }
@@ -63,10 +61,10 @@ bool NodeMix::drawInputPinExtras(const Pin* pin, int pinNumber)
     {
     case 0: // input 1
         ImGui::SameLine();
-        return ImGui::ColorEdit4("", glm::value_ptr(backupCol1));
+        return NodeUI::ColorEdit4(backupCol1);
     case 1: // input 2
         ImGui::SameLine();
-        return ImGui::ColorEdit4("", glm::value_ptr(backupCol2));
+        return NodeUI::ColorEdit4(backupCol2);
     case 2: // factor
         // TODO
         return false;
