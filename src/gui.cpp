@@ -293,7 +293,7 @@ void Gui::render()
     if (isFirstRender)
     {
         ImVec2 windowSize = ImGui::GetWindowSize();
-        ImNodes::SetNodeEditorSpacePos(0, ImVec2(4 * windowSize.x / 5, windowSize.y / 4)); // 0 = output node
+        ImNodes::SetNodeEditorSpacePos(0, ImVec2(windowSize.x * 0.8f, windowSize.y * 0.5f)); // 0 = output node
     }
 
     drawNodeEditor();
@@ -372,6 +372,8 @@ void Gui::drawNodeEditor()
     {
         isDeleteQueued = false;
 
+        bool didDelete = false;
+
         const int numSelectedEdges = ImNodes::NumSelectedLinks();
         if (numSelectedEdges > 0)
         {
@@ -381,6 +383,7 @@ void Gui::drawNodeEditor()
             for (const auto edgeId : selectedEdges)
             {
                 deleteEdge(edgeId);
+                didDelete = true;
             }
         }
 
@@ -393,7 +396,13 @@ void Gui::drawNodeEditor()
             for (const auto nodeId : selectedNodes)
             {
                 deleteNode(nodeId);
+                didDelete = true;
             }
+        }
+
+        if (didDelete)
+        {
+            isNetworkDirty = true; // TODO: check if the deleted objects were actually connected to the output
         }
     }
 }

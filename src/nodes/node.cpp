@@ -127,10 +127,12 @@ bool Node::draw()
     ImNodes::EndNodeTitleBar();
 
     bool didParameterChange = false;
-    for (const auto& inputPin : inputPins)
+    for (int i = 0; i < inputPins.size(); ++i)
     {
+        const auto& inputPin = inputPins[i];
         ImNodes::BeginInputAttribute(inputPin.id);
         ImGui::Text(inputPin.name.c_str());
+        didParameterChange |= drawInputPinExtras(&inputPin, i);
         ImNodes::EndInputAttribute();
     }
 
@@ -148,4 +150,10 @@ bool Node::draw()
     ImNodes::PopColorStyle();
 
     return didParameterChange;
+}
+
+bool Node::drawInputPinExtras(const Pin* pin, int pinNumber)
+{
+    // do nothing, should be overridden by nodes with parameters
+    return false;
 }

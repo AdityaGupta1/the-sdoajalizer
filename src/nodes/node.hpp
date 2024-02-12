@@ -71,6 +71,8 @@ protected:
     virtual void evaluate() = 0;
     void clearInputTextures();
 
+    virtual bool drawInputPinExtras(const Pin* pin, int pinNumber);
+
 public:
     const int id;
 

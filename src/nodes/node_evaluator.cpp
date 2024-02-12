@@ -19,7 +19,10 @@ NodeEvaluator::~NodeEvaluator()
     {
         for (const auto& texture : resTextures)
         {
-            CUDA_CHECK(cudaFree(texture->dev_pixels));
+            if (texture->dev_pixels != nullptr)
+            {
+                CUDA_CHECK(cudaFree(texture->dev_pixels));
+            }
         }
     }
 }
@@ -40,11 +43,6 @@ void NodeEvaluator::setOutputNode(Node* outputNode)
     this->outputNode = outputNode;
 }
 
-Texture* NodeEvaluator::requestTexture()
-{
-    return this->requestTexture(this->outputResolution);
-}
-
 Texture* NodeEvaluator::requestTexture(glm::ivec2 resolution)
 {
     if (this->textures.contains(resolution))
@@ -63,12 +61,26 @@ Texture* NodeEvaluator::requestTexture(glm::ivec2 resolution)
     }
 
     auto tex = std::make_unique<Texture>();
-    CUDA_CHECK(cudaMalloc(&tex->dev_pixels, resolution.x * resolution.y * sizeof(glm::vec4)));
-    tex->resolution = resolution;
+    
+    if (resolution.x != 0)
+    {
+        CUDA_CHECK(cudaMalloc(&tex->dev_pixels, resolution.x * resolution.y * sizeof(glm::vec4)));
+        tex->resolution = resolution;
+    }
 
     Texture* texPtr = tex.get();
     this->textures[resolution].push_back(std::move(tex));
     return texPtr;
+}
+
+Texture* NodeEvaluator::requestTexture()
+{
+    return this->requestTexture(this->outputResolution);
+}
+
+Texture* NodeEvaluator::requestSingleColorTexture()
+{
+    return this->requestTexture(glm::ivec2(0));
 }
 
 void NodeEvaluator::setOutputTexture(Texture* texture)
