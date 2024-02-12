@@ -16,6 +16,11 @@ const std::unordered_set<Edge*>& Pin::getEdges() const
     return this->edges;
 }
 
+bool Pin::hasEdge() const
+{
+    return !getEdges().empty();
+}
+
 void Pin::addEdge(Edge* edge)
 {
     this->edges.insert(edge);
@@ -98,7 +103,7 @@ Texture* Node::getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col)
 
     if (tex == nullptr)
     {
-        tex = nodeEvaluator->requestSingleColorTexture();
+        tex = nodeEvaluator->requestTemporarySingleColorTexture();
         tex->setColor(col);
     }
 
@@ -138,6 +143,8 @@ bool Node::draw()
     ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, this->getTitleBarSelectedColor());
     ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, this->getTitleBarSelectedColor());
 
+    ImGui::PushItemWidth(200);
+
     ImNodes::BeginNode(this->id);
 
     ImNodes::BeginNodeTitleBar();
@@ -162,6 +169,8 @@ bool Node::draw()
     }
 
     ImNodes::EndNode();
+
+    ImGui::PopItemWidth();
 
     ImNodes::PopColorStyle();
     ImNodes::PopColorStyle();

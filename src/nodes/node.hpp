@@ -2,15 +2,16 @@
 
 #define NODE_ID_STRIDE 32
 
-#include "node.hpp"
 #include "node_evaluator.hpp"
-#include "../texture.hpp"
+#include "texture.hpp"
 
-#include "../ImGui/imgui.h"
+#include "ImGui/imgui.h"
 
 #include <vector>
 #include <string>
 #include <unordered_set>
+
+#include <glm/gtc/type_ptr.hpp>
 
 class Edge;
 class Node;
@@ -36,6 +37,7 @@ public:
 
     Node* getNode() const;
     const std::unordered_set<Edge*>& getEdges() const;
+    bool hasEdge() const;
 
     void addEdge(Edge* edge);
     void removeEdge(Edge* edge);

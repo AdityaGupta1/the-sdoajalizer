@@ -23,6 +23,8 @@ private:
     std::unordered_map<glm::ivec2, std::vector<std::unique_ptr<Texture>>, ResolutionHash> textures;
     Texture* outputTexture{ nullptr };
 
+    std::vector<Texture*> temporarySingleColorTextures;
+
 public:
     GLuint viewerTex;
 
@@ -38,6 +40,7 @@ public:
     Texture* requestTexture(glm::ivec2 resolution);
     Texture* requestTexture(); // defaults to output resolution
     Texture* requestSingleColorTexture(); // resolution = (0, 0)
+    Texture* requestTemporarySingleColorTexture(); // for use with input pins as backups (numReferences cleared after node evaluation)
 
     void setOutputTexture(Texture* texture);
     bool hasOutputTexture();

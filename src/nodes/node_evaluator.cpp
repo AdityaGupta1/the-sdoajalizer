@@ -83,6 +83,14 @@ Texture* NodeEvaluator::requestSingleColorTexture()
     return this->requestTexture(glm::ivec2(0));
 }
 
+Texture* NodeEvaluator::requestTemporarySingleColorTexture()
+{
+    Texture* tex = requestSingleColorTexture();
+    tex->numReferences = 1;
+    temporarySingleColorTextures.push_back(tex);
+    return tex;
+}
+
 void NodeEvaluator::setOutputTexture(Texture* texture)
 {
     this->outputTexture = texture;
@@ -157,6 +165,12 @@ void NodeEvaluator::evaluate()
     {
         node->evaluate();
         node->clearInputTextures();
+
+        for (auto& tex : temporarySingleColorTextures)
+        {
+            tex->numReferences = 0;
+        }
+        temporarySingleColorTextures.clear();
     }
 
     cudaDeviceSynchronize();

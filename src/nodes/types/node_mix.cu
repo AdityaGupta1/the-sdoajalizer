@@ -54,14 +54,19 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, float factor, Texture ou
 
 bool NodeMix::drawInputPinExtras(const Pin* pin, int pinNumber)
 {
+    if (pin->hasEdge())
+    {
+        return false;
+    }
+
     switch (pinNumber)
     {
     case 0: // input 1
-        // TODO
-        return false;
+        ImGui::SameLine();
+        return ImGui::ColorEdit4("", glm::value_ptr(backupCol1));
     case 1: // input 2
-        // TODO
-        return false;
+        ImGui::SameLine();
+        return ImGui::ColorEdit4("", glm::value_ptr(backupCol2));
     case 2: // factor
         // TODO
         return false;
@@ -80,6 +85,7 @@ void NodeMix::evaluate()
     {
         Texture* outTex = nodeEvaluator->requestSingleColorTexture();
         outTex->setColor(mixCols(inTex1->singleColor, inTex2->singleColor, factor));
+
         outputPins[0].propagateTexture(outTex);
         return;
     }
