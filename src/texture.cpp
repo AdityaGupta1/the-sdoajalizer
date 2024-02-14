@@ -26,3 +26,16 @@ void Texture::setColor(float col)
 {
     this->singleColor = glm::vec4(col, col, col, 1);
 }
+
+glm::ivec2 Texture::getFirstResolution(std::initializer_list<Texture*> textures)
+{
+    for (const auto& tex : textures)
+    {
+        if (!tex->isSingleColor())
+        {
+            return tex->resolution;
+        }
+    }
+
+    return glm::ivec2(0, 0);
+}

@@ -105,6 +105,11 @@ Texture* Node::getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col)
     return tex;
 }
 
+Texture* Node::getPinTextureOrSingleColor(const Pin& pin, float col)
+{
+    return getPinTextureOrSingleColor(pin, glm::vec4(col, col, col, 1));
+}
+
 void Node::clearInputTextures()
 {
     for (auto& inputPin : this->inputPins)

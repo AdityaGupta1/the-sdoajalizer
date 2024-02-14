@@ -72,6 +72,7 @@ protected:
 
     virtual void evaluate() = 0;
     Texture* getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col);
+    Texture* getPinTextureOrSingleColor(const Pin& pin, float col);
     void clearInputTextures();
 
     virtual bool drawPinExtras(const Pin* pin, int pinNumber);

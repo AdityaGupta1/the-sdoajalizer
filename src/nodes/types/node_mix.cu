@@ -7,6 +7,7 @@ NodeMix::NodeMix()
 {
     addPin(PinType::INPUT, "input 1");
     addPin(PinType::INPUT, "input 2");
+    addPin(PinType::INPUT, "factor");
     addPin(PinType::OUTPUT);
 }
 
@@ -15,39 +16,21 @@ __host__ __device__ glm::vec4 mixCols(glm::vec4 col1, glm::vec4 col2, float fact
     return glm::mix(col1, col2, factor);
 }
 
-__global__ void kernMix(Texture inTex1, Texture inTex2, float factor, Texture outTex)
+__global__ void kernMix(Texture inTex1, Texture inTex2, Texture inTexFactor, glm::ivec2 outRes, Texture outTex)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
 
-    glm::vec4 col1, col2;
-
-    if (x >= inTex1.resolution.x || y >= inTex1.resolution.y)
+    if (x >= outRes.x || y >= outRes.y)
     {
         return;
     }
 
-    int idx1 = y * inTex1.resolution.x + x;
-    col1 = inTex1.dev_pixels[idx1];
+    glm::vec4 col1 = inTex1.getColor(x, y);
+    glm::vec4 col2 = inTex2.getColor(x, y);
+    float factor = inTexFactor.getColor(x, y).r;
 
-    if (inTex2.isSingleColor())
-    {
-        col2 = inTex2.singleColor;
-    }
-    else
-    {
-        if (x < inTex2.resolution.x && y < inTex2.resolution.y)
-        {
-            int idx2 = y * inTex2.resolution.x + x;
-            col2 = inTex2.dev_pixels[idx2];
-        }
-        else
-        {
-            col2 = glm::vec4(0, 0, 0, 1);
-        }
-    }
-
-    outTex.dev_pixels[idx1] = mixCols(col1, col2, factor);
+    outTex.dev_pixels[y * outRes.x + x] = mixCols(col1, col2, factor);
 }
 
 bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
@@ -66,8 +49,8 @@ bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
         ImGui::SameLine();
         return NodeUI::ColorEdit4(backupCol2);
     case 2: // factor
-        // TODO
-        return false;
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupFactor, 0.01f, 0.f, 1.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -78,35 +61,24 @@ void NodeMix::evaluate()
 {
     Texture* inTex1 = getPinTextureOrSingleColor(inputPins[0], backupCol1);
     Texture* inTex2 = getPinTextureOrSingleColor(inputPins[1], backupCol2);
+    Texture* inTexFactor = getPinTextureOrSingleColor(inputPins[2], backupFactor);
 
-    if (inTex1->isSingleColor() && inTex2->isSingleColor())
+    if (inTex1->isSingleColor() && inTex2->isSingleColor() && inTexFactor->isSingleColor())
     {
         Texture* outTex = nodeEvaluator->requestSingleColorTexture();
-        outTex->setColor(mixCols(inTex1->singleColor, inTex2->singleColor, factor));
+        outTex->setColor(mixCols(inTex1->singleColor, inTex2->singleColor, inTexFactor->singleColor.r));
 
         outputPins[0].propagateTexture(outTex);
         return;
     }
 
-    float realFactor;
-    if (inTex1->isSingleColor())
-    {
-        std::swap(inTex1, inTex2);
-        realFactor = 1.f - factor;
-    }
-    else
-    {
-        realFactor = factor;
-    }
+    glm::ivec2 outRes = Texture::getFirstResolution({ inTex1, inTex2, inTexFactor });
 
-    // inTex1 is not a single color, inTex2 may or may not be a single color
-    // additionally, neither one is nullptr
-
-    Texture* outTex = nodeEvaluator->requestTexture(inTex1->resolution);
+    Texture* outTex = nodeEvaluator->requestTexture(outRes);
 
     const dim3 blockSize(16, 16);
-    const dim3 blocksPerGrid(inTex1->resolution.x / 16 + 1, inTex1->resolution.y / 16 + 1);
-    kernMix<<<blocksPerGrid, blockSize>>>(*inTex1, *inTex2, realFactor, *outTex);
+    const dim3 blocksPerGrid(outRes.x / 16 + 1, outRes.y / 16 + 1);
+    kernMix<<<blocksPerGrid, blockSize>>>(*inTex1, *inTex2, *inTexFactor, outRes, *outTex);
 
     outputPins[0].propagateTexture(outTex);
 }

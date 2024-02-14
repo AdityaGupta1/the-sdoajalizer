@@ -7,7 +7,7 @@ class NodeMix : public Node
 private:
     glm::vec4 backupCol1{ NodeUI::defaultBackupVec4 };
     glm::vec4 backupCol2{ NodeUI::defaultBackupVec4 };
-    float factor{ NodeUI::defaultBackupFloat };
+    float backupFactor{ NodeUI::defaultBackupFloat };
 
 public:
     NodeMix();

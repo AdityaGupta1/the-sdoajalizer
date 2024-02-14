@@ -30,4 +30,26 @@ struct Texture
     {
         return this->resolution.x == 0;
     }
+
+    __host__ __device__ inline glm::vec4 getColor(int x, int y, glm::vec4 backup = glm::vec4(0, 0, 0, 1))
+    {
+        if (isSingleColor())
+        {
+            return singleColor;
+        }
+        else
+        {
+            if (x < resolution.x && y < resolution.y)
+            {
+                int idx = y * resolution.x + x;
+                return dev_pixels[idx];
+            }
+            else
+            {
+                return backup;
+            }
+        }
+    }
+
+    static glm::ivec2 getFirstResolution(std::initializer_list<Texture*> textures);
 };
