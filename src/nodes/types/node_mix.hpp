@@ -15,4 +15,6 @@ public:
 protected:
     bool drawPinExtras(const Pin* pin, int pinNumber) override;
     void evaluate() override;
+
+    std::string debugGetSrcFileName() const override;
 };

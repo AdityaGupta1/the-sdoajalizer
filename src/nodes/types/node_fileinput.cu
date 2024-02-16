@@ -61,3 +61,8 @@ void NodeFileInput::evaluate()
     ++outTex->numReferences; // cache this texture
     outputPins[0].propagateTexture(outTex);
 }
+
+std::string NodeFileInput::debugGetSrcFileName() const
+{
+    return __FILE__;
+}

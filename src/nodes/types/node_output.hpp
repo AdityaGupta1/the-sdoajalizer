@@ -13,4 +13,6 @@ protected:
     unsigned int getTitleBarSelectedColor() const override;
 
     void evaluate() override;
+
+    std::string debugGetSrcFileName() const override;
 };

@@ -365,6 +365,14 @@ void Gui::drawNodeEditor()
         addEdge(startPinId, endPinId);
     }
 
+    const int numSelectedNodes = ImNodes::NumSelectedNodes();
+    std::vector<int> selectedNodes;
+    if (numSelectedNodes > 0)
+    {
+        selectedNodes.resize(numSelectedNodes);
+        ImNodes::GetSelectedNodes(selectedNodes.data());
+    }
+
     if (controls.deleteComponents)
     {
         controls.deleteComponents = false;
@@ -382,14 +390,7 @@ void Gui::drawNodeEditor()
                 deleteEdge(edgeId);
                 didDelete = true;
             }
-        }
 
-        const int numSelectedNodes = ImNodes::NumSelectedNodes();
-        if (numSelectedNodes > 0)
-        {
-            std::vector<int> selectedNodes;
-            selectedNodes.resize(numSelectedNodes);
-            ImNodes::GetSelectedNodes(selectedNodes.data());
             for (const auto nodeId : selectedNodes)
             {
                 deleteNode(nodeId);
@@ -401,6 +402,12 @@ void Gui::drawNodeEditor()
         {
             isNetworkDirty = true; // TODO: check if the deleted objects were actually connected to the output
         }
+    }
+
+    if (controls.debugOpenSrcFile && numSelectedNodes == 1) 
+    {
+        controls.debugOpenSrcFile = false;
+        this->nodes[selectedNodes[0]]->debugOpenSrcFile();
     }
 }
 
@@ -532,6 +539,9 @@ void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
             break;
         case GLFW_KEY_ESCAPE:
             controls.shouldCreateWindowBeVisible = false;
+            break;
+        case GLFW_KEY_SLASH:
+            controls.debugOpenSrcFile = !io->WantTextInput;
             break;
         }
     }

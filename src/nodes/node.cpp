@@ -186,3 +186,8 @@ bool Node::drawPinExtras(const Pin* pin, int pinNumber)
     // do nothing, should be overridden by nodes with parameters
     return false;
 }
+
+void Node::debugOpenSrcFile()
+{
+    system(("\"" + debugGetSrcFileName() + "\"").c_str());
+}
