@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <string>
+
 namespace NodeUI
 {
     static const float defaultBackupFloat = 0.5f;
@@ -13,4 +15,6 @@ namespace NodeUI
     bool ColorEdit4(glm::vec4& col);
 
     bool FloatEdit(float& v, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f");
+
+    bool FilePicker(std::string* filePath);
 }

@@ -9,3 +9,4 @@
 #include "types/node_noise.hpp"
 #include "types/node_uvgradient.hpp"
 #include "types/node_color.hpp"
+#include "types/node_fileinput.hpp"

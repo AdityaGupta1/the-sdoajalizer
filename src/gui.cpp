@@ -37,13 +37,14 @@ void Gui::init(GLFWwindow* window)
     this->nodeEvaluator.setOutputNode(this->outputNode);
 
     // TODO: temporary until node creation UI is added
-    addNode(std::make_unique<NodeUvGradient>());
-    addNode(std::make_unique<NodeNoise>());
-    addNode(std::make_unique<NodeInvert>());
-    addNode(std::make_unique<NodeInvert>());
-    addNode(std::make_unique<NodeMix>());
-    addNode(std::make_unique<NodeMix>());
+    //addNode(std::make_unique<NodeUvGradient>());
+    //addNode(std::make_unique<NodeNoise>());
+    //addNode(std::make_unique<NodeInvert>());
+    //addNode(std::make_unique<NodeInvert>());
+    //addNode(std::make_unique<NodeMix>());
+    //addNode(std::make_unique<NodeMix>());
     addNode(std::make_unique<NodeColor>());
+    addNode(std::make_unique<NodeFileInput>());
 }
 
 void Gui::setupStyle()
