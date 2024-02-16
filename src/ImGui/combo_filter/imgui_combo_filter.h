@@ -547,6 +547,8 @@ bool ComboAutoSelectEX(const char* combo_label, int& selected_item, const T1& it
 	return selection_changed;
 }
 
+// hugely scuffed
+// hacked together to get node search to work
 template<typename T1, typename T2, typename>
 bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboFilterSearchCallback<T2> filter_callback, ImGuiComboFlags flags)
 {
@@ -580,6 +582,7 @@ bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items,
 		combo_data = AddComboData<ComboFilterData>(combo_id);
 		combo_data->FilteredItems.reserve(GetContainerSize(items) / 2);
 	}
+	combo_data->CurrentSelection = -1;
 
 	// Open on click
 	bool hovered, held;
@@ -616,7 +619,9 @@ bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items,
 	//if (label_size.x > 0)
 	//	RenderText(ImVec2(bb.Max.x + style.ItemInnerSpacing.x, bb.Min.y + style.FramePadding.y), combo_label);
 	if (!popup_open)
+	{
 		return false;
+	}
 
 	PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(3.50f, 5.00f));
 	int popup_item_count = -1;

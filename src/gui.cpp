@@ -39,14 +39,14 @@ void Gui::init(GLFWwindow* window)
     this->nodeEvaluator.setOutputNode(this->outputNode);
 
     // TODO: temporary until node creation UI is added
-    addNode(std::make_unique<NodeUvGradient>());
-    addNode(std::make_unique<NodeNoise>());
-    addNode(std::make_unique<NodeInvert>());
-    addNode(std::make_unique<NodeInvert>());
-    addNode(std::make_unique<NodeMix>());
-    addNode(std::make_unique<NodeMix>());
-    addNode(std::make_unique<NodeColor>());
-    addNode(std::make_unique<NodeFileInput>());
+    //addNode(std::make_unique<NodeUvGradient>());
+    //addNode(std::make_unique<NodeNoise>());
+    //addNode(std::make_unique<NodeInvert>());
+    //addNode(std::make_unique<NodeInvert>());
+    //addNode(std::make_unique<NodeMix>());
+    //addNode(std::make_unique<NodeMix>());
+    //addNode(std::make_unique<NodeColor>());
+    //addNode(std::make_unique<NodeFileInput>());
 }
 
 void Gui::setupStyle()
@@ -414,9 +414,9 @@ void Gui::drawNodeEditor()
     }
 }
 
-const char* itemGetter(const std::vector<std::string>& items, int index) {
+const char* itemGetter(const std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>>>& items, int index) {
     if (index >= 0 && index < (int)items.size()) {
-        return items[index].c_str();
+        return items[index].first.c_str();
     }
     return "N/A";
 }
@@ -425,7 +425,9 @@ static bool fuzzyScore(const char* str1, const char* str2, int& score)
 {
     score = 0;
     if (*str2 == '\0')
+    {
         return *str1 == '\0';
+    }
 
     int consecutive = 0;
     int maxerrors = 0;
@@ -465,6 +467,15 @@ void filterSearch(const ImGui::ComboFilterSearchCallbackData<T>& cbd)
     ImGui::SortFilterResultsDescending(*cbd.FilterResults);
 }
 
+static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>>> nodeCreators = {
+    { "color", std::make_unique<NodeColor> },
+    { "file input", std::make_unique<NodeFileInput> },
+    { "invert", std::make_unique<NodeInvert> },
+    { "mix", std::make_unique<NodeMix> },
+    { "noise", std::make_unique<NodeNoise> },
+    { "uv gradient", std::make_unique<NodeUvGradient> }
+};
+
 void Gui::updateNodeCreatorWindow()
 {
     if (createWindowData.visible) {
@@ -480,10 +491,14 @@ void Gui::updateNodeCreatorWindow()
 
         ImGui::PushItemWidth(400);
 
-        static std::vector<std::string> items1{ "instruction", "Chemistry", "Beating Around the Bush", "Instantaneous Combustion", "Level 999999", "nasal problems", "On cloud nine", "break the iceberg", "lacircificane" };
-        static int selectedItem = -1;
-        if (ImGui::ComboFilter("##", selectedItem, items1, itemGetter, filterSearch, ImGuiComboFlags_NoArrowButton)) {
-            printf("%s\n", items1[selectedItem].c_str());
+        int selectedItem = -1;
+        if (ImGui::ComboFilter("##", selectedItem, nodeCreators, itemGetter, filterSearch, ImGuiComboFlags_NoArrowButton)) {
+            auto newNodeUptr = nodeCreators[selectedItem].second();
+            int newNodeId = newNodeUptr->id;
+            addNode(std::move(newNodeUptr));
+
+            ImNodes::SetNodeScreenSpacePos(newNodeId, ImGui::GetMousePos());
+
             controls.shouldCreateWindowBeVisible = false;
         }
 
@@ -512,9 +527,11 @@ void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
         case GLFW_KEY_DELETE:
             controls.deleteComponents = true;
             break;
-        //case GLFW_KEY_TAB:
-        //    controls.shouldCreateWindowBeVisible = !createWindowData.visible;
-        //    break;
+        case GLFW_KEY_TAB:
+            if (createWindowData.visible || !io->WantTextInput) {
+                controls.shouldCreateWindowBeVisible = !createWindowData.visible;
+            }
+            break;
         case GLFW_KEY_ESCAPE:
             controls.shouldCreateWindowBeVisible = false;
             break;

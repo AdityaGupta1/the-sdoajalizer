@@ -49,7 +49,7 @@ __global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
     }
 
     glm::vec4 col;
-    if (x >= inTex.resolution.x || y > inTex.resolution.y)
+    if (x >= inTex.resolution.x || y >= inTex.resolution.y)
     {
         col = glm::vec4(0, 0, 0, 1);
     }

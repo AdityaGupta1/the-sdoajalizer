@@ -25,7 +25,7 @@ void NodeFileInput::reloadFile()
     }
 
     texFile = nodeEvaluator->requestTexture(glm::ivec2(width, height));
-    cudaMemcpy(texFile->dev_pixels, host_pixels, width * height * 4 * sizeof(float), cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(texFile->dev_pixels, host_pixels, width * height * 4 * sizeof(float), cudaMemcpyHostToDevice));
 
     stbi_image_free(host_pixels);
 }
