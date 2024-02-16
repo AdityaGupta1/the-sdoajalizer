@@ -28,7 +28,11 @@ bool NodeUI::FloatEdit(float& v, float v_speed, float v_min, float v_max, const 
 
 bool NodeUI::FilePicker(std::string* filePath)
 {
-    ImGui::Text(filePath->c_str());
+    ImGui::PushItemWidth(160);
+    std::string fileName = filePath->substr(filePath->find_last_of("/\\") + 1);
+    // sussy const_cast but it should be fine since it's read-only
+    ImGui::InputText("", const_cast<char*>(fileName.c_str()), filePath->length(), ImGuiInputTextFlags_ReadOnly);
+    ImGui::PopItemWidth();
 
     ImGui::SameLine();
     if (!ImGui::Button("open")) {

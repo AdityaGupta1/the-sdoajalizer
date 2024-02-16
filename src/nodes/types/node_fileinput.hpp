@@ -5,7 +5,7 @@
 class NodeFileInput : public Node
 {
 private:
-    std::string filePath{ "" };
+    std::string filePath;
 
     Texture* texFile{ nullptr };
     bool needsReloadFile{ false };
