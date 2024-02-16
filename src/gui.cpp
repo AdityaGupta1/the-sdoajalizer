@@ -517,7 +517,10 @@ void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     {
         switch (key)
         {
-        //case GLFW_KEY_BACKSPACE:
+        case GLFW_KEY_BACKSPACE:
+            if (io->WantTextInput) {
+                break;
+            }
         case GLFW_KEY_DELETE:
             controls.deleteComponents = true;
             break;
