@@ -29,9 +29,9 @@ bool NodeUI::FloatEdit(float& v, float v_speed, float v_min, float v_max, const 
 bool NodeUI::FilePicker(std::string* filePath)
 {
     ImGui::PushItemWidth(160);
-    std::string fileName = filePath->substr(filePath->find_last_of("/\\") + 1);
+    char* fileName = const_cast<char*>(filePath->c_str()) + filePath->find_last_of("/\\") + 1;
     // sussy const_cast but it should be fine since it's read-only
-    ImGui::InputText("", const_cast<char*>(fileName.c_str()), filePath->length(), ImGuiInputTextFlags_ReadOnly);
+    ImGui::InputText("", fileName, filePath->length(), ImGuiInputTextFlags_ReadOnly);
     ImGui::PopItemWidth();
 
     ImGui::SameLine();
