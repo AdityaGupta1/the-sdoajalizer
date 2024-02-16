@@ -37,6 +37,8 @@ private:
         bool visible{ false };
         ImVec2 pos{ 0, 0 };
 
+        bool justOpened{ false };
+
         std::string searchText;
     } createWindowData;
 

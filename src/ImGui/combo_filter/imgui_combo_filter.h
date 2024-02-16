@@ -80,9 +80,9 @@ bool ComboAutoSelect(const char* combo_label, int& selected_item, const T1& item
 template<typename T1, typename T2, typename = std::enable_if<std::is_convertible<T1, T2>::value>::type>
 bool ComboAutoSelect(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ImGuiComboFlags flags = ImGuiComboFlags_None);
 template<typename T1, typename T2, typename = std::enable_if<std::is_convertible<T1, T2>::value>::type>
-bool ComboFilter(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboFilterSearchCallback<T2> filter_callback, ImGuiComboFlags flags = ImGuiComboFlags_None);
+bool ComboFilter(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboFilterSearchCallback<T2> filter_callback, bool justOpened, ImGuiComboFlags flags = ImGuiComboFlags_None);
 template<typename T1, typename T2, typename = std::enable_if<std::is_convertible<T1, T2>::value>::type>
-bool ComboFilter(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ImGuiComboFlags flags = ImGuiComboFlags_None);
+bool ComboFilter(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, bool justOpened, ImGuiComboFlags flags = ImGuiComboFlags_None);
 
 namespace Internal
 {
@@ -130,7 +130,7 @@ void DefaultComboFilterSearchCallback(const ComboFilterSearchCallbackData<T>& ca
 template<typename T1, typename T2, typename = std::enable_if<std::is_convertible<T1, T2>::value>::type>
 bool ComboAutoSelectEX(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboAutoSelectSearchCallback<T2> autoselect_callback, ImGuiComboFlags flags);
 template<typename T1, typename T2, typename = std::enable_if<std::is_convertible<T1, T2>::value>::type>
-bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboFilterSearchCallback<T2> filter_callback, ImGuiComboFlags flags);
+bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboFilterSearchCallback<T2> filter_callback, bool justOpened, ImGuiComboFlags flags);
 
 } // Internal namespace
 } // ImGui namespace
@@ -229,19 +229,19 @@ bool ComboAutoSelect(const char* combo_label, int& selected_item, const T1& item
 }
 
 template<typename T1, typename T2, typename>
-bool ComboFilter(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboFilterSearchCallback<T2> filter_callback, ImGuiComboFlags flags)
+bool ComboFilter(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboFilterSearchCallback<T2> filter_callback, bool justOpened, ImGuiComboFlags flags)
 {
 	ImGui::BeginDisabled(Internal::IsContainerEmpty(items));
-	auto ret = Internal::ComboFilterEX(combo_label, selected_item, items, item_getter, filter_callback, flags);
+	auto ret = Internal::ComboFilterEX(combo_label, selected_item, items, item_getter, filter_callback, justOpened, flags);
 	ImGui::EndDisabled();
 
 	return ret;
 }
 
 template<typename T1, typename T2, typename>
-bool ComboFilter(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ImGuiComboFlags flags)
+bool ComboFilter(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, bool justOpened, ImGuiComboFlags flags)
 {
-	return ComboFilter(combo_label, selected_item, items, item_getter, Internal::DefaultComboFilterSearchCallback, flags);
+	return ComboFilter(combo_label, selected_item, items, item_getter, Internal::DefaultComboFilterSearchCallback, justOpened, flags);
 }
 
 namespace Internal
@@ -550,7 +550,7 @@ bool ComboAutoSelectEX(const char* combo_label, int& selected_item, const T1& it
 // hugely scuffed
 // hacked together to get node search to work
 template<typename T1, typename T2, typename>
-bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboFilterSearchCallback<T2> filter_callback, ImGuiComboFlags flags)
+bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items, ComboItemGetterCallback<T2> item_getter, ComboFilterSearchCallback<T2> filter_callback, bool justOpened, ImGuiComboFlags flags)
 {
 	ImGuiContext* g = GImGui;
 	ImGuiWindow* window = GetCurrentWindow();
@@ -582,17 +582,18 @@ bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items,
 		combo_data = AddComboData<ComboFilterData>(combo_id);
 		combo_data->FilteredItems.reserve(GetContainerSize(items) / 2);
 	}
-	combo_data->CurrentSelection = -1;
 
 	// Open on click
 	bool hovered, held;
 	bool popup_open = IsPopupOpen(combo_id, ImGuiPopupFlags_None);
-	bool popup_just_opened = false;
 	if (!popup_open)
 	{
 		OpenPopupEx(combo_id, ImGuiPopupFlags_None);
 		popup_open = true;
-		popup_just_opened = true;
+	}
+
+	if (justOpened) {
+		combo_data->CurrentSelection = -1;
 	}
 
 	// Render shape
@@ -659,10 +660,6 @@ bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items,
 	//	return false;
 	//}
 
-	if (popup_just_opened) {
-		SetKeyboardFocusHere();
-	}
-
 	const float items_max_width = expected_w - (style.WindowPadding.x * 2.00f);
 	PushItemWidth(items_max_width);
 	PushStyleVar(ImGuiStyleVar_FrameRounding, 5.00f);
@@ -672,6 +669,10 @@ bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items,
 	PopStyleColor(2);
 	PopStyleVar(1);
 	PopItemWidth();
+
+	if (justOpened) {
+		SetKeyboardFocusHere(-1);
+	}
 
 	bool selection_changed     = false;
 	const bool clicked_outside = !IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem | ImGuiHoveredFlags_AnyWindow) && IsMouseClicked(0);

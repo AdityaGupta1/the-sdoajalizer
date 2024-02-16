@@ -37,16 +37,6 @@ void Gui::init(GLFWwindow* window)
     addNode(std::move(outputNodeUptr));
 
     this->nodeEvaluator.setOutputNode(this->outputNode);
-
-    // TODO: temporary until node creation UI is added
-    //addNode(std::make_unique<NodeUvGradient>());
-    //addNode(std::make_unique<NodeNoise>());
-    //addNode(std::make_unique<NodeInvert>());
-    //addNode(std::make_unique<NodeInvert>());
-    //addNode(std::make_unique<NodeMix>());
-    //addNode(std::make_unique<NodeMix>());
-    //addNode(std::make_unique<NodeColor>());
-    //addNode(std::make_unique<NodeFileInput>());
 }
 
 void Gui::setupStyle()
@@ -492,7 +482,7 @@ void Gui::updateNodeCreatorWindow()
         ImGui::PushItemWidth(400);
 
         int selectedItem = -1;
-        if (ImGui::ComboFilter("##", selectedItem, nodeCreators, itemGetter, filterSearch, ImGuiComboFlags_NoArrowButton)) {
+        if (ImGui::ComboFilter("##", selectedItem, nodeCreators, itemGetter, filterSearch, createWindowData.justOpened, ImGuiComboFlags_NoArrowButton)) {
             auto newNodeUptr = nodeCreators[selectedItem].second();
             int newNodeId = newNodeUptr->id;
             addNode(std::move(newNodeUptr));
@@ -505,11 +495,15 @@ void Gui::updateNodeCreatorWindow()
         ImGui::PopItemWidth();
 
         ImGui::End();
+
+        createWindowData.justOpened = false;
     }
 
     if (controls.shouldCreateWindowBeVisible && !createWindowData.visible) {
         createWindowData.visible = true;
         createWindowData.pos = ImGui::GetMousePos();
+
+        createWindowData.justOpened = true;
     }
 
     if (!controls.shouldCreateWindowBeVisible && createWindowData.visible) {
