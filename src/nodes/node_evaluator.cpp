@@ -10,7 +10,7 @@ NodeEvaluator::NodeEvaluator(glm::ivec2 outputResolution)
 
 NodeEvaluator::~NodeEvaluator()
 {
-    for (const auto& [resolution, resTextures] : this->textures)
+    for (const auto& [res, resTextures] : this->textures)
     {
         for (const auto& texture : resTextures)
         {

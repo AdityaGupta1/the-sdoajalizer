@@ -5,6 +5,7 @@
 #include "node_evaluator.hpp"
 #include "node_ui_elements.hpp"
 #include "texture.hpp"
+#include "color_utils.hpp"
 
 #include "ImGui/imgui.h"
 

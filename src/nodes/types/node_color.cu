@@ -23,6 +23,6 @@ bool NodeColor::drawPinExtras(const Pin* pin, int pinNumber)
 void NodeColor::evaluate()
 {
     Texture* outTex = nodeEvaluator->requestSingleColorTexture();
-    outTex->setColor(backupCol);
+    outTex->setColor(ColorUtils::srgbToLinear(backupCol));
     outputPins[0].propagateTexture(outTex);
 }

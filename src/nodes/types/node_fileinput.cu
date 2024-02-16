@@ -45,6 +45,17 @@ void NodeFileInput::evaluate()
         reloadFile();
     }
 
-    Texture* outTex = (texFile == nullptr) ? nodeEvaluator->requestSingleColorTexture() : texFile;
+    Texture* outTex;
+    if (texFile == nullptr)
+    {
+        outTex = nodeEvaluator->requestSingleColorTexture();
+        outTex->setColor(glm::vec4(0, 0, 0, 1));
+    }
+    else
+    {
+        outTex = texFile;
+    }
+
+    ++outTex->numReferences; // cache this texture
     outputPins[0].propagateTexture(outTex);
 }

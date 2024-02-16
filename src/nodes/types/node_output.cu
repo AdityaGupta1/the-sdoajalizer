@@ -2,8 +2,6 @@
 
 #include "cuda_includes.hpp"
 
-#include "color_utils.hpp"
-
 NodeOutput::NodeOutput()
     : Node("output")
 {
@@ -18,6 +16,13 @@ unsigned int NodeOutput::getTitleBarColor() const
 unsigned int NodeOutput::getTitleBarSelectedColor() const
 {
     return IM_COL32(255, 128, 0, 255);
+}
+
+__host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col)
+{
+    col = glm::vec4(glm::max(glm::vec3(col), 0.f), col.a);
+    // TODO: tone mapping?
+    return ColorUtils::linearToSrgb(col);
 }
 
 __global__ void kernFillSingleColor(Texture outTex, glm::vec4 col)
@@ -50,7 +55,7 @@ __global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
     }
     else
     {
-        col = ColorUtils::linearToSrgb(inTex.dev_pixels[y * inTex.resolution.x + x]);
+        col = hdrToLdr(inTex.dev_pixels[y * inTex.resolution.x + x]);
     }
 
     outTex.dev_pixels[y * outTex.resolution.x + x] = col;
@@ -72,7 +77,7 @@ void NodeOutput::evaluate()
     const dim3 blocksPerGrid(outTex->resolution.x / 16 + 1, outTex->resolution.y / 16 + 1);
     if (inTex->isSingleColor())
     {
-        kernFillSingleColor<<<blocksPerGrid, blockSize>>>(*outTex, ColorUtils::linearToSrgb(inTex->singleColor));
+        kernFillSingleColor<<<blocksPerGrid, blockSize>>>(*outTex, hdrToLdr(inTex->singleColor));
     }
     else
     {
