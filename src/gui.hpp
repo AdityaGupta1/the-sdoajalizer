@@ -7,6 +7,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <string>
 
 #include "nodes/node.hpp"
 #include "nodes/edge.hpp"
@@ -25,8 +26,19 @@ private:
     NodeEvaluator nodeEvaluator{ glm::ivec2(1080, 1350) }; // TODO: allow user to set this
 
     bool isFirstRender{ true };
-    bool isDeleteQueued{ false };
     bool isNetworkDirty{ true };
+
+    struct {
+        bool deleteComponents{ false };
+        bool shouldCreateWindowBeVisible{ false };
+    } controls;
+
+    struct {
+        bool visible{ false };
+        ImVec2 pos{ 0, 0 };
+
+        std::string searchText;
+    } createWindowData;
 
 public:
     void init(GLFWwindow* window);
@@ -47,6 +59,7 @@ private:
 
     void drawOutputImageViewer();
     void drawNodeEditor();
+    void updateNodeCreatorWindow();
 
 public:
     void render();

@@ -95,15 +95,15 @@ void mainLoop()
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (action == GLFW_PRESS)
-    {
-        switch (key)
-        {
-        case GLFW_KEY_ESCAPE:
-            glfwSetWindowShouldClose(window, GL_TRUE);
-            return;
-        }
-    }
+    //if (action == GLFW_PRESS)
+    //{
+    //    switch (key)
+    //    {
+    //    case GLFW_KEY_ESCAPE:
+    //        glfwSetWindowShouldClose(window, GL_TRUE);
+    //        return;
+    //    }
+    //}
 
     gui.keyCallback(window, key, scancode, action, mods);
 }

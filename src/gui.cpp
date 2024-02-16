@@ -4,6 +4,8 @@
 
 #include "ImGui/imgui_internal.h"
 #include "ImGui/imnodes.h"
+#include "ImGui/misc/cpp/imgui_stdlib.h"
+#include "ImGui/combo_filter/imgui_combo_filter.h"
 
 #include <iostream>
 
@@ -279,7 +281,7 @@ void Gui::render()
 
     ImGui::End();
 
-    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove;
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     // VIEWER
     // ================================================================================
@@ -303,6 +305,8 @@ void Gui::render()
     ImGui::End();
 
     // ================================================================================
+
+    updateNodeCreatorWindow();
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -371,9 +375,9 @@ void Gui::drawNodeEditor()
         addEdge(startPinId, endPinId);
     }
 
-    if (isDeleteQueued)
+    if (controls.deleteComponents)
     {
-        isDeleteQueued = false;
+        controls.deleteComponents = false;
 
         bool didDelete = false;
 
@@ -410,6 +414,94 @@ void Gui::drawNodeEditor()
     }
 }
 
+const char* itemGetter(const std::vector<std::string>& items, int index) {
+    if (index >= 0 && index < (int)items.size()) {
+        return items[index].c_str();
+    }
+    return "N/A";
+}
+
+static bool fuzzyScore(const char* str1, const char* str2, int& score)
+{
+    score = 0;
+    if (*str2 == '\0')
+        return *str1 == '\0';
+
+    int consecutive = 0;
+    int maxerrors = 0;
+
+    while (*str1 && *str2) {
+        int is_leading = (*str1 & 64) && !(str1[1] & 64);
+        if ((*str1 & ~32) == (*str2 & ~32)) {
+            int had_separator = (str1[-1] <= 32);
+            int x = had_separator || is_leading ? 10 : consecutive * 5;
+            consecutive = 1;
+            score += x;
+            ++str2;
+        }
+        else {
+            int x = -1, y = is_leading * -3;
+            consecutive = 0;
+            score += x;
+            maxerrors += y;
+        }
+        ++str1;
+    }
+
+    score += (maxerrors < -9 ? -9 : maxerrors);
+    return *str2 == '\0';
+};
+
+template<typename T>
+void filterSearch(const ImGui::ComboFilterSearchCallbackData<T>& cbd)
+{
+    const int items_count = static_cast<int>(std::size(cbd.Items));
+    for (int i = 0; i < items_count; ++i) {
+        int score = 0;
+        if (fuzzyScore(cbd.ItemGetter(cbd.Items, i), cbd.SearchString, score))
+            cbd.FilterResults->emplace_back(i, score);
+    }
+
+    ImGui::SortFilterResultsDescending(*cbd.FilterResults);
+}
+
+void Gui::updateNodeCreatorWindow()
+{
+    if (createWindowData.visible) {
+        ImGui::SetNextWindowPos(createWindowData.pos);
+
+        int windowFlags =
+            ImGuiWindowFlags_NoDocking |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_AlwaysAutoResize |
+            ImGuiWindowFlags_NoTitleBar;
+        bool test = ImGui::Begin("node creator", nullptr, windowFlags);
+
+        ImGui::PushItemWidth(400);
+
+        static std::vector<std::string> items1{ "instruction", "Chemistry", "Beating Around the Bush", "Instantaneous Combustion", "Level 999999", "nasal problems", "On cloud nine", "break the iceberg", "lacircificane" };
+        static int selectedItem = -1;
+        if (ImGui::ComboFilter("##", selectedItem, items1, itemGetter, filterSearch, ImGuiComboFlags_NoArrowButton)) {
+            printf("%s\n", items1[selectedItem].c_str());
+            controls.shouldCreateWindowBeVisible = false;
+        }
+
+        ImGui::PopItemWidth();
+
+        ImGui::End();
+    }
+
+    if (controls.shouldCreateWindowBeVisible && !createWindowData.visible) {
+        createWindowData.visible = true;
+        createWindowData.pos = ImGui::GetMousePos();
+    }
+
+    if (!controls.shouldCreateWindowBeVisible && createWindowData.visible) {
+        createWindowData.visible = false;
+    }
+}
+
 void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (action == GLFW_PRESS)
@@ -418,14 +510,24 @@ void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
         {
         //case GLFW_KEY_BACKSPACE:
         case GLFW_KEY_DELETE:
-            this->isDeleteQueued = true;
+            controls.deleteComponents = true;
+            break;
+        //case GLFW_KEY_TAB:
+        //    controls.shouldCreateWindowBeVisible = !createWindowData.visible;
+        //    break;
+        case GLFW_KEY_ESCAPE:
+            controls.shouldCreateWindowBeVisible = false;
             break;
         }
     }
 }
 
 void Gui::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
-{}
+{
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+        controls.shouldCreateWindowBeVisible = !createWindowData.visible;
+    }
+}
 
 void Gui::mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
 {}
