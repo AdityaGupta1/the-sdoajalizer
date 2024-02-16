@@ -476,7 +476,7 @@ void Gui::updateNodeCreatorWindow()
             ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_AlwaysAutoResize |
             ImGuiWindowFlags_NoTitleBar;
-        bool test = ImGui::Begin("node creator", nullptr, windowFlags);
+        ImGui::Begin("node creator", nullptr, windowFlags);
 
         ImGui::PushItemWidth(400);
 
