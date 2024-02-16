@@ -34,7 +34,9 @@ bool NodeFileInput::drawPinExtras(const Pin* pin, int pinNumber)
 {
     ImGui::SameLine();
     bool didParameterChange = NodeUI::FilePicker(&filePath);
-    needsReloadFile = didParameterChange;
+    if (didParameterChange) {
+        needsReloadFile = true;
+    }
     return didParameterChange;
 }
 
