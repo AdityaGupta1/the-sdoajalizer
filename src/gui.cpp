@@ -521,6 +521,7 @@ void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
             if (io->WantTextInput) {
                 break;
             }
+            [[fallthrough]];
         case GLFW_KEY_DELETE:
             controls.deleteComponents = true;
             break;
