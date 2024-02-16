@@ -39,7 +39,7 @@ bool NodeUI::FilePicker(std::string* filePath)
         return false;
     }
 
-    auto selections = pfd::open_file("Open", "", { "Image Files (.png, .jpg, .jpeg, .exr)", "*.png *.jpg *.jpeg" }).result();
+    auto selections = pfd::open_file("Open", "", { "Image Files (.png, .jpg, .jpeg)", "*.png *.jpg *.jpeg" }).result();
     if (selections.empty()) {
         return false;
     }
