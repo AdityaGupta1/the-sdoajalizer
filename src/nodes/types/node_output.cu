@@ -2,10 +2,13 @@
 
 #include "cuda_includes.hpp"
 
+std::vector<const char*> NodeOutput::toneMappingOptions = { "none", "reinhard" };
+
 NodeOutput::NodeOutput()
     : Node("output")
 {
     addPin(PinType::INPUT, "image");
+    addPin(PinType::INPUT, "tone mapping").setNoConnect();
 }
 
 unsigned int NodeOutput::getTitleBarColor() const
@@ -18,10 +21,19 @@ unsigned int NodeOutput::getTitleBarSelectedColor() const
     return IM_COL32(255, 128, 0, 255);
 }
 
-__host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col)
+__host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col, int toneMapping)
 {
     col = glm::vec4(glm::max(glm::vec3(col), 0.f), col.a);
-    // TODO: tone mapping?
+    
+    switch (toneMapping)
+    {
+    case 0:
+        break;
+    case 1:
+        col = ColorUtils::reinhard(col);
+        break;
+    }
+
     return ColorUtils::linearToSrgb(col);
 }
 
@@ -38,7 +50,7 @@ __global__ void kernFillSingleColor(Texture outTex, glm::vec4 col)
     outTex.dev_pixels[y * outTex.resolution.x + x] = col;
 }
 
-__global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
+__global__ void kernCopyToOutTex(Texture inTex, int toneMapping, Texture outTex)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
@@ -55,10 +67,21 @@ __global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
     }
     else
     {
-        col = hdrToLdr(inTex.dev_pixels[y * inTex.resolution.x + x]);
+        col = hdrToLdr(inTex.dev_pixels[y * inTex.resolution.x + x], toneMapping);
     }
 
     outTex.dev_pixels[y * outTex.resolution.x + x] = col;
+}
+
+bool NodeOutput::drawPinExtras(const Pin* pin, int pinNumber)
+{
+    if (pinNumber == 1)
+    {
+        ImGui::SameLine();
+        return NodeUI::Dropdown(selectedToneMapping, toneMappingOptions);
+    }
+
+    return false;
 }
 
 void NodeOutput::evaluate()
@@ -77,11 +100,12 @@ void NodeOutput::evaluate()
     const dim3 blocksPerGrid = calculateBlocksPerGrid(outTex->resolution, blockSize);
     if (inTex->isSingleColor())
     {
-        kernFillSingleColor<<<blocksPerGrid, blockSize>>>(*outTex, hdrToLdr(inTex->singleColor));
+        auto ldrCol = hdrToLdr(inTex->singleColor, selectedToneMapping);
+        kernFillSingleColor<<<blocksPerGrid, blockSize>>>(*outTex, ldrCol);
     }
     else
     {
-        kernCopyToOutTex<<<blocksPerGrid, blockSize>>>(*inTex, *outTex);
+        kernCopyToOutTex<<<blocksPerGrid, blockSize>>>(*inTex, selectedToneMapping, *outTex);
     }
 
     nodeEvaluator->setOutputTexture(outTex);
