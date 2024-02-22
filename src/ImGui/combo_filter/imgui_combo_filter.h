@@ -584,7 +584,7 @@ bool ComboFilterEX(const char* combo_label, int& selected_item, const T1& items,
 	}
 
 	// Open on click
-	bool hovered, held;
+	//bool hovered, held;
 	bool popup_open = IsPopupOpen(combo_id, ImGuiPopupFlags_None);
 	if (!popup_open)
 	{

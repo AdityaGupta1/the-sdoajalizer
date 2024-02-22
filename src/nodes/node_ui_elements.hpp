@@ -4,6 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <string>
+#include <vector>
 
 namespace NodeUI
 {
@@ -17,4 +18,6 @@ namespace NodeUI
     bool FloatEdit(float& v, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f");
 
     bool FilePicker(std::string* filePath);
+
+    bool Dropdown(int& selectedItem, const std::vector<const char*>& items);
 }

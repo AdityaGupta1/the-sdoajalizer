@@ -10,6 +10,9 @@ private:
     Texture* texFile{ nullptr };
     bool needsReloadFile{ false };
 
+    static std::vector<const char*> colorSpaceOptions;
+    int selectedColorSpace{ 0 }; // linear
+
 public:
     NodeFileInput();
 

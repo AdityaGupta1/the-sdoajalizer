@@ -3,11 +3,16 @@
 #include "cuda_includes.hpp"
 
 #include "stb_image.h"
+#include <filesystem>
+
+std::vector<const char*> NodeFileInput::colorSpaceOptions = { "linear", "sRGB" };
 
 NodeFileInput::NodeFileInput()
     : Node("file input")
 {
     addPin(PinType::OUTPUT, "image");
+
+    addPin(PinType::INPUT, "color space").setNoConnect();
 }
 
 void NodeFileInput::reloadFile()
@@ -15,6 +20,15 @@ void NodeFileInput::reloadFile()
     if (texFile != nullptr) {
         --texFile->numReferences;
         texFile = nullptr;
+    }
+
+    if (selectedColorSpace == 0) // linear
+    {
+        stbi_ldr_to_hdr_gamma(1.0f);
+    }
+    else // sRGB
+    {
+        stbi_ldr_to_hdr_gamma(2.2f);
     }
 
     int width, height, channels;
@@ -33,7 +47,46 @@ void NodeFileInput::reloadFile()
 bool NodeFileInput::drawPinExtras(const Pin* pin, int pinNumber)
 {
     ImGui::SameLine();
-    bool didParameterChange = NodeUI::FilePicker(&filePath);
+
+    bool didParameterChange;
+
+    if (pin->pinType == PinType::INPUT)
+    {
+        switch (pinNumber)
+        {
+        case 0: // color space
+            didParameterChange = NodeUI::Dropdown(selectedColorSpace, colorSpaceOptions);
+            break;
+        default:
+            throw std::runtime_error("invalid pin number");
+        }
+    }
+    else
+    {
+        switch (pinNumber)
+        {
+        case 0: // file input
+            didParameterChange = NodeUI::FilePicker(&filePath);
+
+            if (didParameterChange)
+            {
+                std::string extension = std::filesystem::path(filePath).extension().string();
+                if (extension == ".exr")
+                {
+                    selectedColorSpace = 0; // linear
+                }
+                else
+                {
+                    selectedColorSpace = 1; // sRGB
+                }
+            }
+
+            break;
+        default:
+            throw std::runtime_error("invalid pin number");
+        }
+    }
+
     if (didParameterChange) {
         needsReloadFile = true;
     }

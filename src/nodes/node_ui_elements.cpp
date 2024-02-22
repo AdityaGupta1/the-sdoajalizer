@@ -63,3 +63,16 @@ bool NodeUI::FilePicker(std::string* filePath)
     *filePath = newFilePath;
     return true;
 }
+
+bool NodeUI::Dropdown(int& selectedItem, const std::vector<const char*>& items)
+{
+    ImGui::PushID(&selectedItem);
+    ImGui::PushItemWidth(120);
+
+    bool didParameterChange = ImGui::Combo("", &selectedItem, items.data(), items.size());
+
+    ImGui::PopID();
+    ImGui::PopItemWidth();
+
+    return didParameterChange;
+}
