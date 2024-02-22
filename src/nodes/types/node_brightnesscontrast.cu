@@ -1,17 +1,23 @@
-#include "node_exposure.hpp"
+#include "node_brightnesscontrast.hpp"
 
 #include "cuda_includes.hpp"
 
-NodeExposure::NodeExposure()
-    : Node("exposure")
+NodeBrightnessContrast::NodeBrightnessContrast()
+    : Node("brightness/contrast")
 {
     addPin(PinType::OUTPUT, "image");
 
     addPin(PinType::INPUT, "image");
-    addPin(PinType::INPUT, "exposure").setNoConnect();
+    addPin(PinType::INPUT, "brightness").setNoConnect();
+    addPin(PinType::INPUT, "contrast").setNoConnect();
 }
 
-__global__ void kernExposure(Texture inTex, float multiplier, Texture outTex)
+__host__ __device__ glm::vec4 applyBrightnessContrast(glm::vec4 col, float brightness, float contrast)
+{
+    return glm::vec4((contrast + 1.f) * (glm::vec3(col) - 0.5f) + 0.5f + brightness, col.a);
+}
+
+__global__ void kernBrightnessContrast(Texture inTex, float brightness, float contrast, Texture outTex)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
@@ -22,11 +28,10 @@ __global__ void kernExposure(Texture inTex, float multiplier, Texture outTex)
     }
 
     int idx = y * inTex.resolution.x + x;
-    glm::vec4 col = inTex.dev_pixels[idx];
-    outTex.dev_pixels[idx] = glm::vec4(glm::vec3(col) * multiplier, col.a);
+    outTex.dev_pixels[idx] = applyBrightnessContrast(inTex.dev_pixels[idx], brightness, contrast);
 }
 
-bool NodeExposure::drawPinExtras(const Pin* pin, int pinNumber)
+bool NodeBrightnessContrast::drawPinExtras(const Pin* pin, int pinNumber)
 {
     if (pin->pinType == PinType::OUTPUT || pin->hasEdge())
     {
@@ -38,27 +43,30 @@ bool NodeExposure::drawPinExtras(const Pin* pin, int pinNumber)
     case 0: // image
         ImGui::SameLine();
         return NodeUI::ColorEdit4(backupCol);
-    case 1: // exposure
+    case 1: // brightness
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupExposure, 0.01f);
+        return NodeUI::FloatEdit(backupBrightness, 0.01f);
+    case 2: // contrast
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupContrast, 0.01f, -1.f, FLT_MAX);
     default:
         throw std::runtime_error("invalid pin number");
     }
 }
 
-void NodeExposure::evaluate()
+void NodeBrightnessContrast::evaluate()
 {
     Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(backupCol));
 
     if (inTex->isSingleColor()) {
         Texture* outTex = nodeEvaluator->requestSingleColorTexture();
 
-        if (backupExposure == 0.f) {
+        if (backupBrightness == 0.f && backupContrast == 0.f) {
             outTex->setSingleColor(inTex->singleColor);
         }
         else
         {
-            glm::vec4 outCol = glm::vec4(glm::vec3(inTex->singleColor) * powf(2.f, backupExposure), inTex->singleColor.a);
+            glm::vec4 outCol = applyBrightnessContrast(inTex->singleColor, backupBrightness, backupContrast);
             outTex->setSingleColor(outCol);
         }
 
@@ -67,7 +75,7 @@ void NodeExposure::evaluate()
     }
 
     // inTex is not a single color
-    if (backupExposure == 0.0f) {
+    if (backupBrightness == 0.f && backupContrast == 0.f) {
         outputPins[0].propagateTexture(inTex);
         return;
     }
@@ -77,12 +85,12 @@ void NodeExposure::evaluate()
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateBlocksPerGrid(inTex->resolution, blockSize);
-    kernExposure<<<blocksPerGrid, blockSize>>>(*inTex, powf(2.f, backupExposure), *outTex);
+    kernBrightnessContrast<<<blocksPerGrid, blockSize>>>(*inTex, backupBrightness, backupContrast, *outTex);
 
     outputPins[0].propagateTexture(outTex);
 }
 
-std::string NodeExposure::debugGetSrcFileName() const
+std::string NodeBrightnessContrast::debugGetSrcFileName() const
 {
     return __FILE__;
 }

@@ -15,14 +15,25 @@ constexpr unsigned int colorEditFlags =
 
 bool NodeUI::ColorEdit4(glm::vec4& col)
 {
-    return ImGui::ColorEdit4("", glm::value_ptr(col), colorEditFlags);
+    ImGui::PushID(&col);
+
+    bool didParameterChange = ImGui::ColorEdit4("", glm::value_ptr(col), colorEditFlags);
+
+    ImGui::PopID();
+
+    return didParameterChange;
 }
 
 bool NodeUI::FloatEdit(float& v, float v_speed, float v_min, float v_max, const char* format)
 {
+    ImGui::PushID(&v);
     ImGui::PushItemWidth(80);
+
     bool didParameterChange = ImGui::DragFloat("", &v, v_speed, v_min, v_max, format);
+
+    ImGui::PopID();
     ImGui::PopItemWidth();
+
     return didParameterChange;
 }
 

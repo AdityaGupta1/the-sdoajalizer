@@ -472,7 +472,8 @@ static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>
     { "mix", std::make_unique<NodeMix> },
     { "noise", std::make_unique<NodeNoise> },
     { "uv gradient", std::make_unique<NodeUvGradient> },
-    { "exposure", std::make_unique<NodeExposure> }
+    { "exposure", std::make_unique<NodeExposure> },
+    { "brightness/contrast", std::make_unique<NodeBrightnessContrast> }
 };
 
 void Gui::updateNodeCreatorWindow()
@@ -491,7 +492,7 @@ void Gui::updateNodeCreatorWindow()
         ImGui::PushItemWidth(400);
 
         int selectedItem = -1;
-        if (ImGui::ComboFilter("##", selectedItem, nodeCreators, itemGetter, filterSearch, createWindowData.justOpened, ImGuiComboFlags_NoArrowButton)) {
+        if (ImGui::ComboFilter("##nodeSearch", selectedItem, nodeCreators, itemGetter, filterSearch, createWindowData.justOpened, ImGuiComboFlags_NoArrowButton)) {
             auto newNodeUptr = nodeCreators[selectedItem].second();
             int newNodeId = newNodeUptr->id;
             addNode(std::move(newNodeUptr));

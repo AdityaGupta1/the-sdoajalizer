@@ -2,14 +2,15 @@
 
 #include "nodes/node.hpp"
 
-class NodeExposure : public Node
+class NodeBrightnessContrast : public Node
 {
 private:
     glm::vec4 backupCol{ NodeUI::defaultBackupVec4 };
-    float backupExposure{ 0.f };
+    float backupBrightness{ 0.f };
+    float backupContrast{ 0.f };
 
 public:
-    NodeExposure();
+    NodeBrightnessContrast();
 
 protected:
     bool drawPinExtras(const Pin* pin, int pinNumber) override;

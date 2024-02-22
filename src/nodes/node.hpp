@@ -33,7 +33,7 @@ private:
     Node* node{ nullptr };
     std::unordered_set<Edge*> edges;
 
-    bool noConnection{ false };
+    bool canConnect{ true };
 
 public:
     const int id;
@@ -56,8 +56,8 @@ public:
     void propagateTexture(Texture* texture);
     void clearTextures();
 
-    void setNoConnection();
-    bool getNoConnection() const;
+    void setNoConnect();
+    bool getCanConnect() const;
 };
 
 class Node
@@ -99,6 +99,10 @@ public:
 
     void setNodeEvaluator(NodeEvaluator* nodeEvaluator);
 
+private:
+    void drawPin(const Pin& pin, int pinNumber, bool& didParameterChange);
+
+public:
     bool draw();
 
     // I would rather not implement this but it was suggested so I have no choice
