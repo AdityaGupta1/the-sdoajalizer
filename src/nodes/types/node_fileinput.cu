@@ -51,7 +51,7 @@ void NodeFileInput::evaluate()
     if (texFile == nullptr)
     {
         outTex = nodeEvaluator->requestSingleColorTexture();
-        outTex->setColor(glm::vec4(0, 0, 0, 1));
+        outTex->setSingleColor(glm::vec4(0, 0, 0, 1));
     }
     else
     {

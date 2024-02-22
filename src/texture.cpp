@@ -12,17 +12,17 @@ Texture Texture::nullCheck(Texture* inTex)
     }
 }
 
-void Texture::setColor(glm::vec4 col)
+void Texture::setSingleColor(glm::vec4 col)
 {
     this->singleColor = col;
 }
 
-void Texture::setColor(glm::vec3 col)
+void Texture::setSingleColor(glm::vec3 col)
 {
     this->singleColor = glm::vec4(col, 1);
 }
 
-void Texture::setColor(float col)
+void Texture::setSingleColor(float col)
 {
     this->singleColor = glm::vec4(col, col, col, 1);
 }

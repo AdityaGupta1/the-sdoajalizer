@@ -5,8 +5,9 @@
 NodeInvert::NodeInvert()
     : Node("invert")
 {
-    addPin(PinType::INPUT, "image");
     addPin(PinType::OUTPUT, "image");
+
+    addPin(PinType::INPUT, "image");
 }
 
 __host__ __device__ glm::vec4 invertCol(glm::vec4 col)
@@ -53,7 +54,7 @@ void NodeInvert::evaluate()
     if (inTex->isSingleColor())
     {
         Texture* outTex = nodeEvaluator->requestSingleColorTexture();
-        outTex->setColor(invertCol(inTex->singleColor));
+        outTex->setSingleColor(invertCol(inTex->singleColor));
         outputPins[0].propagateTexture(outTex);
         return;
     }

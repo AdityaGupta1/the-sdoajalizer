@@ -5,10 +5,11 @@
 NodeMix::NodeMix()
     : Node("mix")
 {
+    addPin(PinType::OUTPUT, "image");
+
     addPin(PinType::INPUT, "image 1");
     addPin(PinType::INPUT, "image 2");
     addPin(PinType::INPUT, "factor");
-    addPin(PinType::OUTPUT, "image");
 }
 
 __host__ __device__ glm::vec4 mixCols(glm::vec4 col1, glm::vec4 col2, float factor)
@@ -66,7 +67,7 @@ void NodeMix::evaluate()
     if (inTex1->isSingleColor() && inTex2->isSingleColor() && inTexFactor->isSingleColor())
     {
         Texture* outTex = nodeEvaluator->requestSingleColorTexture();
-        outTex->setColor(mixCols(inTex1->singleColor, inTex2->singleColor, inTexFactor->singleColor.r));
+        outTex->setSingleColor(mixCols(inTex1->singleColor, inTex2->singleColor, inTexFactor->singleColor.r));
 
         outputPins[0].propagateTexture(outTex);
         return;

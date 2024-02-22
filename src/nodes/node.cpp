@@ -109,7 +109,7 @@ Texture* Node::getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col)
     if (tex == nullptr)
     {
         tex = nodeEvaluator->requestTemporarySingleColorTexture();
-        tex->setColor(col);
+        tex->setSingleColor(col);
     }
 
     return tex;
@@ -130,16 +130,20 @@ void Node::clearInputTextures()
 
 Pin& Node::getPin(int pinId)
 {
-    int localPinId = pinId - this->id - 1;
-    int numInputPins = inputPins.size();
-    if (localPinId < numInputPins)
+    for (auto& inputPin : inputPins) 
     {
-        return inputPins[localPinId];
+        if (inputPin.id == pinId) {
+            return inputPin;
+        }
     }
-    else
-    {
-        return outputPins[localPinId - numInputPins];
+
+    for (auto& outputPin : outputPins) {
+        if (outputPin.id == pinId) {
+            return outputPin;
+        }
     }
+
+    throw std::runtime_error("invalid pin id");
 }
 
 void Node::setNodeEvaluator(NodeEvaluator* nodeEvaluator)
@@ -162,6 +166,7 @@ bool Node::draw()
     ImNodes::EndNodeTitleBar();
 
     bool didParameterChange = false;
+
     for (int i = 0; i < outputPins.size(); ++i)
     {
         const auto& outputPin = outputPins[i];

@@ -22,9 +22,9 @@ struct Texture
 
     static Texture nullCheck(Texture* inTex);
 
-    void setColor(glm::vec4 col);
-    void setColor(glm::vec3 col);
-    void setColor(float col);
+    void setSingleColor(glm::vec4 col);
+    void setSingleColor(glm::vec3 col);
+    void setSingleColor(float col);
 
     __host__ __device__ inline bool isSingleColor()
     {
