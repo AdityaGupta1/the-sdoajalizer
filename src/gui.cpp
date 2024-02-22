@@ -375,8 +375,6 @@ void Gui::drawNodeEditor()
 
     if (controls.deleteComponents)
     {
-        controls.deleteComponents = false;
-
         bool didDelete = false;
 
         const int numSelectedEdges = ImNodes::NumSelectedLinks();
@@ -409,6 +407,9 @@ void Gui::drawNodeEditor()
         controls.debugOpenSrcFile = false;
         this->nodes[selectedNodes[0]]->debugOpenSrcFile();
     }
+
+    controls.deleteComponents = false;
+    controls.debugOpenSrcFile = false;
 }
 
 const char* itemGetter(const std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>>>& items, int index) {
