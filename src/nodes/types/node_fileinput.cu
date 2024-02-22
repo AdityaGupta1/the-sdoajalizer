@@ -7,7 +7,7 @@
 NodeFileInput::NodeFileInput()
     : Node("file input")
 {
-    addPin(PinType::OUTPUT);
+    addPin(PinType::OUTPUT, "image");
 }
 
 void NodeFileInput::reloadFile()

@@ -5,10 +5,10 @@
 NodeMix::NodeMix()
     : Node("mix")
 {
-    addPin(PinType::INPUT, "input 1");
-    addPin(PinType::INPUT, "input 2");
+    addPin(PinType::INPUT, "image 1");
+    addPin(PinType::INPUT, "image 2");
     addPin(PinType::INPUT, "factor");
-    addPin(PinType::OUTPUT);
+    addPin(PinType::OUTPUT, "image");
 }
 
 __host__ __device__ glm::vec4 mixCols(glm::vec4 col1, glm::vec4 col2, float factor)
@@ -42,10 +42,10 @@ bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
 
     switch (pinNumber)
     {
-    case 0: // input 1
+    case 0: // in color 1
         ImGui::SameLine();
         return NodeUI::ColorEdit4(backupCol1);
-    case 1: // input 2
+    case 1: // in color 2
         ImGui::SameLine();
         return NodeUI::ColorEdit4(backupCol2);
     case 2: // factor
@@ -76,8 +76,8 @@ void NodeMix::evaluate()
 
     Texture* outTex = nodeEvaluator->requestTexture(outRes);
 
-    const dim3 blockSize(16, 16);
-    const dim3 blocksPerGrid(outRes.x / 16 + 1, outRes.y / 16 + 1);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blocksPerGrid = calculateBlocksPerGrid(outRes, blockSize);
     kernMix<<<blocksPerGrid, blockSize>>>(*inTex1, *inTex2, *inTexFactor, outRes, *outTex);
 
     outputPins[0].propagateTexture(outTex);

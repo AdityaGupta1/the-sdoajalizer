@@ -388,12 +388,12 @@ void Gui::drawNodeEditor()
                 deleteEdge(edgeId);
                 didDelete = true;
             }
+        }
 
-            for (const auto nodeId : selectedNodes)
-            {
-                deleteNode(nodeId);
-                didDelete = true;
-            }
+        for (const auto nodeId : selectedNodes)
+        {
+            deleteNode(nodeId);
+            didDelete = true;
         }
 
         if (didDelete)
@@ -471,7 +471,8 @@ static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>
     { "invert", std::make_unique<NodeInvert> },
     { "mix", std::make_unique<NodeMix> },
     { "noise", std::make_unique<NodeNoise> },
-    { "uv gradient", std::make_unique<NodeUvGradient> }
+    { "uv gradient", std::make_unique<NodeUvGradient> },
+    { "exposure", std::make_unique<NodeExposure> }
 };
 
 void Gui::updateNodeCreatorWindow()

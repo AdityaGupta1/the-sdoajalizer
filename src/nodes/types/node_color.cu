@@ -5,14 +5,14 @@
 NodeColor::NodeColor()
     : Node("color")
 {
-    addPin(PinType::OUTPUT);
+    addPin(PinType::OUTPUT, "image");
 }
 
 bool NodeColor::drawPinExtras(const Pin* pin, int pinNumber)
 {
     switch (pinNumber)
     {
-    case 0: // output
+    case 0: // image
         ImGui::SameLine();
         return NodeUI::ColorEdit4(backupCol);
     default:

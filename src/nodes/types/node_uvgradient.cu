@@ -5,7 +5,7 @@
 NodeUvGradient::NodeUvGradient()
     : Node("uv gradient")
 {
-    addPin(PinType::OUTPUT);
+    addPin(PinType::OUTPUT, "image");
 }
 
 __global__ void kernUvGradient(Texture outTex)
@@ -26,8 +26,8 @@ void NodeUvGradient::evaluate()
 {
     Texture* outTex = nodeEvaluator->requestTexture();
 
-    const dim3 blockSize(16, 16);
-    const dim3 blocksPerGrid(outTex->resolution.x / 16 + 1, outTex->resolution.y / 16 + 1);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blocksPerGrid = calculateBlocksPerGrid(outTex->resolution, blockSize);
     kernUvGradient<<<blocksPerGrid, blockSize>>>(*outTex);
 
     outputPins[0].propagateTexture(outTex);

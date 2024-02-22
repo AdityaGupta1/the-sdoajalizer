@@ -7,7 +7,7 @@
 NodeNoise::NodeNoise()
     : Node("noise")
 {
-    addPin(PinType::OUTPUT);
+    addPin(PinType::OUTPUT, "image");
 }
 
 __global__ void kernNoise(Texture outTex)
@@ -28,8 +28,8 @@ void NodeNoise::evaluate()
 {
     Texture* outTex = nodeEvaluator->requestTexture();
 
-    const dim3 blockSize(16, 16);
-    const dim3 blocksPerGrid(outTex->resolution.x / 16 + 1, outTex->resolution.y / 16 + 1);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blocksPerGrid = calculateBlocksPerGrid(outTex->resolution, blockSize);
     kernNoise<<<blocksPerGrid, blockSize>>>(*outTex);
 
     outputPins[0].propagateTexture(outTex);

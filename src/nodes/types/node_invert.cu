@@ -5,8 +5,8 @@
 NodeInvert::NodeInvert()
     : Node("invert")
 {
-    addPin(PinType::INPUT);
-    addPin(PinType::OUTPUT);
+    addPin(PinType::INPUT, "image");
+    addPin(PinType::OUTPUT, "image");
 }
 
 __host__ __device__ glm::vec4 invertCol(glm::vec4 col)
@@ -38,7 +38,7 @@ bool NodeInvert::drawPinExtras(const Pin* pin, int pinNumber)
 
     switch (pinNumber)
     {
-    case 0: // input
+    case 0: // in color
         ImGui::SameLine();
         return NodeUI::ColorEdit4(backupCol);
     default:
@@ -60,8 +60,8 @@ void NodeInvert::evaluate()
 
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
 
-    const dim3 blockSize(16, 16);
-    const dim3 blocksPerGrid(inTex->resolution.x / 16 + 1, inTex->resolution.y / 16 + 1);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blocksPerGrid = calculateBlocksPerGrid(inTex->resolution, blockSize);
     kernInvert<<<blocksPerGrid, blockSize>>>(*inTex, *outTex);
 
     outputPins[0].propagateTexture(outTex);

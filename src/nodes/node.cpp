@@ -62,6 +62,16 @@ void Pin::clearTextures()
     }
 }
 
+void Pin::setNoConnection()
+{
+    this->noConnection = true;
+}
+
+bool Pin::getNoConnection() const
+{
+    return this->noConnection;
+}
+
 int Node::nextId = 0;
 
 Node::Node(std::string name)
@@ -70,16 +80,16 @@ Node::Node(std::string name)
     Node::nextId += NODE_ID_STRIDE;
 }
 
-void Node::addPin(PinType type, const std::string& name)
+Pin& Node::addPin(PinType type, const std::string& name)
 {
     int pinId = this->id + inputPins.size() + outputPins.size() + 1;
     auto& pinVector = (type == PinType::INPUT) ? inputPins : outputPins;
-    pinVector.emplace_back(pinId, this, type, name);
+    return pinVector.emplace_back(pinId, this, type, name);
 }
 
-void Node::addPin(PinType type)
+Pin& Node::addPin(PinType type)
 {
-    addPin(type, type == PinType::INPUT ? "input" : "output");
+    return addPin(type, type == PinType::INPUT ? "input" : "output");
 }
 
 unsigned int Node::getTitleBarColor() const
@@ -152,22 +162,36 @@ bool Node::draw()
     ImNodes::EndNodeTitleBar();
 
     bool didParameterChange = false;
-    for (int i = 0; i < inputPins.size(); ++i)
-    {
-        const auto& inputPin = inputPins[i];
-        ImNodes::BeginInputAttribute(inputPin.id);
-        ImGui::Text(inputPin.name.c_str());
-        didParameterChange |= drawPinExtras(&inputPin, i);
-        ImNodes::EndInputAttribute();
-    }
-
     for (int i = 0; i < outputPins.size(); ++i)
     {
         const auto& outputPin = outputPins[i];
-        ImNodes::BeginOutputAttribute(outputPin.id);
+
+        if (!outputPin.getNoConnection()) {
+            ImNodes::BeginOutputAttribute(outputPin.id);
+        }
+
         ImGui::Text(outputPin.name.c_str());
         didParameterChange |= drawPinExtras(&outputPin, i);
-        ImNodes::EndOutputAttribute();
+
+        if (!outputPin.getNoConnection()) {
+            ImNodes::EndOutputAttribute();
+        }
+    }
+
+    for (int i = 0; i < inputPins.size(); ++i)
+    {
+        const auto& inputPin = inputPins[i];
+
+        if (!inputPin.getNoConnection()) {
+            ImNodes::BeginInputAttribute(inputPin.id);
+        }
+
+        ImGui::Text(inputPin.name.c_str());
+        didParameterChange |= drawPinExtras(&inputPin, i);
+
+        if (!inputPin.getNoConnection()) {
+            ImNodes::EndInputAttribute();
+        }
     }
 
     ImNodes::EndNode();

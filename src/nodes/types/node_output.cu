@@ -5,7 +5,7 @@
 NodeOutput::NodeOutput()
     : Node("output")
 {
-    addPin(PinType::INPUT);
+    addPin(PinType::INPUT, "image");
 }
 
 unsigned int NodeOutput::getTitleBarColor() const
@@ -73,8 +73,8 @@ void NodeOutput::evaluate()
 
     Texture* outTex = nodeEvaluator->requestTexture();
 
-    const dim3 blockSize(16, 16);
-    const dim3 blocksPerGrid(outTex->resolution.x / 16 + 1, outTex->resolution.y / 16 + 1);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blocksPerGrid = calculateBlocksPerGrid(outTex->resolution, blockSize);
     if (inTex->isSingleColor())
     {
         kernFillSingleColor<<<blocksPerGrid, blockSize>>>(*outTex, hdrToLdr(inTex->singleColor));

@@ -2,8 +2,12 @@
 
 #define NODE_ID_STRIDE 32
 
+#define DEFAULT_BLOCK_SIZE_X 32
+#define DEFAULT_BLOCK_SIZE_Y 32
+
 #include "node_evaluator.hpp"
 #include "node_ui_elements.hpp"
+#include "node_utils.hpp"
 #include "texture.hpp"
 #include "color_utils.hpp"
 
@@ -29,6 +33,8 @@ private:
     Node* node{ nullptr };
     std::unordered_set<Edge*> edges;
 
+    bool noConnection{ false };
+
 public:
     const int id;
     const PinType pinType;
@@ -49,6 +55,9 @@ public:
 
     void propagateTexture(Texture* texture);
     void clearTextures();
+
+    void setNoConnection();
+    bool getNoConnection() const;
 };
 
 class Node
@@ -65,8 +74,8 @@ protected:
 
     Node(std::string name);
 
-    void addPin(PinType type, const std::string& name);
-    void addPin(PinType type);
+    Pin& addPin(PinType type, const std::string& name);
+    Pin& addPin(PinType type);
 
     virtual unsigned int getTitleBarColor() const;
     virtual unsigned int getTitleBarSelectedColor() const;
