@@ -2,7 +2,7 @@
 
 #include "cuda_includes.hpp"
 
-std::vector<const char*> NodeOutput::toneMappingOptions = { "none", "reinhard" };
+std::vector<const char*> NodeOutput::toneMappingOptions = { "none", "reinhard", "ACES filmic" };
 
 NodeOutput::NodeOutput()
     : Node("output")
@@ -23,18 +23,21 @@ unsigned int NodeOutput::getTitleBarSelectedColor() const
 
 __host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col, int toneMapping)
 {
-    col = glm::vec4(glm::max(glm::vec3(col), 0.f), col.a);
+    glm::vec3 rgb = glm::max(glm::vec3(col), 0.f);
     
     switch (toneMapping)
     {
     case 0:
         break;
     case 1:
-        col = ColorUtils::reinhard(col);
+        rgb = ColorUtils::reinhard(rgb);
+        break;
+    case 2:
+        rgb = ColorUtils::ACESFilm(rgb);
         break;
     }
 
-    return ColorUtils::linearToSrgb(col);
+    return glm::vec4(ColorUtils::linearToSrgb(rgb), col.a);
 }
 
 __global__ void kernFillSingleColor(Texture outTex, glm::vec4 col)

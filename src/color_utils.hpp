@@ -19,23 +19,38 @@ namespace ColorUtils
 	// ==================================================================
 
 	// TODO: use more accurate approximation?
-	__host__ __device__ inline glm::vec4 linearToSrgb(glm::vec4 linearCol)
+	__host__ __device__ inline glm::vec3 linearToSrgb(glm::vec3 linearCol)
 	{
-		return glm::vec4(glm::pow(glm::vec3(linearCol), glm::vec3(0.454545454545454545454545f)), linearCol.a);
+		return glm::pow(linearCol, glm::vec3(0.454545454545454545454545f));
+	}
+
+	__host__ __device__ inline glm::vec3 srgbToLinear(glm::vec3 srgbCol)
+	{
+		return glm::pow(srgbCol, glm::vec3(2.2f));
 	}
 
 	__host__ __device__ inline glm::vec4 srgbToLinear(glm::vec4 srgbCol)
 	{
-		return glm::vec4(glm::pow(glm::vec3(srgbCol), glm::vec3(2.2f)), srgbCol.a);
+		return glm::vec4(srgbToLinear(glm::vec3(srgbCol)), srgbCol.a);
 	}
 
 	// ==================================================================
 	// TONE MAPPING
 	// ==================================================================
 
-	__host__ __device__ inline glm::vec4 reinhard(glm::vec4 col)
+	__host__ __device__ inline glm::vec3 reinhard(glm::vec3 col)
 	{
-		glm::vec3 rgb = glm::vec3(col);
-		return glm::vec4(rgb / (1.f + luminance(rgb)), col.a);
+		return col / (1.f + luminance(col));
+	}
+
+	// https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+	__host__ __device__ inline glm::vec3 ACESFilm(glm::vec3 x)
+	{
+		float a = 2.51f;
+		float b = 0.03f;
+		float c = 2.43f;
+		float d = 0.59f;
+		float e = 0.14f;
+		return glm::clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.f, 1.f);
 	}
 }
