@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.8)
 project(the_sdoajalizer LANGUAGES CXX CUDA)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -22,8 +22,8 @@ endif()
 ########################################
 # CUDA Setup
 ########################################
-find_package(CUDA 10 REQUIRED)
-include(${CMAKE_MODULE_PATH}/CUDAComputesList.cmake)
+# find_package(CUDA 10 REQUIRED)
+# include(${CMAKE_MODULE_PATH}/CUDAComputesList.cmake)
 
 list(APPEND CUDA_NVCC_FLAGS ${CUDA_GENERATE_CODE})
 list(APPEND CUDA_NVCC_FLAGS_DEBUG "-g -G")
@@ -74,8 +74,10 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Sources" FILES ${sou
 
 include_directories("${CMAKE_SOURCE_DIR}/src")
 
-cuda_add_executable(${CMAKE_PROJECT_NAME} ${sources} ${headers})
+add_executable(${CMAKE_PROJECT_NAME} ${sources} ${headers})
 target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBRARIES})
+
+set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "50;60;70;80")
 
 ########################################
 
