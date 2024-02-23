@@ -12,3 +12,4 @@
 #include "types/node_fileinput.hpp"
 #include "types/node_exposure.hpp"
 #include "types/node_brightnesscontrast.hpp"
+#include "types/node_bloom.hpp"

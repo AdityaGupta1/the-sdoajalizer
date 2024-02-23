@@ -163,7 +163,7 @@ void NodeEvaluator::evaluate()
 
         for (auto& tex : temporarySingleColorTextures)
         {
-            tex->numReferences = 0;
+            --tex->numReferences;
         }
         temporarySingleColorTextures.clear();
     }

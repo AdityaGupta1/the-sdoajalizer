@@ -11,6 +11,18 @@
 
 #include "nodes/all_nodes.hpp"
 
+static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>>> nodeCreators = {
+    { "color", std::make_unique<NodeColor> },
+    { "file input", std::make_unique<NodeFileInput> },
+    { "invert", std::make_unique<NodeInvert> },
+    { "mix", std::make_unique<NodeMix> },
+    { "noise", std::make_unique<NodeNoise> },
+    { "uv gradient", std::make_unique<NodeUvGradient> },
+    { "exposure", std::make_unique<NodeExposure> },
+    { "brightness/contrast", std::make_unique<NodeBrightnessContrast> },
+    { "bloom", std::make_unique<NodeBloom> }
+};
+
 void Gui::init(GLFWwindow* window)
 {
     this->window = window;
@@ -464,17 +476,6 @@ void filterSearch(const ImGui::ComboFilterSearchCallbackData<T>& cbd)
 
     ImGui::SortFilterResultsDescending(*cbd.FilterResults);
 }
-
-static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>>> nodeCreators = {
-    { "color", std::make_unique<NodeColor> },
-    { "file input", std::make_unique<NodeFileInput> },
-    { "invert", std::make_unique<NodeInvert> },
-    { "mix", std::make_unique<NodeMix> },
-    { "noise", std::make_unique<NodeNoise> },
-    { "uv gradient", std::make_unique<NodeUvGradient> },
-    { "exposure", std::make_unique<NodeExposure> },
-    { "brightness/contrast", std::make_unique<NodeBrightnessContrast> }
-};
 
 void Gui::updateNodeCreatorWindow()
 {

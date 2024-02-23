@@ -37,6 +37,19 @@ bool NodeUI::FloatEdit(float& v, float v_speed, float v_min, float v_max, const 
     return didParameterChange;
 }
 
+bool NodeUI::IntEdit(int& v, float v_speed, int v_min, int v_max, const char* format)
+{
+    ImGui::PushID(&v);
+    ImGui::PushItemWidth(80);
+
+    bool didParameterChange = ImGui::DragInt("", &v, v_speed, v_min, v_max, format);
+
+    ImGui::PopID();
+    ImGui::PopItemWidth();
+
+    return didParameterChange;
+}
+
 bool NodeUI::FilePicker(std::string* filePath)
 {
     ImGui::PushItemWidth(160);
