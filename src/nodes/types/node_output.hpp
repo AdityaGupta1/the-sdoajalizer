@@ -7,7 +7,7 @@ class NodeOutput : public Node
 {
 private:
     static std::vector<const char*> toneMappingOptions;
-    int selectedToneMapping{ 1 }; // reinhard
+    int selectedToneMapping{ 2 }; // ACES
 
 public:
     NodeOutput();

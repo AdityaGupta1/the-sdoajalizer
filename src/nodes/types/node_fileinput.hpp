@@ -17,6 +17,8 @@ public:
     NodeFileInput();
 
 private:
+    bool isFileExr() const;
+
     void reloadFile();
 
 protected:

@@ -3,6 +3,7 @@
 #include "cuda_includes.hpp"
 
 #include "stb_image.h"
+#include "tinyexr.h"
 #include <filesystem>
 
 std::vector<const char*> NodeFileInput::colorSpaceOptions = { "linear", "sRGB" };
@@ -22,17 +23,34 @@ void NodeFileInput::reloadFile()
         texFile = nullptr;
     }
 
-    if (selectedColorSpace == 0) // linear
-    {
-        stbi_ldr_to_hdr_gamma(1.0f);
-    }
-    else // sRGB
-    {
-        stbi_ldr_to_hdr_gamma(2.2f);
-    }
+    bool isExr = isFileExr();
 
-    int width, height, channels;
-    float* host_pixels = stbi_loadf(filePath.c_str(), &width, &height, &channels, 4);
+    float* host_pixels = nullptr;
+    int width, height;
+    if (isExr)
+    {
+        const char* err = nullptr;
+
+        int ret = LoadEXR(&host_pixels, &width, &height, filePath.c_str(), &err);
+
+        if (ret != TINYEXR_SUCCESS)
+        {
+            if (err)
+            {
+                fprintf(stderr, "ERR : %s\n", err);
+                FreeEXRErrorMessage(err);
+            }
+
+            return;
+        }
+    }
+    else
+    {
+        stbi_ldr_to_hdr_gamma(selectedColorSpace == 0 ? 1.0f : 2.2f); // 1.0f if linear, 2.2f if sRGB
+
+        int channels;
+        host_pixels = stbi_loadf(filePath.c_str(), &width, &height, &channels, 4);
+    }
 
     if (host_pixels == nullptr) {
         return;
@@ -41,7 +59,19 @@ void NodeFileInput::reloadFile()
     texFile = nodeEvaluator->requestTexture(glm::ivec2(width, height));
     CUDA_CHECK(cudaMemcpy(texFile->dev_pixels, host_pixels, width * height * 4 * sizeof(float), cudaMemcpyHostToDevice));
 
-    stbi_image_free(host_pixels);
+    if (isExr)
+    {
+        free(host_pixels);
+    }
+    else
+    {
+        stbi_image_free(host_pixels);
+    }
+}
+
+bool NodeFileInput::isFileExr() const
+{
+    return std::filesystem::path(filePath).extension().string() == ".exr";
 }
 
 bool NodeFileInput::drawPinExtras(const Pin* pin, int pinNumber)
@@ -70,15 +100,7 @@ bool NodeFileInput::drawPinExtras(const Pin* pin, int pinNumber)
 
             if (didParameterChange)
             {
-                std::string extension = std::filesystem::path(filePath).extension().string();
-                if (extension == ".exr")
-                {
-                    selectedColorSpace = 0; // linear
-                }
-                else
-                {
-                    selectedColorSpace = 1; // sRGB
-                }
+                selectedColorSpace = isFileExr() ? 0 : 1; // linear if EXR, sRGB otherwise
             }
 
             break;
