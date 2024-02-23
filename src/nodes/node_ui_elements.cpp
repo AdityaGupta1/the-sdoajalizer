@@ -29,7 +29,7 @@ bool NodeUI::FloatEdit(float& v, float v_speed, float v_min, float v_max, const 
     ImGui::PushID(&v);
     ImGui::PushItemWidth(80);
 
-    bool didParameterChange = ImGui::DragFloat("", &v, v_speed, v_min, v_max, format);
+    bool didParameterChange = ImGui::DragFloat("", &v, v_speed, v_min, v_max, format, ImGuiSliderFlags_AlwaysClamp);
 
     ImGui::PopID();
     ImGui::PopItemWidth();
@@ -42,7 +42,7 @@ bool NodeUI::IntEdit(int& v, float v_speed, int v_min, int v_max, const char* fo
     ImGui::PushID(&v);
     ImGui::PushItemWidth(80);
 
-    bool didParameterChange = ImGui::DragInt("", &v, v_speed, v_min, v_max, format);
+    bool didParameterChange = ImGui::DragInt("", &v, v_speed, v_min, v_max, format, ImGuiSliderFlags_AlwaysClamp);
 
     ImGui::PopID();
     ImGui::PopItemWidth();

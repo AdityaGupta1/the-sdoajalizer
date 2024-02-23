@@ -52,7 +52,7 @@ __global__ void kernBlur(Texture inTex, int blurKernelRadius, Texture outTex)
 
     int blurKernelDiameter = 2 * blurKernelRadius + 1;
 
-    float scale = (1.f / 256.f) * blurKernelDiameter * blurKernelDiameter;
+    float scale = (1.f / 256.f) * powf(blurKernelDiameter, 2.1f);
 
     glm::vec3 sum = glm::vec3(0.f);
 
@@ -65,7 +65,7 @@ __global__ void kernBlur(Texture inTex, int blurKernelRadius, Texture outTex)
         {
             u = 2.0f * (dx / (float)blurKernelDiameter) - 1.0f;
             r = (u * u + v * v) * scale;
-            d = -sqrtf(sqrtf(sqrtf(r))) * 9.0f;
+            d = -powf(r, 0.0625f) * 9.0f;
             f = expf(d);
             w = (0.5f + 0.5f * cosf(u * glm::pi<float>())) * (0.5f + 0.5f * cosf(v * glm::pi<float>()));
             weight = f * w;
@@ -126,7 +126,7 @@ bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
         return NodeUI::FloatEdit(backupThreshold, 0.01f, 0.f, FLT_MAX);
     case 2: // size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupSize, 0.02f, 5, 8);
+        return NodeUI::IntEdit(backupSize, 0.02f, sizeMin, sizeMax);
     case 3: // mix
         ImGui::SameLine();
         return NodeUI::FloatEdit(backupMix, 0.01f, -1.f, 1.f);
