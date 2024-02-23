@@ -48,6 +48,9 @@ void Gui::init(GLFWwindow* window)
     this->outputNode = outputNodeUptr.get();
     addNode(std::move(outputNodeUptr));
 
+    addNode(std::make_unique<NodeFileInput>());
+    addNode(std::make_unique<NodeBloom>());
+
     this->nodeEvaluator.setOutputNode(this->outputNode);
 }
 

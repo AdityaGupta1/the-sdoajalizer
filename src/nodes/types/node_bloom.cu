@@ -9,7 +9,8 @@ NodeBloom::NodeBloom()
 
     addPin(PinType::INPUT, "image");
     addPin(PinType::INPUT, "threshold").setNoConnect();
-    addPin(PinType::INPUT, "iterations").setNoConnect();
+    addPin(PinType::INPUT, "size").setNoConnect();
+    addPin(PinType::INPUT, "mix").setNoConnect();
 }
 
 __global__ void kernCopyWithThreshold(Texture inTex, float threshold, Texture outTex)
@@ -38,103 +39,50 @@ __global__ void kernCopyWithThreshold(Texture inTex, float threshold, Texture ou
     outTex.dev_pixels[idx] = outCol;
 }
 
-// http://demofox.org/gauss.html
-// sigma = 2, support = 0.995
-__constant__ float constant_gaussianKernel[] = {
-    0.0000,	0.0000,	0.0000,	0.0000,	0.0000,	0.0001,	0.0001,	0.0001,	0.0001,	0.0001,	0.0000,	0.0000,	0.0000,	0.0000,	0.0000,
-    0.0000,	0.0000,	0.0000,	0.0001,	0.0002,	0.0003,	0.0004,	0.0005,	0.0004,	0.0003,	0.0002,	0.0001,	0.0000,	0.0000,	0.0000,
-    0.0000,	0.0000,	0.0001,	0.0003,	0.0006,	0.0011,	0.0016,	0.0018,	0.0016,	0.0011,	0.0006,	0.0003,	0.0001,	0.0000,	0.0000,
-    0.0000,	0.0001,	0.0003,	0.0008,	0.0018,	0.0034,	0.0049,	0.0055,	0.0049,	0.0034,	0.0018,	0.0008,	0.0003,	0.0001,	0.0000,
-    0.0000,	0.0002,	0.0006,	0.0018,	0.0043,	0.0079,	0.0115,	0.0130,	0.0115,	0.0079,	0.0043,	0.0018,	0.0006,	0.0002,	0.0000,
-    0.0001,	0.0003,	0.0011,	0.0034,	0.0079,	0.0146,	0.0211,	0.0239,	0.0211,	0.0146,	0.0079,	0.0034,	0.0011,	0.0003,	0.0001,
-    0.0001,	0.0004,	0.0016,	0.0049,	0.0115,	0.0211,	0.0305,	0.0345,	0.0305,	0.0211,	0.0115,	0.0049,	0.0016,	0.0004,	0.0001,
-    0.0001,	0.0005,	0.0018,	0.0055,	0.0130,	0.0239,	0.0345,	0.0390,	0.0345,	0.0239,	0.0130,	0.0055,	0.0018,	0.0005,	0.0001,
-    0.0001,	0.0004,	0.0016,	0.0049,	0.0115,	0.0211,	0.0305,	0.0345,	0.0305,	0.0211,	0.0115,	0.0049,	0.0016,	0.0004,	0.0001,
-    0.0001,	0.0003,	0.0011,	0.0034,	0.0079,	0.0146,	0.0211,	0.0239,	0.0211,	0.0146,	0.0079,	0.0034,	0.0011,	0.0003,	0.0001,
-    0.0000,	0.0002,	0.0006,	0.0018,	0.0043,	0.0079,	0.0115,	0.0130,	0.0115,	0.0079,	0.0043,	0.0018,	0.0006,	0.0002,	0.0000,
-    0.0000,	0.0001,	0.0003,	0.0008,	0.0018,	0.0034,	0.0049,	0.0055,	0.0049,	0.0034,	0.0018,	0.0008,	0.0003,	0.0001,	0.0000,
-    0.0000,	0.0000,	0.0001,	0.0003,	0.0006,	0.0011,	0.0016,	0.0018,	0.0016,	0.0011,	0.0006,	0.0003,	0.0001,	0.0000,	0.0000,
-    0.0000,	0.0000,	0.0000,	0.0001,	0.0002,	0.0003,	0.0004,	0.0005,	0.0004,	0.0003,	0.0002,	0.0001,	0.0000,	0.0000,	0.0000,
-    0.0000,	0.0000,	0.0000,	0.0000,	0.0000,	0.0001,	0.0001,	0.0001,	0.0001,	0.0001,	0.0000,	0.0000,	0.0000,	0.0000,	0.0000
-};
-#define gaussianKernelRadius 7
-
-__global__ void kernBlur(Texture inTex, Texture outTex)
+// https://github.com/blender/blender/blob/7da72a938c05fe5662db3654f8dbd02a67c0150b/source/blender/compositor/operations/COM_GlareFogGlowOperation.cc
+__global__ void kernBlur(Texture inTex, int blurKernelRadius, Texture outTex)
 {
-    // assuming block size of 32 x 32
-    constexpr int sharedMemXSize = 32 + 2 * gaussianKernelRadius;
-    constexpr int sharedMemYSize = 32 + 2 * gaussianKernelRadius;
-    constexpr int sharedMemSize = sharedMemXSize * sharedMemYSize;
-    __shared__ glm::vec4 shared_colors[sharedMemSize];
-
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
-
-    int localIdx = threadIdx.y * blockDim.x + threadIdx.x; // 0 to 1024
-    const glm::ivec2 cornerPos = glm::ivec2(blockIdx.x * blockDim.x, blockIdx.y * blockDim.y);
-    glm::ivec2 loadPos, storePos;
-
-    for (int storeIdx = localIdx; storeIdx < sharedMemSize; storeIdx += blockDim.x * blockDim.y)
-    {
-        int sharedMemX = storeIdx % sharedMemXSize;
-        int sharedMemY = storeIdx / sharedMemXSize;
-
-        loadPos.x = cornerPos.x + sharedMemX - gaussianKernelRadius;
-        loadPos.y = cornerPos.y + sharedMemY - gaussianKernelRadius;
-
-        if (loadPos.x < 0)
-        {
-            loadPos.x = -(loadPos.x + 1);
-        }
-        else if (loadPos.x >= inTex.resolution.x)
-        {
-            loadPos.x = 2 * inTex.resolution.x - loadPos.x - 1;
-        }
-
-        if (loadPos.y < 0)
-        {
-            loadPos.y = -(loadPos.y + 1);
-        }
-        else if (loadPos.y >= inTex.resolution.y)
-        {
-            loadPos.y = 2 * inTex.resolution.y - loadPos.y - 1;
-        }
-
-        shared_colors[storeIdx] = inTex.dev_pixels[loadPos.y * inTex.resolution.x + loadPos.x];
-    }
-
-    __syncthreads();
 
     if (x >= inTex.resolution.x || y >= inTex.resolution.y)
     {
         return;
     }
 
-    glm::vec4 sum = glm::vec4(0.f);
-    float weightSum = 0.f;
+    int blurKernelDiameter = 2 * blurKernelRadius + 1;
 
-    for (int dy = 0; dy <= 2 * gaussianKernelRadius; ++dy)
+    float scale = (1.f / 256.f) * blurKernelDiameter * blurKernelDiameter;
+
+    glm::vec3 sum = glm::vec3(0.f);
+
+    float u, v, r, d, f, w, weight;
+    for (int dy = 0; dy <= 2 * blurKernelRadius; ++dy)
     {
-        for (int dx = 0; dx <= 2 * gaussianKernelRadius; ++dx)
+        v = 2.0f * (dy / (float)blurKernelDiameter) - 1.0f;
+
+        for (int dx = 0; dx <= 2 * blurKernelRadius; ++dx)
         {
-            int sampleX = threadIdx.x + dx;
-            int sampleY = threadIdx.y + dy;
+            u = 2.0f * (dx / (float)blurKernelDiameter) - 1.0f;
+            r = (u * u + v * v) * scale;
+            d = -sqrtf(sqrtf(sqrtf(r))) * 9.0f;
+            f = expf(d);
+            w = (0.5f + 0.5f * cosf(u * glm::pi<float>())) * (0.5f + 0.5f * cosf(v * glm::pi<float>()));
+            weight = f * w;
 
-            float kernelValue = constant_gaussianKernel[dy * (2 * gaussianKernelRadius + 1) + dx];
+            glm::ivec2 loadPos(x + dx - blurKernelRadius, y + dy - blurKernelRadius);
+            loadPos = glm::clamp(loadPos, glm::ivec2(0), inTex.resolution - 1);
 
-            glm::vec4 sampleColor = shared_colors[sampleY * sharedMemXSize + sampleX];
-            sum += sampleColor * kernelValue;
-            weightSum += kernelValue;
+            glm::vec3 sampleColor = glm::vec3(inTex.dev_pixels[loadPos.y * inTex.resolution.x + loadPos.x]);
+            sum += sampleColor * weight;
         }
     }
 
-    glm::vec4 outCol = sum / weightSum;
-
     int idx = y * inTex.resolution.x + x;
-    outTex.dev_pixels[idx] = outCol;
+    outTex.dev_pixels[idx] = glm::vec4(sum, 1.f);
 }
 
-__global__ void kernAdd(Texture inTex1, Texture inTex2, Texture outTex)
+__global__ void kernAdd(Texture inTex1, Texture inTex2, float mix, Texture outTex)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
@@ -145,9 +93,21 @@ __global__ void kernAdd(Texture inTex1, Texture inTex2, Texture outTex)
     }
 
     int idx = y * inTex1.resolution.x + x;
-    glm::vec4 inCol1 = inTex1.dev_pixels[idx];
-    glm::vec4 inCol2 = inTex2.dev_pixels[idx];
-    outTex.dev_pixels[idx] = glm::vec4(glm::vec3(inCol1) + glm::vec3(inCol2), inCol1.a);
+    glm::vec4 baseCol = inTex1.dev_pixels[idx];
+    glm::vec4 processedCol = inTex2.dev_pixels[idx];
+
+    glm::vec4 fullCol = glm::vec4(glm::vec3(baseCol) + glm::vec3(processedCol), baseCol.a);
+    glm::vec4 outCol;
+    if (mix < 0.f)
+    {
+        outCol = glm::mix(fullCol, baseCol, -mix);
+    }
+    else
+    {
+        outCol = glm::mix(fullCol, processedCol, mix);
+    }
+
+    outTex.dev_pixels[idx] = outCol;
 }
 
 bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
@@ -164,9 +124,12 @@ bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
     case 1: // threshold
         ImGui::SameLine();
         return NodeUI::FloatEdit(backupThreshold, 0.01f, 0.f, FLT_MAX);
-    case 2: // iterations
+    case 2: // size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupIterations, 0.10f, 1, INT_MAX);
+        return NodeUI::IntEdit(backupSize, 0.02f, 5, 8);
+    case 3: // mix
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupMix, 0.01f, -1.f, 1.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -192,15 +155,10 @@ void NodeBloom::evaluate()
 
     kernCopyWithThreshold<<<blocksPerGrid, blockSize>>>(*inTex, backupThreshold, *outTex1);
 
-    const dim3 blurBlockSize(32, 32);
-    const dim3 blurBlocksPerGrid = calculateBlocksPerGrid(inTex->resolution, blurBlockSize);
-    for (int i = 0; i < backupIterations; ++i)
-    {
-        kernBlur<<<blurBlocksPerGrid, blurBlockSize>>>(*outTex1, *outTex2);
-        std::swap(outTex1, outTex2);
-    }
+    kernBlur<<<blocksPerGrid, blockSize>>>(*outTex1, 1 << backupSize, *outTex2);
+    std::swap(outTex1, outTex2);
 
-    kernAdd<<<blocksPerGrid, blockSize>>>(*inTex, *outTex1, *outTex2);
+    kernAdd<<<blocksPerGrid, blockSize>>>(*inTex, *outTex1, backupMix, *outTex2);
 
     outputPins[0].propagateTexture(outTex2);
 }

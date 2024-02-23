@@ -6,7 +6,8 @@ class NodeBloom : public Node
 {
 private:
     float backupThreshold{ 1.f };
-    int backupIterations{ 1 };
+    int backupSize{ 6 };
+    float backupMix{ 0.f };
 
 public:
     NodeBloom();

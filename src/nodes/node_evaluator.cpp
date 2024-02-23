@@ -46,6 +46,8 @@ Texture* NodeEvaluator::requestTexture(glm::ivec2 resolution)
         {
             if (texture->numReferences == 0)
             {
+                ++texture->numReferences;
+                requestedTextures.push_back(texture.get());
                 return texture.get();
             }
         }
@@ -65,6 +67,10 @@ Texture* NodeEvaluator::requestTexture(glm::ivec2 resolution)
 
     Texture* texPtr = tex.get();
     this->textures[resolution].push_back(std::move(tex));
+
+    ++texPtr->numReferences;
+    requestedTextures.push_back(texPtr);
+
     return texPtr;
 }
 
@@ -76,14 +82,6 @@ Texture* NodeEvaluator::requestTexture()
 Texture* NodeEvaluator::requestSingleColorTexture()
 {
     return this->requestTexture(glm::ivec2(0));
-}
-
-Texture* NodeEvaluator::requestTemporarySingleColorTexture()
-{
-    Texture* tex = requestSingleColorTexture();
-    tex->numReferences = 1;
-    temporarySingleColorTextures.push_back(tex);
-    return tex;
 }
 
 void NodeEvaluator::setOutputTexture(Texture* texture)
@@ -161,11 +159,11 @@ void NodeEvaluator::evaluate()
         node->evaluate();
         node->clearInputTextures();
 
-        for (auto& tex : temporarySingleColorTextures)
+        for (auto& tex : requestedTextures)
         {
             --tex->numReferences;
         }
-        temporarySingleColorTextures.clear();
+        requestedTextures.clear();
     }
 
     cudaDeviceSynchronize();

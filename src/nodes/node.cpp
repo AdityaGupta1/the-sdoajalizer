@@ -108,7 +108,7 @@ Texture* Node::getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col)
 
     if (tex == nullptr)
     {
-        tex = nodeEvaluator->requestTemporarySingleColorTexture();
+        tex = nodeEvaluator->requestSingleColorTexture();
         tex->setSingleColor(col);
     }
 
