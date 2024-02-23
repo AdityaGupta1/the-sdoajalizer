@@ -16,6 +16,20 @@ NodeFileInput::NodeFileInput()
     addPin(PinType::INPUT, "color space").setNoConnect();
 }
 
+__global__ void kernSrgbToLinear(Texture tex)
+{
+    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
+    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+
+    if (x >= tex.resolution.x || y >= tex.resolution.y)
+    {
+        return;
+    }
+
+    int idx = y * tex.resolution.x + x;
+    tex.dev_pixels[idx] = ColorUtils::srgbToLinear(tex.dev_pixels[idx]);
+}
+
 void NodeFileInput::reloadFile()
 {
     if (texFile != nullptr) {
@@ -62,6 +76,13 @@ void NodeFileInput::reloadFile()
     if (isExr)
     {
         free(host_pixels);
+
+        if (selectedColorSpace == 1) // sRGB
+        {
+            const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+            const dim3 blocksPerGrid = calculateBlocksPerGrid(texFile->resolution, blockSize);
+            kernSrgbToLinear<<<blocksPerGrid, blockSize>>>(*texFile);
+        }
     }
     else
     {
