@@ -493,7 +493,7 @@ void Gui::updateNodeCreatorWindow()
         ImGui::PushItemWidth(400);
 
         int selectedItem = -1;
-        if (ImGui::ComboFilter("##nodeSearch", selectedItem, nodeCreators, itemGetter, filterSearch, createWindowData.justOpened, ImGuiComboFlags_NoArrowButton)) {
+        if (ImGui::ComboFilter("##nodeSearch", selectedItem, nodeCreators, itemGetter, filterSearch, createWindowData.justOpened, ImGuiComboFlags_NoArrowButton) && selectedItem != -1) {
             auto newNodeUptr = nodeCreators[selectedItem].second();
             int newNodeId = newNodeUptr->id;
             addNode(std::move(newNodeUptr));
