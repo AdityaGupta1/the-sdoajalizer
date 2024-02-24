@@ -67,7 +67,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Sources" FILES ${sou
 include_directories("${CMAKE_SOURCE_DIR}/src")
 
 add_executable(${CMAKE_PROJECT_NAME} ${sources} ${headers})
-target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBRARIES})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBRARIES} nppc nppial nppicc nppidei nppif nppig nppim nppist nppisu nppitc npps)
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "50;60;70;80")
 
