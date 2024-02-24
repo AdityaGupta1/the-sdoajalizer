@@ -2,6 +2,9 @@
 
 #include "cuda_includes.hpp"
 
+#include <npp.h>
+#include <nppi.h>
+
 NodeBloom::NodeBloom()
     : Node("bloom")
 {
@@ -25,11 +28,12 @@ __global__ void kernCopyWithThreshold(Texture inTex, float threshold, Texture ou
 
     int idx = y * inTex.resolution.x + x;
     glm::vec4 inCol = inTex.dev_pixels[idx];
+    glm::vec3 inRgb = glm::vec3(inCol) * inCol.a;
 
     glm::vec4 outCol;
-    if (ColorUtils::luminance(glm::vec3(inCol)) >= threshold)
+    if (ColorUtils::luminance(inRgb) >= threshold)
     {
-        outCol = inCol;
+        outCol = glm::vec4(inRgb, 1);
     }
     else
     {
@@ -39,75 +43,59 @@ __global__ void kernCopyWithThreshold(Texture inTex, float threshold, Texture ou
     outTex.dev_pixels[idx] = outCol;
 }
 
-// https://github.com/blender/blender/blob/7da72a938c05fe5662db3654f8dbd02a67c0150b/source/blender/compositor/operations/COM_GlareFogGlowOperation.cc
-__global__ void kernBlur(Texture inTex, int blurKernelRadius, Texture outTex)
+__device__ float calculateKernelWeight(float u, float v, float scale)
 {
-    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
-    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
-
-    if (x >= inTex.resolution.x || y >= inTex.resolution.y)
-    {
-        return;
-    }
-
-    int blurKernelDiameter = 2 * blurKernelRadius + 1;
-
-    float scale = (1.f / 256.f) * powf(blurKernelDiameter, 2.1f);
-
-    glm::vec3 sum = glm::vec3(0.f);
-
-    float u, v, r, d, f, w, weight;
-    for (int dy = 0; dy <= 2 * blurKernelRadius; ++dy)
-    {
-        v = 2.0f * (dy / (float)blurKernelDiameter) - 1.0f;
-
-        for (int dx = 0; dx <= 2 * blurKernelRadius; ++dx)
-        {
-            u = 2.0f * (dx / (float)blurKernelDiameter) - 1.0f;
-            r = (u * u + v * v) * scale;
-            d = -powf(r, 0.0625f) * 9.0f;
-            f = expf(d);
-            w = (0.5f + 0.5f * cosf(u * glm::pi<float>())) * (0.5f + 0.5f * cosf(v * glm::pi<float>()));
-            weight = f * w;
-
-            glm::ivec2 loadPos(x + dx - blurKernelRadius, y + dy - blurKernelRadius);
-            loadPos = glm::clamp(loadPos, glm::ivec2(0), inTex.resolution - 1);
-
-            glm::vec3 sampleColor = glm::vec3(inTex.dev_pixels[loadPos.y * inTex.resolution.x + loadPos.x]);
-            sum += sampleColor * weight;
-        }
-    }
-
-    int idx = y * inTex.resolution.x + x;
-    outTex.dev_pixels[idx] = glm::vec4(sum, 1.f);
+    float r = (u * u + v * v) * scale;
+    float d = -powf(r, 0.0625f) * 9.0f;
+    float f = expf(d);
+    float w = (0.5f + 0.5f * cosf(u * glm::pi<float>())) * (0.5f + 0.5f * cosf(v * glm::pi<float>()));
+    return f * w;
 }
 
-__global__ void kernAdd(Texture inTex1, Texture inTex2, float mix, Texture outTex)
+// https://github.com/blender/blender/blob/7da72a938c05fe5662db3654f8dbd02a67c0150b/source/blender/compositor/operations/COM_GlareFogGlowOperation.cc
+__global__ void kernFillBlurKernel(float* kernel, int kernelDiameter, float scale)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
 
-    if (x >= inTex1.resolution.x || y >= inTex1.resolution.y)
+    if (x >= kernelDiameter || y >= kernelDiameter)
     {
         return;
     }
 
-    int idx = y * inTex1.resolution.x + x;
-    glm::vec4 baseCol = inTex1.dev_pixels[idx];
-    glm::vec4 processedCol = inTex2.dev_pixels[idx];
+    float u = 2.0f * (x / (float)kernelDiameter) - 1.0f;
+    float v = 2.0f * (y / (float)kernelDiameter) - 1.0f;
 
-    glm::vec4 fullCol = glm::vec4(glm::vec3(baseCol) + glm::vec3(processedCol), baseCol.a);
-    glm::vec4 outCol;
+    int idx = y * kernelDiameter + x;
+    kernel[idx] = calculateKernelWeight(u, v, scale);
+}
+
+__global__ void kernAdd(Texture inTexBase, Texture inTexProcessed, float mix, Texture outTex)
+{
+    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
+    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+
+    if (x >= inTexBase.resolution.x || y >= inTexBase.resolution.y)
+    {
+        return;
+    }
+
+    int idx = y * inTexBase.resolution.x + x;
+    glm::vec3 baseRgb(inTexBase.dev_pixels[idx]);
+    glm::vec3 processedCol(inTexProcessed.dev_pixels[idx]);
+
+    glm::vec3 fullRgb(baseRgb + processedCol);
+    glm::vec3 outRgb;
     if (mix < 0.f)
     {
-        outCol = glm::mix(fullCol, baseCol, -mix);
+        outRgb = glm::mix(fullRgb, baseRgb, -mix);
     }
     else
     {
-        outCol = glm::mix(fullCol, processedCol, mix);
+        outRgb = glm::mix(fullRgb, processedCol, mix);
     }
 
-    outTex.dev_pixels[idx] = outCol;
+    outTex.dev_pixels[idx] = glm::vec4(outRgb, 1);
 }
 
 bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
@@ -135,6 +123,11 @@ bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
     }
 }
 
+#include <iostream>
+#define NPP_CHECK_NPP(S) NppStatus eStatusNPP; \
+        eStatusNPP = S; \
+        if (eStatusNPP != NPP_SUCCESS) printf("brokey\n");
+
 void NodeBloom::evaluate()
 {
     Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
@@ -155,8 +148,36 @@ void NodeBloom::evaluate()
 
     kernCopyWithThreshold<<<blocksPerGrid, blockSize>>>(*inTex, backupThreshold, *outTex1);
 
-    kernBlur<<<blocksPerGrid, blockSize>>>(*outTex1, 1 << backupSize, *outTex2);
+    const int kernelRadius = 1 << backupSize;
+    const int kernelDiameter = 2 * kernelRadius + 1;
+    NppiSize oKernelSize = { kernelDiameter, kernelDiameter };
+
+    // TODO: fill dev_kernels out ahead of time (or lazily) and share among all bloom nodes
+    float* dev_kernel;
+    cudaMalloc(&dev_kernel, kernelDiameter * kernelDiameter * sizeof(float));
+
+    const float scale = (1.f / 256.f) * powf(kernelDiameter, 2.1f);
+    kernFillBlurKernel<<<blocksPerGrid, blockSize>>>(dev_kernel, kernelDiameter, scale);
+
+    const int width = outTex1->resolution.x;
+    const int height = outTex1->resolution.y;
+    NppiSize oSrcSize = { width, height };
+    NppiPoint oSrcOffset = { 0, 0 };
+
+    NppiSize oSizeROI = { width, height };
+    NppiPoint oAnchor = { kernelRadius, kernelRadius };
+
+    NPP_CHECK_NPP(
+        nppiFilterBorder_32f_C4R(
+            (Npp32f*)outTex1->dev_pixels, width * 4 * sizeof(float),
+            oSrcSize, oSrcOffset,
+            (Npp32f*)outTex2->dev_pixels, width * 4 * sizeof(float),
+            oSizeROI, (Npp32f*)dev_kernel, oKernelSize, oAnchor,
+            NPP_BORDER_REPLICATE)
+    );
     std::swap(outTex1, outTex2);
+
+    cudaFree(dev_kernel);
 
     kernAdd<<<blocksPerGrid, blockSize>>>(*inTex, *outTex1, backupMix, *outTex2);
 

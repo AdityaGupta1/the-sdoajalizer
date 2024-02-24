@@ -29,33 +29,25 @@ list(APPEND CUDA_NVCC_FLAGS ${CUDA_GENERATE_CODE})
 list(APPEND CUDA_NVCC_FLAGS_DEBUG "-g -G")
 set(CUDA_VERBOSE_BUILD ON)
 
-if(WIN32)
-    # Set up include and lib paths
-    set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH "Host side compiler used by NVCC" FORCE)
-endif(WIN32)
+# Set up include and lib paths
+set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH "Host side compiler used by NVCC" FORCE)
 ########################################
 
 find_package(OpenGL REQUIRED)
 
-if(UNIX)
-    find_package(glfw3 REQUIRED)
-    find_package(GLEW REQUIRED)
-    set(LIBRARIES glfw ${GLEW_LIBRARIES} ${OPENGL_gl_LIBRARY})
-else(UNIX)
-    set(EXTERNAL "external")
+set(EXTERNAL "external")
 
-    set(GLFW_ROOT_DIR ${EXTERNAL})
-    set(GLFW_USE_STATIC_LIBS ON)
-    find_package(GLFW REQUIRED)
+set(GLFW_ROOT_DIR ${EXTERNAL})
+set(GLFW_USE_STATIC_LIBS ON)
+find_package(GLFW REQUIRED)
 
-    set(GLEW_ROOT_DIR ${EXTERNAL})
-    set(GLEW_USE_STATIC_LIBS ON)
-    find_package(GLEW REQUIRED)
+set(GLEW_ROOT_DIR ${EXTERNAL})
+set(GLEW_USE_STATIC_LIBS ON)
+find_package(GLEW REQUIRED)
 
-    add_definitions(${GLEW_DEFINITIONS})
-    include_directories(${GLEW_INCLUDE_DIR} ${GLFW_INCLUDE_DIR})
-    set(LIBRARIES ${GLEW_LIBRARY} ${GLFW_LIBRARY} ${OPENGL_LIBRARY})
-endif(UNIX)
+add_definitions(${GLEW_DEFINITIONS})
+include_directories(${GLEW_INCLUDE_DIR} ${GLFW_INCLUDE_DIR})
+set(LIBRARIES ${GLEW_LIBRARY} ${GLFW_LIBRARY} ${OPENGL_LIBRARY})
 
 set(GLM_ROOT_DIR "external")
 find_package(GLM REQUIRED)
