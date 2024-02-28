@@ -156,7 +156,7 @@ void NodeBloom::evaluate()
     float* dev_kernel;
     cudaMalloc(&dev_kernel, kernelDiameter * kernelDiameter * sizeof(float));
 
-    const float scale = (1.f / 256.f) * powf(kernelDiameter, 2.1f);
+    const float scale = (1.f / 256.f) * powf(kernelDiameter, 2.38f); // last parameter is manually adjusted to get good visual results
     kernFillBlurKernel<<<blocksPerGrid, blockSize>>>(dev_kernel, kernelDiameter, scale);
 
     const int width = outTex1->resolution.x;
