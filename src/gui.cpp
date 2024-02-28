@@ -374,6 +374,8 @@ void Gui::drawNodeEditor()
         ImNodes::Link(edgeId, edge->startPin->id, edge->endPin->id);
     }
 
+    ImNodes::MiniMap(0.2f, ImNodesMiniMapLocation_TopRight);
+
     ImNodes::EndNodeEditor();
 
     int startPinId, endPinId;
