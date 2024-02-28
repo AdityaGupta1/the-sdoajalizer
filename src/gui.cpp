@@ -494,6 +494,7 @@ void Gui::updateNodeCreatorWindow()
         ImGui::Begin("node creator", nullptr, windowFlags);
 
         ImGui::PushItemWidth(400);
+        ImGui::PushID(createWindowData.id);
 
         int selectedItem = -1;
         if (ImGui::ComboFilter("##nodeSearch", selectedItem, nodeCreators, itemGetter, filterSearch, createWindowData.justOpened, ImGuiComboFlags_NoArrowButton) && selectedItem != -1) {
@@ -506,6 +507,7 @@ void Gui::updateNodeCreatorWindow()
             controls.shouldCreateWindowBeVisible = false;
         }
 
+        ImGui::PopID();
         ImGui::PopItemWidth();
 
         ImGui::End();
@@ -518,6 +520,8 @@ void Gui::updateNodeCreatorWindow()
         createWindowData.pos = ImGui::GetMousePos();
 
         createWindowData.justOpened = true;
+
+        ++createWindowData.id;
     }
 
     if (!controls.shouldCreateWindowBeVisible && createWindowData.visible) {

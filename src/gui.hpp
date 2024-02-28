@@ -41,7 +41,7 @@ private:
 
         bool justOpened{ false };
 
-        std::string searchText;
+        int id{ 0 };
     } createWindowData;
 
 public:
