@@ -26,9 +26,6 @@ private:
 
     std::vector<Texture*> requestedTextures;
 
-    Node* changedNode{ nullptr };
-    std::unordered_set<Node*> nodesToDeleteCache;
-
 public:
     GLuint viewerTex;
 

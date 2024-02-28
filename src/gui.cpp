@@ -179,7 +179,7 @@ void Gui::addEdge(int startPinId, int endPinId)
     this->edges[edgePtr->id] = std::move(edgePtr);
 
     this->isNetworkDirty = true;
-    nodeEvaluator.setChangedNode(startPin.getNode());
+    nodeEvaluator.setChangedNode(endPin.getNode());
 }
 
 void Gui::deleteNode(int nodeId)
@@ -211,7 +211,7 @@ void Gui::deleteEdge(int edgeId)
 
 void Gui::deleteEdge(Edge* edge)
 {
-    nodeEvaluator.setChangedNode(edge->startPin->getNode());
+    nodeEvaluator.setChangedNode(edge->endPin->getNode());
 
     edge->startPin->removeEdge(edge);
     edge->endPin->removeEdge(edge);

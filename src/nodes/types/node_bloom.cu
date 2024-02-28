@@ -16,6 +16,8 @@ NodeBloom::NodeBloom()
     addPin(PinType::INPUT, "threshold").setNoConnect();
     addPin(PinType::INPUT, "size").setNoConnect();
     addPin(PinType::INPUT, "mix").setNoConnect();
+
+    setExpensive();
 }
 
 void NodeBloom::freeDeviceMemory()

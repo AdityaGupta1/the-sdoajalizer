@@ -80,6 +80,8 @@ class Node
 private:
     static int nextId;
 
+    bool isExpensive{ false };
+
 protected:
     const std::string name;
 
@@ -89,6 +91,8 @@ protected:
 
     Pin& addPin(PinType type, const std::string& name);
     Pin& addPin(PinType type);
+
+    void setExpensive();
 
     virtual unsigned int getTitleBarColor() const;
     virtual unsigned int getTitleBarSelectedColor() const;

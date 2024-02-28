@@ -137,6 +137,11 @@ Pin& Node::addPin(PinType type)
     return addPin(type, type == PinType::INPUT ? "input" : "output");
 }
 
+void Node::setExpensive()
+{
+    this->isExpensive = true;
+}
+
 unsigned int Node::getTitleBarColor() const
 {
     return IM_COL32(11, 109, 191, 255);

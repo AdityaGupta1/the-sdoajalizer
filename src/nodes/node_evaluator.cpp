@@ -99,99 +99,27 @@ bool NodeEvaluator::hasOutputTexture()
 // - not caching means bad performance on editing nodes later on in a chain
 void NodeEvaluator::setChangedNode(Node* changedNode)
 {
-    // do this no matter what for changedNode so user can use its output without reevaluating
-    for (auto& outputPin : changedNode->outputPins)
-    {
-        outputPin.deleteCache();
-        outputPin.prepareForCache();
-    }
-
-    if (changedNode == this->changedNode)
-    {
-        return;
-    }
-
-    this->changedNode = changedNode;
-
-    // reachability search from changed node
-    // delete cache of any pins reachable from this node
+    // delete cache of any pins reachable from changed node
     std::queue<Node*> frontier;
     std::unordered_set<Node*> visited;
-    frontier.push(this->changedNode);
-    visited.insert(this->changedNode);
+    frontier.push(changedNode);
+    visited.insert(changedNode);
     while (!frontier.empty())
     {
-        Node* node = frontier.front();
+        Node* thisNode = frontier.front();
         frontier.pop();
 
-        for (auto& outputPin : node->outputPins)
+        for (auto& thisOutputPin : thisNode->outputPins)
         {
-            for (const auto& edge : outputPin.getEdges())
-            {
-                Pin* otherInputPin = edge->endPin;
-                if (node != this->changedNode)
-                {
-                    outputPin.deleteCache();
-                }
+            thisOutputPin.deleteCache();
 
-                Node* otherNode = otherInputPin->getNode();
+            for (const auto& edge : thisOutputPin.getEdges())
+            {
+                Node* otherNode = edge->endPin->getNode();
                 if (!visited.contains(otherNode))
                 {
                     visited.insert(otherNode);
                     frontier.push(otherNode);
-                }
-            }
-        }
-
-        this->nodesToDeleteCache.erase(node); // no need to delay cache deletion since caches were just deleted
-    }
-
-    if (!visited.contains(this->outputNode))
-    {
-        return;
-    }
-
-    // do one step of reachability search backwards to find where to prepare caches
-    std::queue<Node*> frontierBackwards;
-    std::unordered_set<Node*> visitedBackwards = visited;
-    for (const auto& node : visited)
-    {
-        for (const auto& inputPin : node->inputPins)
-        {
-            for (const auto& edge : inputPin.getEdges()) // should be at most 1 edge
-            {
-                Node* otherNode = edge->startPin->getNode();
-                if (!visitedBackwards.contains(otherNode))
-                {
-                    visitedBackwards.insert(otherNode);
-                    frontierBackwards.push(otherNode);
-
-                    for (auto& otherOutputPin : otherNode->outputPins)
-                    {
-                        otherOutputPin.prepareForCache();
-                    }
-                }
-            }
-        }
-    }
-
-    // finish reachability search and prepare caches for deletion
-    while (!frontierBackwards.empty())
-    {
-        Node* node = frontierBackwards.front();
-        frontierBackwards.pop();
-
-        for (const auto& inputPin : node->inputPins)
-        {
-            for (const auto& edge : inputPin.getEdges()) // should be at most 1 edge
-            {
-                Node* otherNode = edge->startPin->getNode();
-                if (!visitedBackwards.contains(otherNode))
-                {
-                    visitedBackwards.insert(otherNode);
-                    frontierBackwards.push(otherNode);
-
-                    nodesToDeleteCache.insert(otherNode);
                 }
             }
         }
@@ -210,13 +138,13 @@ void NodeEvaluator::evaluate()
     visited.insert(this->outputNode);
     while (!frontier.empty())
     {
-        Node* node = frontier.front();
+        Node* thisNode = frontier.front();
         frontier.pop();
 
         int indegree = 0;
-        for (const auto& inputPin : node->inputPins)
+        for (const auto& thisInputPin : thisNode->inputPins)
         {
-            for (const auto& edge : inputPin.getEdges()) // should be at most 1 edge
+            for (const auto& edge : thisInputPin.getEdges()) // should be at most 1 edge
             {
                 Pin* otherOutputPin = edge->startPin;
 
@@ -236,10 +164,10 @@ void NodeEvaluator::evaluate()
             }
         }
 
-        indegrees[node] = indegree;
+        indegrees[thisNode] = indegree;
         if (indegree == 0)
         {
-            nodesWithIndegreeZero.push(node);
+            nodesWithIndegreeZero.push(thisNode);
         }
     }
 
@@ -268,6 +196,14 @@ void NodeEvaluator::evaluate()
 
     for (const auto& node : topoSortedNodes)
     {
+        if (node->isExpensive)
+        {
+            for (auto& outputPin : node->outputPins)
+            {
+                outputPin.prepareForCache(); // does nothing if cache already exists
+            }
+        }
+
         node->evaluate(); // will cache textures in pins if necessary when calling propagateTexture()
         node->clearInputTextures();
 
@@ -277,16 +213,6 @@ void NodeEvaluator::evaluate()
         }
         requestedTextures.clear();
     }
-
-    for (const auto& node : nodesToDeleteCache)
-    {
-        for (auto& outputPin : node->outputPins)
-        {
-            outputPin.deleteCache();
-        }
-    }
-
-    nodesToDeleteCache.clear();
 
     cudaDeviceSynchronize();
 
