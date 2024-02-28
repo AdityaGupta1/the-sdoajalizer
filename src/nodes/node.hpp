@@ -27,6 +27,11 @@ enum class PinType
     INPUT, OUTPUT
 };
 
+enum class PinCacheState
+{
+    NO_CACHE, PREPARED, CACHED
+};
+
 class Pin
 {
 private:
@@ -34,6 +39,9 @@ private:
     std::unordered_set<Edge*> edges;
 
     bool canConnect{ true };
+
+    PinCacheState cacheState{ PinCacheState::NO_CACHE };
+    Texture* cachedTexture{ nullptr };
 
 public:
     const int id;
@@ -58,6 +66,11 @@ public:
 
     void setNoConnect();
     bool getCanConnect() const;
+
+    PinCacheState getCacheState() const;
+    Texture* getCachedTexture() const;
+    void prepareForCache();
+    void deleteCache();
 };
 
 class Node

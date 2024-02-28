@@ -2,6 +2,8 @@
 
 #include "ImGui/imnodes.h"
 
+#define DEBUG_SHOW_NODE_ID 0
+
 Pin::Pin(int id, Node* node, PinType pinType, const std::string& name)
     : id(id), node(node), pinType(pinType), name(name)
 {}
@@ -52,6 +54,20 @@ void Pin::propagateTexture(Texture* texture)
     {
         edge->setTexture(texture);
     }
+
+    if (this->cachedTexture != nullptr)
+    {
+        printf("WARNING: calling propagateTexture() when cachedTexture != nullptr\n");
+        --this->cachedTexture->numReferences;
+        this->cachedTexture = nullptr;
+    }
+
+    if (this->cacheState == PinCacheState::PREPARED)
+    {
+        this->cachedTexture = texture;
+        ++this->cachedTexture->numReferences;
+        this->cacheState = PinCacheState::CACHED;
+    }
 }
 
 void Pin::clearTextures()
@@ -70,6 +86,35 @@ void Pin::setNoConnect()
 bool Pin::getCanConnect() const
 {
     return this->canConnect;
+}
+
+PinCacheState Pin::getCacheState() const
+{
+    return this->cacheState;
+}
+
+Texture* Pin::getCachedTexture() const
+{
+    return this->cachedTexture;
+}
+
+void Pin::prepareForCache()
+{
+    if (this->cacheState != PinCacheState::CACHED)
+    {
+        this->cacheState = PinCacheState::PREPARED;
+    }
+}
+
+void Pin::deleteCache()
+{
+    this->cacheState = PinCacheState::NO_CACHE;
+
+    if (this->cachedTexture != nullptr)
+    {
+        --this->cachedTexture->numReferences;
+        this->cachedTexture = nullptr;
+    }
 }
 
 int Node::nextId = 0;
@@ -192,7 +237,11 @@ bool Node::draw()
     ImNodes::BeginNode(this->id);
 
     ImNodes::BeginNodeTitleBar();
+#if DEBUG_SHOW_NODE_ID
+    ImGui::TextUnformatted((this->name + " (" + std::to_string(this->id) + ")").c_str());
+#else
     ImGui::TextUnformatted(this->name.c_str());
+#endif
     ImNodes::EndNodeTitleBar();
 
     bool didParameterChange = false;

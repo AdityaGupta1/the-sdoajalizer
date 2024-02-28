@@ -5,6 +5,7 @@
 #include "texture.hpp"
 
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
 
 #include "cuda_includes.hpp"
@@ -25,6 +26,9 @@ private:
 
     std::vector<Texture*> requestedTextures;
 
+    Node* changedNode{ nullptr };
+    std::unordered_set<Node*> nodesToDeleteCache;
+
 public:
     GLuint viewerTex;
 
@@ -43,6 +47,8 @@ public:
 
     void setOutputTexture(Texture* texture);
     bool hasOutputTexture();
+
+    void setChangedNode(Node* changedNode);
 
     void evaluate();
 };

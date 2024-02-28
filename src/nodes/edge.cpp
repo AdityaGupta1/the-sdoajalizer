@@ -8,6 +8,12 @@ Edge::Edge(Pin* startPin, Pin* endPin)
 
 Texture* Edge::getTexture() const
 {
+    Texture* startPinCachedTexture = startPin->getCachedTexture();
+    if (startPinCachedTexture != nullptr)
+    {
+        return startPinCachedTexture;
+    }
+
     return this->texture;
 }
 
