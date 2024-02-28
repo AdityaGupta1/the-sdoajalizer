@@ -5,6 +5,8 @@
 #include <npp.h>
 #include <nppi.h>
 
+std::array<float*, NodeBloom::numBloomKernels> NodeBloom::dev_bloomKernels = {};
+
 NodeBloom::NodeBloom()
     : Node("bloom")
 {
@@ -14,6 +16,18 @@ NodeBloom::NodeBloom()
     addPin(PinType::INPUT, "threshold").setNoConnect();
     addPin(PinType::INPUT, "size").setNoConnect();
     addPin(PinType::INPUT, "mix").setNoConnect();
+}
+
+void NodeBloom::freeDeviceMemory()
+{
+    for (auto& dev_kernel : dev_bloomKernels)
+    {
+        if (dev_kernel != nullptr)
+        {
+            cudaFree(dev_kernel);
+            dev_kernel = nullptr;
+        }
+    }
 }
 
 __global__ void kernCopyWithThreshold(Texture inTex, float threshold, Texture outTex)
@@ -152,12 +166,15 @@ void NodeBloom::evaluate()
     const int kernelDiameter = 2 * kernelRadius + 1;
     NppiSize oKernelSize = { kernelDiameter, kernelDiameter };
 
-    // TODO: fill dev_kernels out ahead of time (or lazily) and share among all bloom nodes
-    float* dev_kernel;
-    cudaMalloc(&dev_kernel, kernelDiameter * kernelDiameter * sizeof(float));
+    float*& dev_kernel = dev_bloomKernels[backupSize - sizeMin];
 
-    const float scale = (1.f / 256.f) * powf(kernelDiameter, 2.38f); // last parameter is manually adjusted to get good visual results
-    kernFillBlurKernel<<<blocksPerGrid, blockSize>>>(dev_kernel, kernelDiameter, scale);
+    if (dev_kernel == nullptr)
+    {
+        cudaMalloc(&dev_kernel, kernelDiameter * kernelDiameter * sizeof(float));
+
+        const float scale = (1.f / 256.f) * powf(kernelDiameter, 2.38f); // last parameter is manually adjusted to get good visual results
+        kernFillBlurKernel<<<blocksPerGrid, blockSize>>>(dev_kernel, kernelDiameter, scale);
+    }
 
     const int width = outTex1->resolution.x;
     const int height = outTex1->resolution.y;
@@ -176,8 +193,6 @@ void NodeBloom::evaluate()
             NPP_BORDER_REPLICATE)
     );
     std::swap(outTex1, outTex2);
-
-    cudaFree(dev_kernel);
 
     kernAdd<<<blocksPerGrid, blockSize>>>(*inTex, *outTex1, backupMix, *outTex2);
 

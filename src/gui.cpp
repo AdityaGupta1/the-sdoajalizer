@@ -147,6 +147,8 @@ void Gui::setupStyle()
 
 void Gui::deinit()
 {
+    NodeBloom::freeDeviceMemory(); // not sure if this is the right place to call this but whatever
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImNodes::DestroyContext();
