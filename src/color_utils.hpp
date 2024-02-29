@@ -139,7 +139,7 @@ namespace ColorUtils
 		return val;
 	}
 
-	__host__ __device__ inline glm::vec3 _agxLook(glm::vec3 val)
+	__host__ __device__ inline glm::vec3 _agxLook(glm::vec3 val, int agxLook)
 	{
 		float luma = luminance(val);
 
@@ -149,29 +149,35 @@ namespace ColorUtils
 		glm::vec3 power = glm::vec3(1.0);
 		float sat = 1.0;
 
-#if AGX_LOOK == 1
-		// Golden
-		slope = glm::vec3(1.0, 0.9, 0.5);
-		glm::power = glm::vec3(0.8);
-		sat = 0.8;
-#elif AGX_LOOK == 2
-		// Punchy
-		slope = glm::vec3(1.0);
-		glm::power = glm::vec3(1.35, 1.35, 1.35);
-		sat = 1.4;
-#endif
+		if (agxLook == 1)
+		{
+			// Golden
+			slope = glm::vec3(1.0, 0.9, 0.5);
+			power = glm::vec3(0.8);
+			sat = 0.8;
+		}
+		else if (agxLook == 2)
+		{
+			// Punchy
+			slope = glm::vec3(1.0);
+			power = glm::vec3(1.35, 1.35, 1.35);
+			sat = 1.4;
+		}
 
 		// ASC CDL
 		val = glm::pow(val * slope + offset, power);
 		return luma + sat * (val - luma);
 	}
 
-	__host__ __device__ inline glm::vec3 AgX(glm::vec3 col)
+	__host__ __device__ inline glm::vec3 AgX(glm::vec3 col, int agxLook)
 	{
 		col = _agx_internal(col);
-#if AGX_LOOK != 0
-		col = _agxLook(col);
-#endif
+
+		if (agxLook != 0)
+		{
+			col = _agxLook(col, agxLook);
+		}
+
 		col = _agxEotf(col);
 		return col;
 	}
