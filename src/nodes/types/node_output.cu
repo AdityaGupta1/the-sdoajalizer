@@ -132,4 +132,3 @@ std::string NodeOutput::debugGetSrcFileName() const
 {
     return __FILE__;
 }
-
