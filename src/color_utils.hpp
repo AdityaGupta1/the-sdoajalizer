@@ -111,7 +111,7 @@ namespace ColorUtils
 
 		// Log2 space encoding
 		//val = glm::clamp(glm::log2(val), min_ev, max_ev);
-		val = glm::clamp(glm::log(val) / log(2.f), min_ev, max_ev);
+		val = glm::clamp(glm::log(val) * 1.4426950408889634073599246810019f, min_ev, max_ev); // glm::log2() causes indexing errors for some reason
 		val = (val - min_ev) / (max_ev - min_ev);
 
 		// Apply sigmoid function approximation
@@ -134,7 +134,7 @@ namespace ColorUtils
 		// sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
 		// NOTE: We're linearizing the output here. Comment/adjust when
 		// *not* using a sRGB render target
-		val = glm::pow(val, glm::vec3(2.2));
+		//val = glm::pow(val, glm::vec3(2.2)); // linearization happens in NodeOutput
 
 		return val;
 	}

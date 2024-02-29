@@ -46,7 +46,12 @@ __host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col, int toneMapping)
         break;
     }
 
-    return glm::vec4(ColorUtils::linearToSrgb(rgb), col.a);
+    if (toneMapping < 3)
+    {
+        rgb = ColorUtils::linearToSrgb(rgb);
+    }
+
+    return glm::vec4(rgb, col.a);
 }
 
 __global__ void kernFillSingleColor(Texture outTex, glm::vec4 col)
