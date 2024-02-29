@@ -13,3 +13,7 @@ GUI:
 Image loading:
 - https://github.com/nothings/stb
 - https://github.com/syoyo/tinyexr
+
+Tone mapping:
+- https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+- https://iolite-engine.com/blog_posts/minimal_agx_implementation

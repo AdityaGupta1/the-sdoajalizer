@@ -7,7 +7,7 @@ class NodeOutput : public Node
 {
 private:
     static std::vector<const char*> toneMappingOptions;
-    int selectedToneMapping{ 2 }; // ACES
+    int selectedToneMapping{ 3 }; // AgX
 
 public:
     NodeOutput();
