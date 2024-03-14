@@ -105,8 +105,13 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes)
 
     const bool inBounds = x < outTex.resolution.x && y < outTex.resolution.y;
 
+    if (!inBounds)
+    {
+        atomicAdd(&shared_numFinishedThreads, 1);
+    }
+
     bool hasColor = false;
-    glm::vec4 thisColor = glm::vec4(0, 0, 0, 1);
+    glm::vec4 thisColor = glm::vec4(0, 0, 0, 0);
     glm::vec2 thisPos = glm::vec2(x, y);
 
     int strokesStart = 0;
@@ -133,6 +138,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes)
                 {
                     hasColor = true;
                     thisColor = stroke.color;
+                    atomicAdd(&shared_numFinishedThreads, 1);
                     break;
                 }
             }
