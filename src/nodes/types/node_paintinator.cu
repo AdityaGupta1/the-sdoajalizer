@@ -2,6 +2,10 @@
 
 #include "cuda_includes.hpp"
 
+#include "random_utils.hpp"
+#include <thrust/execution_policy.h>
+#include <thrust/sort.h>
+
 NodePaintinator::NodePaintinator()
     : Node("paint-inator")
 {
@@ -31,10 +35,10 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
         return NodeUI::IntEdit(backupNumStrokes, 0.02f, 8, 18);
     case 2: // min stroke size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, 1, 250);
+        return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, 1, backupMaxStrokeSize);
     case 3: // max stroke size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, 1, 500);
+        return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, 500);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -46,6 +50,34 @@ struct PaintStroke
     float scale;
     glm::vec4 color;
 };
+
+struct PaintStrokeComparator
+{
+    __host__ __device__ bool operator()(const PaintStroke& stroke1, const PaintStroke& stroke2)
+    {
+        return stroke1.scale < stroke2.scale;
+    }
+};
+
+__global__ void kernGeneratePaintStrokes(Texture inTex, PaintStroke* strokes, int numStrokes, int minStrokeSize, int maxStrokeSize)
+{
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+    if (idx >= numStrokes)
+    {
+        return;
+    }
+
+    thrust::default_random_engine rng = makeSeededRandomEngine(idx);
+    thrust::uniform_int_distribution<int> distX(0, inTex.resolution.x - 1);
+    thrust::uniform_int_distribution<int> distY(0, inTex.resolution.y - 1);
+    glm::ivec2 pos(distX(rng), distY(rng));
+
+    float scale = minStrokeSize + (maxStrokeSize - minStrokeSize) * ((float)idx / numStrokes);
+    glm::vec4 color = inTex.dev_pixels[pos.y * inTex.resolution.x + pos.x];
+
+    strokes[idx] = { glm::vec2(pos) + glm::vec2(0.5f), scale, color};
+}
 
 __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes)
 {
@@ -86,37 +118,21 @@ void NodePaintinator::evaluate()
 
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
 
-    std::vector<PaintStroke> host_strokes;
-    host_strokes.resize(1 << backupNumStrokes);
-    const int numStrokes = host_strokes.size();
-
-    glm::vec4* host_pixels = new glm::vec4[inTex->resolution.x * inTex->resolution.y];
-    cudaMemcpy(host_pixels, inTex->dev_pixels, inTex->resolution.x * inTex->resolution.y * sizeof(glm::vec4), cudaMemcpyDeviceToHost);
-
-    srand(1023940234);
-    for (int i = 0; i < numStrokes; ++i)
-    {
-        glm::ivec2 pos(rand() % inTex->resolution.x, rand() % inTex->resolution.y);
-        float scale = backupMinStrokeSize + (backupMaxStrokeSize - backupMinStrokeSize) * ((float)i / numStrokes);
-        glm::vec4 color = host_pixels[pos.y * inTex->resolution.x + pos.x];
-
-        host_strokes[i] = { 
-            pos,
-            scale,
-            color 
-        };
-    }
-
-    delete[] host_pixels;
-
     PaintStroke* dev_strokes;
+    const int numStrokes = 1 << backupNumStrokes;
     cudaMalloc(&dev_strokes, numStrokes * sizeof(PaintStroke));
-    cudaMemcpy(dev_strokes, host_strokes.data(), numStrokes * sizeof(PaintStroke), cudaMemcpyHostToDevice);
 
-    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateBlocksPerGrid(inTex->resolution, blockSize);
+    const dim3 blockSize1d(256);
+    const dim3 blocksPerGrid1d(calculateNumBlocksPerGrid(numStrokes, blockSize1d.x));
 
-    kernPaint<<<blocksPerGrid, blockSize>>>(*outTex, dev_strokes, numStrokes);
+    kernGeneratePaintStrokes<<<blocksPerGrid1d, blockSize1d>>>(*inTex, dev_strokes, numStrokes, backupMinStrokeSize, backupMaxStrokeSize);
+
+    thrust::sort(thrust::device, dev_strokes, dev_strokes + numStrokes, PaintStrokeComparator());
+
+    const dim3 blockSize2d(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blocksPerGrid2d = calculateNumBlocksPerGrid(inTex->resolution, blockSize2d);
+
+    kernPaint<<<blocksPerGrid2d, blockSize2d>>>(*outTex, dev_strokes, numStrokes);
 
     cudaFree(dev_strokes);
 

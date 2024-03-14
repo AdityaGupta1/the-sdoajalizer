@@ -78,7 +78,7 @@ void NodeMix::evaluate()
     Texture* outTex = nodeEvaluator->requestTexture(outRes);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateBlocksPerGrid(outRes, blockSize);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outRes, blockSize);
     kernMix<<<blocksPerGrid, blockSize>>>(*inTex1, *inTex2, *inTexFactor, outRes, *outTex);
 
     outputPins[0].propagateTexture(outTex);

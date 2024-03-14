@@ -76,7 +76,7 @@ void NodeExposure::evaluate()
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateBlocksPerGrid(inTex->resolution, blockSize);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
     kernExposure<<<blocksPerGrid, blockSize>>>(*inTex, powf(2.f, backupExposure), *outTex);
 
     outputPins[0].propagateTexture(outTex);

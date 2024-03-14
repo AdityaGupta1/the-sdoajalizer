@@ -3,7 +3,12 @@
 #include "cuda_includes.hpp"
 #include <glm/glm.hpp>
 
-inline dim3 calculateBlocksPerGrid(const glm::ivec2& res, const dim3& blockSize)
+inline int calculateNumBlocksPerGrid(int n, int blockSize)
 {
-    return dim3((res.x + blockSize.x - 1) / blockSize.x, (res.y + blockSize.y - 1) / blockSize.y);
+    return (n + blockSize - 1) / blockSize;
+}
+
+inline dim3 calculateNumBlocksPerGrid(const glm::ivec2& res, const dim3& blockSize)
+{
+    return dim3(calculateNumBlocksPerGrid(res.x, blockSize.x), calculateNumBlocksPerGrid(res.y, blockSize.y));
 }

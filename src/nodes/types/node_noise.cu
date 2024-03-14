@@ -29,7 +29,7 @@ void NodeNoise::evaluate()
     Texture* outTex = nodeEvaluator->requestTexture();
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateBlocksPerGrid(outTex->resolution, blockSize);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);
     kernNoise<<<blocksPerGrid, blockSize>>>(*outTex);
 
     outputPins[0].propagateTexture(outTex);

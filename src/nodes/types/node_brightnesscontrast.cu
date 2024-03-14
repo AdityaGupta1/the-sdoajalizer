@@ -84,7 +84,7 @@ void NodeBrightnessContrast::evaluate()
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateBlocksPerGrid(inTex->resolution, blockSize);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
     kernBrightnessContrast<<<blocksPerGrid, blockSize>>>(*inTex, backupBrightness, backupContrast, *outTex);
 
     outputPins[0].propagateTexture(outTex);

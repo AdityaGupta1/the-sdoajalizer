@@ -160,7 +160,7 @@ void NodeBloom::evaluate()
     Texture* outTex2 = nodeEvaluator->requestTexture(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateBlocksPerGrid(inTex->resolution, blockSize);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
 
     kernCopyWithThreshold<<<blocksPerGrid, blockSize>>>(*inTex, backupThreshold, *outTex1);
 

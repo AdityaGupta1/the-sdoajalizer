@@ -80,7 +80,7 @@ void NodeFileInput::reloadFile()
         if (selectedColorSpace == 1) // sRGB
         {
             const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-            const dim3 blocksPerGrid = calculateBlocksPerGrid(texFile->resolution, blockSize);
+            const dim3 blocksPerGrid = calculateNumBlocksPerGrid(texFile->resolution, blockSize);
             kernSrgbToLinear<<<blocksPerGrid, blockSize>>>(*texFile);
         }
     }

@@ -114,7 +114,7 @@ void NodeOutput::evaluate()
     Texture* outTex = nodeEvaluator->requestTexture();
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateBlocksPerGrid(outTex->resolution, blockSize);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);
     if (inTex->isSingleColor())
     {
         auto ldrCol = hdrToLdr(inTex->singleColor, selectedToneMapping);
