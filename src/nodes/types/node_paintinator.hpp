@@ -10,6 +10,7 @@ private:
     int backupNumStrokes{ 16 };
     int backupMinStrokeSize{ 5 };
     int backupMaxStrokeSize{ 50 };
+    float backupSizeBias{ 0.7f };
 
 public:
     NodePaintinator();

@@ -15,6 +15,7 @@ NodePaintinator::NodePaintinator()
     addPin(PinType::INPUT, "num strokes").setNoConnect();
     addPin(PinType::INPUT, "min stroke size").setNoConnect();
     addPin(PinType::INPUT, "max stroke size").setNoConnect();
+    addPin(PinType::INPUT, "size bias").setNoConnect();
 
     setExpensive();
 }
@@ -32,13 +33,16 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
         return false;
     case 1: // num strokes
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupNumStrokes, 0.02f, 8, 18);
+        return NodeUI::IntEdit(backupNumStrokes, 0.02f, 9, 19);
     case 2: // min stroke size
         ImGui::SameLine();
         return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, 1, backupMaxStrokeSize);
     case 3: // max stroke size
         ImGui::SameLine();
         return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, 500);
+    case 4: // size bias
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupSizeBias, 0.01f, 0.f, FLT_MAX);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -59,7 +63,7 @@ struct PaintStrokeComparator
     }
 };
 
-__global__ void kernGeneratePaintStrokes(Texture inTex, PaintStroke* strokes, int numStrokes, int minStrokeSize, int maxStrokeSize)
+__global__ void kernGeneratePaintStrokes(Texture inTex, PaintStroke* strokes, int numStrokes, int minStrokeSize, int maxStrokeSize, float sizeBias)
 {
     const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
@@ -73,36 +77,76 @@ __global__ void kernGeneratePaintStrokes(Texture inTex, PaintStroke* strokes, in
     thrust::uniform_int_distribution<int> distY(0, inTex.resolution.y - 1);
     glm::ivec2 pos(distX(rng), distY(rng));
 
-    float scale = minStrokeSize + (maxStrokeSize - minStrokeSize) * ((float)idx / numStrokes);
+    thrust::uniform_real_distribution<float> u01(0, 1);
+    float scale = minStrokeSize + (maxStrokeSize - minStrokeSize) * powf(u01(rng), sizeBias);
     glm::vec4 color = inTex.dev_pixels[pos.y * inTex.resolution.x + pos.x];
 
     strokes[idx] = { glm::vec2(pos) + glm::vec2(0.5f), scale, color};
 }
 
+#define NUM_SHARED_STROKES 512
+
 __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes)
 {
+    __shared__ PaintStroke shared_strokes[NUM_SHARED_STROKES];
+    __shared__ int shared_numFinishedThreads;
+
+    const int localIdx = threadIdx.y * blockDim.x + threadIdx.x;
+
+    if (localIdx == 0)
+    {
+        shared_numFinishedThreads = 0;
+    }
+
+    __syncthreads();
+
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
 
-    if (x >= outTex.resolution.x || y >= outTex.resolution.y)
+    const bool inBounds = x < outTex.resolution.x && y < outTex.resolution.y;
+
+    bool hasColor = false;
+    glm::vec4 thisColor = glm::vec4(0, 0, 0, 1);
+    glm::vec2 thisPos = glm::vec2(x, y);
+
+    int strokesStart = 0;
+    const int numTotalThreads = blockDim.x * blockDim.y;
+    while (shared_numFinishedThreads != numTotalThreads && strokesStart < numStrokes)
+    {
+        if (localIdx < NUM_SHARED_STROKES)
+        {
+            // no issues with indices going out of bounds if numStrokes is a multiple of NUM_SHARED_STROKES
+            shared_strokes[localIdx] = strokes[strokesStart + localIdx];
+        }
+
+        strokesStart += NUM_SHARED_STROKES;
+
+        __syncthreads();
+
+        if (inBounds && !hasColor)
+        {
+            for (int strokeIdx = 0; strokeIdx < NUM_SHARED_STROKES; ++strokeIdx)
+            {
+                const PaintStroke& stroke = shared_strokes[strokeIdx];
+
+                if (glm::distance(thisPos, stroke.pos) <= stroke.scale)
+                {
+                    hasColor = true;
+                    thisColor = stroke.color;
+                    break;
+                }
+            }
+        }
+
+        __syncthreads();
+    }
+
+    if (!inBounds)
     {
         return;
     }
 
-    glm::vec4 thisColor = glm::vec4(0, 0, 0, 1);
-    glm::vec2 thisPos = glm::vec2(x, y);
-    for (int strokeIdx = 0; strokeIdx < numStrokes; ++strokeIdx)
-    {
-        const PaintStroke& stroke = strokes[strokeIdx];
-
-        if (glm::distance(thisPos, stroke.pos) <= stroke.scale)
-        {
-            thisColor = stroke.color;
-            break;
-        }
-    }
-
-    int idx = y * outTex.resolution.x + x;
+    const int idx = y * outTex.resolution.x + x;
     outTex.dev_pixels[idx] = thisColor;
 }
 
@@ -125,7 +169,7 @@ void NodePaintinator::evaluate()
     const dim3 blockSize1d(256);
     const dim3 blocksPerGrid1d(calculateNumBlocksPerGrid(numStrokes, blockSize1d.x));
 
-    kernGeneratePaintStrokes<<<blocksPerGrid1d, blockSize1d>>>(*inTex, dev_strokes, numStrokes, backupMinStrokeSize, backupMaxStrokeSize);
+    kernGeneratePaintStrokes<<<blocksPerGrid1d, blockSize1d>>>(*inTex, dev_strokes, numStrokes, backupMinStrokeSize, backupMaxStrokeSize, backupSizeBias);
 
     thrust::sort(thrust::device, dev_strokes, dev_strokes + numStrokes, PaintStrokeComparator());
 
