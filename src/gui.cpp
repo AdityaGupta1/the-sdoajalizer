@@ -20,7 +20,8 @@ static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>
     { "uv gradient", std::make_unique<NodeUvGradient> },
     { "exposure", std::make_unique<NodeExposure> },
     { "brightness/contrast", std::make_unique<NodeBrightnessContrast> },
-    { "bloom", std::make_unique<NodeBloom> }
+    { "bloom", std::make_unique<NodeBloom> },
+    { "paint-inator", std::make_unique<NodePaintinator> }
 };
 
 void Gui::init(GLFWwindow* window)
@@ -48,8 +49,9 @@ void Gui::init(GLFWwindow* window)
     this->outputNode = outputNodeUptr.get();
     addNode(std::move(outputNodeUptr));
 
+    // TEMP
     addNode(std::make_unique<NodeFileInput>());
-    addNode(std::make_unique<NodeBloom>());
+    addNode(std::make_unique<NodePaintinator>());
 
     this->nodeEvaluator.setOutputNode(this->outputNode);
 }
