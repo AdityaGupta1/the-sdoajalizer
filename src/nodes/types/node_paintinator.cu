@@ -174,7 +174,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
                     continue;
                 }
 
-                // probably not how real paint works but whatever
+                // probably not how real paint mixes but whatever
                 glm::vec3 bottomRgb = glm::vec3(bottomColor.x, bottomColor.y, bottomColor.z) * stroke.color;
                 float newAlpha = bottomColor.w + ((1.f - bottomColor.w) * topColor.a);
                 topColor = glm::vec4(glm::mix(bottomRgb, glm::vec3(topColor), topColor.a), newAlpha);
