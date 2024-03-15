@@ -68,7 +68,7 @@ struct PaintStroke
     glm::vec2 pos;
     glm::mat2 matRotate;
     float scale;
-    glm::vec4 color;
+    glm::vec3 color;
     glm::vec2 uv;
 };
 
@@ -97,14 +97,14 @@ __global__ void kernGeneratePaintStrokes(Texture inTex, PaintStroke* strokes, in
     thrust::uniform_real_distribution<float> u01(0, 1);
     float sinVal, cosVal;
     sincosf(u01(rng) * glm::two_pi<float>(), &sinVal, &cosVal);
-    glm::mat2 matRotate = glm::mat2(cosVal, sinVal, -sinVal, cosVal);
+    glm::mat2 matRotate(cosVal, sinVal, -sinVal, cosVal);
 
     float scale = minStrokeSize + (maxStrokeSize - minStrokeSize) * powf(u01(rng), sizeBias);
 
-    glm::vec4 color = inTex.dev_pixels[pos.y * inTex.resolution.x + pos.x];
+    glm::vec3 color(inTex.dev_pixels[pos.y * inTex.resolution.x + pos.x]);
 
     thrust::uniform_int_distribution<int> distUv(0, 3);
-    glm::vec2 uv = glm::vec2(distUv(rng) * 0.25f, distUv(rng) * 0.25f);
+    glm::vec2 uv(distUv(rng) * 0.25f, distUv(rng) * 0.25f);
 
     strokes[idx] = { glm::vec2(pos) + glm::vec2(0.5f), matRotate, scale, color, uv };
 }
@@ -136,7 +136,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
     }
 
     bool hasColor = false;
-    glm::vec4 thisColor = glm::vec4(0, 0, 0, 0);
+    glm::vec4 topColor = glm::vec4(0, 0, 0, 0);
     glm::vec2 thisPos = glm::vec2(x, y);
 
     int strokesStart = 0;
@@ -168,17 +168,24 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
                 glm::vec2 uv = ((localPos / stroke.scale) + 1.f) * 0.5f;
 
                 uv = stroke.uv + uv * 0.25f;
-                float4 brushColor = tex2D<float4>(brushTex, uv.x, uv.y);
-                if (brushColor.w == 0.f)
+                float4 bottomColor = tex2D<float4>(brushTex, uv.x, uv.y);
+                if (bottomColor.w == 0.f)
                 {
                     continue;
                 }
 
-                // TODO: alpha blending
-                hasColor = true;
-                thisColor = stroke.color;
-                atomicAdd(&shared_numFinishedThreads, 1);
-                break;
+                // probably not how real paint works but whatever
+                glm::vec3 bottomRgb = glm::vec3(bottomColor.x, bottomColor.y, bottomColor.z) * stroke.color;
+                float newAlpha = bottomColor.w + ((1.f - bottomColor.w) * topColor.a);
+                topColor = glm::vec4(glm::mix(bottomRgb, glm::vec3(topColor), topColor.a), newAlpha);
+
+                if (topColor.a > 0.999f)
+                {
+                    topColor.a = 1.f;
+                    hasColor = true;
+                    atomicAdd(&shared_numFinishedThreads, 1);
+                    break;
+                }
             }
         }
 
@@ -191,7 +198,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
     }
 
     const int idx = y * outTex.resolution.x + x;
-    outTex.dev_pixels[idx] = thisColor;
+    outTex.dev_pixels[idx] = topColor;
 }
 
 void NodePaintinator::evaluate()
