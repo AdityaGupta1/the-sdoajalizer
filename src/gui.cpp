@@ -34,7 +34,7 @@ void Gui::init(GLFWwindow* window)
     io = &ImGui::GetIO();
     setupStyle();
 
-    ImFont* font = io->Fonts->AddFontFromFileTTF("fonts/Inter-Regular.ttf", 16);
+    ImFont* font = io->Fonts->AddFontFromFileTTF("assets/fonts/Inter-Regular.ttf", 16);
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 120");
@@ -150,6 +150,7 @@ void Gui::setupStyle()
 void Gui::deinit()
 {
     NodeBloom::freeDeviceMemory(); // not sure if this is the right place to call this but whatever
+    NodePaintinator::freeDeviceMemory();
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

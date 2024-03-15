@@ -6,6 +6,14 @@
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
 
+#include <glm/gtx/component_wise.hpp>
+
+#include "stb_image.h"
+
+bool NodePaintinator::hasLoadedBrushes = false;
+cudaArray_t NodePaintinator::pixelArray;
+cudaTextureObject_t NodePaintinator::textureObject;
+
 NodePaintinator::NodePaintinator()
     : Node("paint-inator")
 {
@@ -18,6 +26,12 @@ NodePaintinator::NodePaintinator()
     addPin(PinType::INPUT, "size bias").setNoConnect();
 
     setExpensive();
+}
+
+void NodePaintinator::freeDeviceMemory()
+{
+    cudaDestroyTextureObject(textureObject);
+    cudaFreeArray(pixelArray);
 }
 
 bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
@@ -86,7 +100,7 @@ __global__ void kernGeneratePaintStrokes(Texture inTex, PaintStroke* strokes, in
 
 #define NUM_SHARED_STROKES 512
 
-__global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes)
+__global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, cudaTextureObject_t brushTex)
 {
     __shared__ PaintStroke shared_strokes[NUM_SHARED_STROKES];
     __shared__ int shared_numFinishedThreads;
@@ -102,6 +116,10 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes)
 
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+
+    //float4 brushColor = tex2D<float4>(brushTex, x / 1080.f, y / 1350.f);
+    //outTex.dev_pixels[y * outTex.resolution.x + x] = glm::vec4(brushColor.x, brushColor.y, brushColor.z, brushColor.w);
+    //return;
 
     const bool inBounds = x < outTex.resolution.x && y < outTex.resolution.y;
 
@@ -134,13 +152,25 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes)
             {
                 const PaintStroke& stroke = shared_strokes[strokeIdx];
 
-                if (glm::distance(thisPos, stroke.pos) <= stroke.scale)
+                glm::vec2 localPos = thisPos - stroke.pos;
+                if (glm::compMax(glm::abs(localPos)) > stroke.scale)
                 {
-                    hasColor = true;
-                    thisColor = stroke.color;
-                    atomicAdd(&shared_numFinishedThreads, 1);
-                    break;
+                    continue;
                 }
+
+                glm::vec2 uv = ((localPos / stroke.scale) + 1.f) * 0.5f;
+
+                uv *= 0.25f; // TEMP to sample only one brush stroke
+                float4 brushColor = tex2D<float4>(brushTex, uv.x, uv.y);
+                if (brushColor.w == 0.f)
+                {
+                    continue;
+                }
+
+                hasColor = true;
+                thisColor = stroke.color;
+                atomicAdd(&shared_numFinishedThreads, 1);
+                break;
             }
         }
 
@@ -168,9 +198,58 @@ void NodePaintinator::evaluate()
 
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
 
+    if (!hasLoadedBrushes)
+    {
+        int width, height, channels;
+        unsigned char* host_pixels = stbi_load("assets/brushes/test.png", &width, &height, &channels, 4);
+
+        cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<uchar4>();
+        int pitch = width * sizeof(uchar4);
+
+        CUDA_CHECK(cudaMallocArray(
+            &pixelArray,
+            &channelDesc,
+            width,
+            height
+        ));
+
+        CUDA_CHECK(cudaMemcpy2DToArray(pixelArray,
+            0, // wOffset
+            0, // hOffset
+            host_pixels,
+            pitch,
+            pitch,
+            height,
+            cudaMemcpyHostToDevice
+        ));
+
+        stbi_image_free(host_pixels);
+
+        cudaResourceDesc resDesc = {};
+        resDesc.resType = cudaResourceTypeArray;
+        resDesc.res.array.array = pixelArray;
+
+        cudaTextureDesc texDesc = {};
+        texDesc.addressMode[0] = cudaAddressModeClamp;
+        texDesc.addressMode[1] = cudaAddressModeClamp;
+        texDesc.filterMode = cudaFilterModePoint;
+        texDesc.readMode = cudaReadModeNormalizedFloat;
+        texDesc.normalizedCoords = 1;
+        texDesc.maxAnisotropy = 1;
+        texDesc.maxMipmapLevelClamp = 99;
+        texDesc.minMipmapLevelClamp = 0;
+        texDesc.mipmapFilterMode = cudaFilterModePoint;
+        texDesc.borderColor[0] = 1.0f;
+        texDesc.sRGB = 0;
+
+        CUDA_CHECK(cudaCreateTextureObject(&textureObject, &resDesc, &texDesc, nullptr));
+
+        hasLoadedBrushes = true;
+    }
+
     PaintStroke* dev_strokes;
     const int numStrokes = 1 << backupNumStrokes;
-    cudaMalloc(&dev_strokes, numStrokes * sizeof(PaintStroke));
+    CUDA_CHECK(cudaMalloc(&dev_strokes, numStrokes * sizeof(PaintStroke))); // TODO: malloc once and re-malloc only if numStrokes changes
 
     const dim3 blockSize1d(256);
     const dim3 blocksPerGrid1d(calculateNumBlocksPerGrid(numStrokes, blockSize1d.x));
@@ -182,9 +261,9 @@ void NodePaintinator::evaluate()
     const dim3 blockSize2d(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid2d = calculateNumBlocksPerGrid(inTex->resolution, blockSize2d);
 
-    kernPaint<<<blocksPerGrid2d, blockSize2d>>>(*outTex, dev_strokes, numStrokes);
+    kernPaint<<<blocksPerGrid2d, blockSize2d>>>(*outTex, dev_strokes, numStrokes, textureObject);
 
-    cudaFree(dev_strokes);
+    CUDA_CHECK(cudaFree(dev_strokes));
 
     outputPins[0].propagateTexture(outTex);
 }

@@ -75,4 +75,4 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "50;60
 
 add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
-                   ${CMAKE_SOURCE_DIR}/fonts ${CMAKE_BINARY_DIR}/fonts)
+                   ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/assets)
