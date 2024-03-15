@@ -7,6 +7,7 @@
 #include <thrust/sort.h>
 
 #include <glm/gtx/component_wise.hpp>
+#include <glm/gtc/constants.hpp>
 
 #include "stb_image.h"
 
@@ -56,7 +57,7 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
         return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, 500);
     case 4: // size bias
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupSizeBias, 0.01f, 0.f, FLT_MAX);
+        return NodeUI::FloatEdit(backupSizeBias, 0.01f, 0.01f, 100.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -65,8 +66,10 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
 struct PaintStroke
 {
     glm::vec2 pos;
+    glm::mat2 matRotate;
     float scale;
     glm::vec4 color;
+    glm::vec2 uv;
 };
 
 struct PaintStrokeComparator
@@ -92,10 +95,18 @@ __global__ void kernGeneratePaintStrokes(Texture inTex, PaintStroke* strokes, in
     glm::ivec2 pos(distX(rng), distY(rng));
 
     thrust::uniform_real_distribution<float> u01(0, 1);
+    float sinVal, cosVal;
+    sincosf(u01(rng) * glm::two_pi<float>(), &sinVal, &cosVal);
+    glm::mat2 matRotate = glm::mat2(cosVal, sinVal, -sinVal, cosVal);
+
     float scale = minStrokeSize + (maxStrokeSize - minStrokeSize) * powf(u01(rng), sizeBias);
+
     glm::vec4 color = inTex.dev_pixels[pos.y * inTex.resolution.x + pos.x];
 
-    strokes[idx] = { glm::vec2(pos) + glm::vec2(0.5f), scale, color};
+    thrust::uniform_int_distribution<int> distUv(0, 3);
+    glm::vec2 uv = glm::vec2(distUv(rng) * 0.25f, distUv(rng) * 0.25f);
+
+    strokes[idx] = { glm::vec2(pos) + glm::vec2(0.5f), matRotate, scale, color, uv };
 }
 
 #define NUM_SHARED_STROKES 512
@@ -116,10 +127,6 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
 
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
-
-    //float4 brushColor = tex2D<float4>(brushTex, x / 1080.f, y / 1350.f);
-    //outTex.dev_pixels[y * outTex.resolution.x + x] = glm::vec4(brushColor.x, brushColor.y, brushColor.z, brushColor.w);
-    //return;
 
     const bool inBounds = x < outTex.resolution.x && y < outTex.resolution.y;
 
@@ -152,7 +159,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
             {
                 const PaintStroke& stroke = shared_strokes[strokeIdx];
 
-                glm::vec2 localPos = thisPos - stroke.pos;
+                glm::vec2 localPos = stroke.matRotate * (thisPos - stroke.pos);
                 if (glm::compMax(glm::abs(localPos)) > stroke.scale)
                 {
                     continue;
@@ -160,13 +167,14 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
 
                 glm::vec2 uv = ((localPos / stroke.scale) + 1.f) * 0.5f;
 
-                uv *= 0.25f; // TEMP to sample only one brush stroke
+                uv = stroke.uv + uv * 0.25f;
                 float4 brushColor = tex2D<float4>(brushTex, uv.x, uv.y);
                 if (brushColor.w == 0.f)
                 {
                     continue;
                 }
 
+                // TODO: alpha blending
                 hasColor = true;
                 thisColor = stroke.color;
                 atomicAdd(&shared_numFinishedThreads, 1);
@@ -254,14 +262,26 @@ void NodePaintinator::evaluate()
     const dim3 blockSize1d(256);
     const dim3 blocksPerGrid1d(calculateNumBlocksPerGrid(numStrokes, blockSize1d.x));
 
-    kernGeneratePaintStrokes<<<blocksPerGrid1d, blockSize1d>>>(*inTex, dev_strokes, numStrokes, backupMinStrokeSize, backupMaxStrokeSize, backupSizeBias);
+    kernGeneratePaintStrokes<<<blocksPerGrid1d, blockSize1d>>>(
+        *inTex,
+        dev_strokes,
+        numStrokes,
+        backupMinStrokeSize,
+        backupMaxStrokeSize,
+        1.f / backupSizeBias
+    );
 
     thrust::sort(thrust::device, dev_strokes, dev_strokes + numStrokes, PaintStrokeComparator());
 
     const dim3 blockSize2d(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid2d = calculateNumBlocksPerGrid(inTex->resolution, blockSize2d);
 
-    kernPaint<<<blocksPerGrid2d, blockSize2d>>>(*outTex, dev_strokes, numStrokes, textureObject);
+    kernPaint<<<blocksPerGrid2d, blockSize2d>>>(
+        *outTex,
+        dev_strokes,
+        numStrokes,
+        textureObject
+    );
 
     CUDA_CHECK(cudaFree(dev_strokes));
 
