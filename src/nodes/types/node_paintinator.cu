@@ -5,6 +5,7 @@
 #include "random_utils.hpp"
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
+#include <thrust/shuffle.h>
 
 #include <glm/gtx/component_wise.hpp>
 #include <glm/gtc/constants.hpp>
@@ -23,10 +24,8 @@ NodePaintinator::NodePaintinator()
     addPin(PinType::OUTPUT, "image");
 
     addPin(PinType::INPUT, "image");
-    addPin(PinType::INPUT, "num strokes").setNoConnect();
     addPin(PinType::INPUT, "min stroke size").setNoConnect();
     addPin(PinType::INPUT, "max stroke size").setNoConnect();
-    addPin(PinType::INPUT, "size bias").setNoConnect();
 
     setExpensive();
 }
@@ -48,18 +47,12 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
     {
     case 0: // image
         return false;
-    case 1: // num strokes
+    case 1: // min stroke size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupNumStrokes, 0.02f, 9, 19);
-    case 2: // min stroke size
-        ImGui::SameLine();
-        return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, 10, backupMaxStrokeSize);
-    case 3: // max stroke size
+        return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, 5, backupMaxStrokeSize);
+    case 2: // max stroke size
         ImGui::SameLine();
         return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, 1000);
-    case 4: // size bias
-        ImGui::SameLine();
-        return NodeUI::FloatEdit(backupSizeBias, 0.01f, 0.01f, 100.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -222,6 +215,13 @@ __global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int num
     stroke.uv = glm::vec2(distUv(rng) * 0.25f, distUv(rng) * 0.25f);
 }
 
+// probably not how real paint mixes but whatever
+__device__ glm::vec4 blendPaintColors(const glm::vec4& bottomColor, const glm::vec4& topColor)
+{
+    float newAlpha = bottomColor.a + ((1.f - bottomColor.a) * topColor.a);
+    return glm::vec4(glm::mix(glm::vec3(bottomColor), glm::vec3(topColor), topColor.a), newAlpha);
+}
+
 #define NUM_SHARED_STROKES 512
 
 __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, cudaTextureObject_t brushTex)
@@ -281,16 +281,14 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
                 glm::vec2 uv = ((localPos / stroke.scale) + 1.f) * 0.5f;
 
                 uv = stroke.uv + uv * 0.25f;
-                float4 bottomColor = tex2D<float4>(brushTex, uv.x, uv.y);
-                if (bottomColor.w == 0.f)
+                float4 brushColor = tex2D<float4>(brushTex, uv.x, uv.y);
+                if (brushColor.w == 0.f)
                 {
                     continue;
                 }
 
-                // probably not how real paint mixes but whatever
-                glm::vec3 bottomRgb = glm::vec3(bottomColor.x, bottomColor.y, bottomColor.z) * stroke.color;
-                float newAlpha = bottomColor.w + ((1.f - bottomColor.w) * topColor.a);
-                topColor = glm::vec4(glm::mix(bottomRgb, glm::vec3(topColor), topColor.a), newAlpha);
+                glm::vec4 bottomColor(glm::vec3(brushColor.x, brushColor.y, brushColor.z) * stroke.color, brushColor.w);
+                topColor = blendPaintColors(bottomColor, topColor);
 
                 if (topColor.a > 0.999f)
                 {
@@ -310,18 +308,19 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
         return;
     }
 
-    const int idx = y * outTex.resolution.x + x;
-    // TODO: read existing color and blend accordingly
-    if (topColor.a != 0.f)
+    if (topColor.a == 0.f)
     {
-        outTex.dev_pixels[idx] = topColor;
+        return;
     }
+
+    const int idx = y * outTex.resolution.x + x;
+    outTex.dev_pixels[idx] = blendPaintColors(outTex.dev_pixels[idx], topColor);
 }
 
 // TODO: make these into node parameters
-static const int numLayers = 5;
-static const float gridSizeFactor = 0.3f;
-static const float newStrokeErrorThreshold = 0.3f;
+static const int numLayers = 12;
+static const float gridSizeFactor = 0.15f;
+static const float newStrokeErrorThreshold = 0.25f;
 
 // reference paper: https://dl.acm.org/doi/10.1145/280814.280951
 void NodePaintinator::evaluate()
@@ -402,13 +401,13 @@ void NodePaintinator::evaluate()
 
     float logMinStrokeSize = logf(backupMinStrokeSize);
     float logMaxStrokeSize = logf(backupMaxStrokeSize);
-    for (int i = 0; i < numLayers; ++i)
+    for (int layerIdx = 0; layerIdx < numLayers; ++layerIdx)
     {
         // =========================
         // MAKE REFERENCE IMAGE
         // =========================
 
-        float logStrokeSize = glm::mix(logMaxStrokeSize, logMinStrokeSize, (float)i / std::max(numLayers - 1, 1));
+        float logStrokeSize = glm::mix(logMaxStrokeSize, logMinStrokeSize, (float)layerIdx / std::max(numLayers - 1, 1));
         float strokeSize = expf(logStrokeSize);
 
         const int kernelRadius = (int)strokeSize; // TODO: check that this is correct and not off by a factor of 2
@@ -468,13 +467,13 @@ void NodePaintinator::evaluate()
 
         CUDA_CHECK(cudaMemcpy(host_colorDiff, dev_colorDiff, numPixels * sizeof(float), cudaMemcpyDeviceToHost));
 
-        // gridSize is always even and at least 2
+        // gridSize is always even and at least 4
         int gridSize = (int)(strokeSize * 2 * gridSizeFactor);
         if (gridSize % 2 != 0)
         {
             --gridSize;
         }
-        gridSize = std::max(gridSize, 2);
+        gridSize = std::max(gridSize, 4);
         int halfGridSize = gridSize / 2;
 
         std::vector<PaintStroke> host_strokes;
@@ -487,7 +486,7 @@ void NodePaintinator::evaluate()
                 int yMin = std::max(cellY - halfGridSize, 0);
                 int yMax = std::min(cellY + halfGridSize, height);
 
-                int gridPixels = (xMax - xMin) * (yMax - yMin);
+                int numGridPixels = (xMax - xMin) * (yMax - yMin);
 
                 float totalError = 0.f;
                 float maxError = -FLT_MAX;
@@ -506,7 +505,7 @@ void NodePaintinator::evaluate()
                     }
                 }
 
-                float areaError = totalError / gridPixels;
+                float areaError = totalError / numGridPixels;
                 if (areaError < newStrokeErrorThreshold)
                 {
                     continue;
@@ -525,6 +524,9 @@ void NodePaintinator::evaluate()
         const int numStrokes = host_strokes.size();
         CUDA_CHECK(cudaMalloc(&dev_strokes, numStrokes * sizeof(PaintStroke)));
         CUDA_CHECK(cudaMemcpy(dev_strokes, host_strokes.data(), numStrokes * sizeof(PaintStroke), cudaMemcpyHostToDevice));
+
+        auto rng = makeSeededRandomEngine((int)strokeSize);
+        thrust::shuffle(thrust::device, dev_strokes, dev_strokes + numStrokes, rng);
 
         kernPrepareStrokes<<<blocksPerGrid1d, blockSize1d>>>(
             *refTex, dev_strokes, numStrokes

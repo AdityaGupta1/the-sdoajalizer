@@ -7,10 +7,8 @@
 class NodePaintinator : public Node
 {
 private:
-    int backupNumStrokes{ 16 };
-    int backupMinStrokeSize{ 20 };
-    int backupMaxStrokeSize{ 250 };
-    float backupSizeBias{ 1.3f };
+    int backupMinStrokeSize{ 10 };
+    int backupMaxStrokeSize{ 400 };
 
     static bool hasLoadedBrushes;
     static cudaArray_t brushPixelArray;
@@ -22,10 +20,10 @@ public:
     static void freeDeviceMemory();
 
 protected:
+    void loadBrushes();
+
     bool drawPinExtras(const Pin* pin, int pinNumber) override;
     void evaluate() override;
-
-    void loadBrushes();
 
     std::string debugGetSrcFileName() const override;
 };
