@@ -320,7 +320,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
 // TODO: make these into node parameters
 static const int numLayers = 12;
 static const float gridSizeFactor = 0.15f;
-static const float newStrokeErrorThreshold = 0.25f;
+static const float newStrokeErrorThreshold = 0.08f;
 
 // reference paper: https://dl.acm.org/doi/10.1145/280814.280951
 void NodePaintinator::evaluate()
