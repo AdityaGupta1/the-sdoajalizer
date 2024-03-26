@@ -19,3 +19,15 @@ __host__ __device__ thrust::default_random_engine makeSeededRandomEngine(int x)
     int h = hash(x);
     return thrust::default_random_engine(h);
 }
+
+__host__ __device__ thrust::default_random_engine makeSeededRandomEngine(int x, int y)
+{
+    int h = hash((1 << 31) | (x << 22) | y);
+    return thrust::default_random_engine(h);
+}
+
+__host__ __device__ thrust::default_random_engine makeSeededRandomEngine(int x, int y, int z)
+{
+    int h = hash((1 << 31) | (x << 22) | y) ^ hash(z);
+    return thrust::default_random_engine(h);
+}

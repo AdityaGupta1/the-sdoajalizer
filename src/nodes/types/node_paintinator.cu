@@ -36,6 +36,9 @@ void NodePaintinator::freeDeviceMemory()
     cudaFreeArray(brushPixelArray);
 }
 
+static constexpr int minMinStrokeSize = 5;
+static constexpr int maxMaxStrokeSize = 1000;
+
 bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
 {
     if (pin->pinType == PinType::OUTPUT || pin->hasEdge())
@@ -49,10 +52,10 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
         return false;
     case 1: // min stroke size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, 5, backupMaxStrokeSize);
+        return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, minMinStrokeSize, backupMaxStrokeSize);
     case 2: // max stroke size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, 1000);
+        return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, maxMaxStrokeSize);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -74,37 +77,6 @@ struct PaintStrokeComparator
         return stroke1.scale < stroke2.scale;
     }
 };
-
-/*
-__global__ void kernGeneratePaintStrokes(Texture inTex, PaintStroke* strokes, int numStrokes, int minStrokeSize, int maxStrokeSize, float sizeBias)
-{
-    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-    if (idx >= numStrokes)
-    {
-        return;
-    }
-
-    thrust::default_random_engine rng = makeSeededRandomEngine(idx);
-    thrust::uniform_int_distribution<int> distX(0, inTex.resolution.x - 1);
-    thrust::uniform_int_distribution<int> distY(0, inTex.resolution.y - 1);
-    glm::ivec2 pos(distX(rng), distY(rng));
-
-    thrust::uniform_real_distribution<float> u01(0, 1);
-    float sinVal, cosVal;
-    sincosf(u01(rng) * glm::two_pi<float>(), &sinVal, &cosVal);
-    glm::mat2 matRotate(cosVal, sinVal, -sinVal, cosVal);
-
-    float scale = minStrokeSize + (maxStrokeSize - minStrokeSize) * powf(u01(rng), sizeBias);
-
-    glm::vec3 color(inTex.dev_pixels[pos.y * inTex.resolution.x + pos.x]);
-
-    thrust::uniform_int_distribution<int> distUv(0, 3);
-    glm::vec2 uv(distUv(rng) * 0.25f, distUv(rng) * 0.25f);
-
-    strokes[idx] = { glm::vec2(pos) + glm::vec2(0.5f), matRotate, scale, color, uv };
-}
-*/
 
 void NodePaintinator::loadBrushes()
 {
@@ -203,7 +175,7 @@ __global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int num
 
     PaintStroke& stroke = strokes[idx];
 
-    thrust::default_random_engine rng = thrust::default_random_engine(hash(idx) ^ hash(numStrokes));
+    auto rng = makeSeededRandomEngine(idx, numStrokes);
     thrust::uniform_real_distribution<float> u01(0, 1);
     float sinVal, cosVal;
     sincosf(u01(rng) * glm::two_pi<float>(), &sinVal, &cosVal);
@@ -258,8 +230,15 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
     {
         if (localIdx < NUM_SHARED_STROKES)
         {
-            // no issues with indices going out of bounds if numStrokes is a multiple of NUM_SHARED_STROKES
-            shared_strokes[localIdx] = strokes[strokesStart + localIdx];
+            int strokeIdx = strokesStart + localIdx;
+            if (strokeIdx < numStrokes)
+            {
+                shared_strokes[localIdx] = strokes[strokesStart + localIdx];
+            }
+            else
+            {
+                shared_strokes[localIdx].pos.x = INT_MIN;
+            }
         }
 
         strokesStart += NUM_SHARED_STROKES;
@@ -271,6 +250,11 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
             for (int strokeIdx = 0; strokeIdx < NUM_SHARED_STROKES; ++strokeIdx)
             {
                 const PaintStroke& stroke = shared_strokes[strokeIdx];
+
+                if (stroke.pos.x == INT_MIN)
+                {
+                    break;
+                }
 
                 glm::vec2 localPos = stroke.matRotate * (thisPos - glm::vec2(stroke.pos));
                 if (glm::compMax(glm::abs(localPos)) > stroke.scale)
@@ -318,9 +302,10 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
 }
 
 // TODO: make these into node parameters
-static const int numLayers = 12;
-static const float gridSizeFactor = 0.15f;
-static const float newStrokeErrorThreshold = 0.08f;
+static constexpr int numLayers = 12;
+static constexpr float gridSizeFactor = 0.15f;
+static constexpr float blurKernelSizeFactor = 0.5f;
+static constexpr float newStrokeErrorThreshold = 0.05f;
 
 // reference paper: https://dl.acm.org/doi/10.1145/280814.280951
 void NodePaintinator::evaluate()
@@ -341,46 +326,12 @@ void NodePaintinator::evaluate()
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
 
     const int numPixels = outTex->resolution.x * outTex->resolution.y;
-    const dim3 blockSize1d(256);
-    const dim3 blocksPerGrid1d(calculateNumBlocksPerGrid(numPixels, blockSize1d.x));
+    const dim3 pixelsBlockSize1d(256);
+    const dim3 pixelsBlocksPerGrid1d(calculateNumBlocksPerGrid(numPixels, pixelsBlockSize1d.x));
 
-    kernFillEmptyTexture<<<blocksPerGrid1d, blockSize1d>>>(
+    kernFillEmptyTexture<<<pixelsBlocksPerGrid1d, pixelsBlockSize1d>>>(
         *outTex, numPixels
     );
-
-    /*
-    PaintStroke* dev_strokes;
-    const int numStrokes = 1 << backupNumStrokes;
-    CUDA_CHECK(cudaMalloc(&dev_strokes, numStrokes * sizeof(PaintStroke))); // TODO: malloc once and re-malloc only if numStrokes changes
-
-    const dim3 blockSize1d(256);
-    const dim3 blocksPerGrid1d(calculateNumBlocksPerGrid(numStrokes, blockSize1d.x));
-
-    kernGeneratePaintStrokes<<<blocksPerGrid1d, blockSize1d>>>(
-        *inTex,
-        dev_strokes,
-        numStrokes,
-        backupMinStrokeSize,
-        backupMaxStrokeSize,
-        1.f / backupSizeBias
-    );
-
-    thrust::sort(thrust::device, dev_strokes, dev_strokes + numStrokes, PaintStrokeComparator());
-
-    const dim3 blockSize2d(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid2d = calculateNumBlocksPerGrid(inTex->resolution, blockSize2d);
-
-    kernPaint<<<blocksPerGrid2d, blockSize2d>>>(
-        *outTex,
-        dev_strokes,
-        numStrokes,
-        brushTextureObj
-    );
-
-    CUDA_CHECK(cudaFree(dev_strokes));
-
-    outputPins[0].propagateTexture(outTex);
-    */
 
     Texture* scratchTex = nodeEvaluator->requestTexture(inTex->resolution);
     Texture* refTex = nodeEvaluator->requestTexture(inTex->resolution);
@@ -410,19 +361,20 @@ void NodePaintinator::evaluate()
         float logStrokeSize = glm::mix(logMaxStrokeSize, logMinStrokeSize, (float)layerIdx / std::max(numLayers - 1, 1));
         float strokeSize = expf(logStrokeSize);
 
-        const int kernelRadius = (int)strokeSize; // TODO: check that this is correct and not off by a factor of 2
+        const int kernelRadius = std::max((int)(strokeSize * blurKernelSizeFactor), 2); // radius < 2 leads to incorrect values (see https://www.desmos.com/calculator/jtsmwtzrc2)
         const int kernelDiameter = kernelRadius * 2 + 1;
 
         // TODO: malloc space for all kernels at once and fill them all using one kernel invocation
-        //       should significantly reduce the number of calls to cudaMalloc
+        //       also likely need to store all kernel sizes in a host vector
+        //       this should significantly reduce the number of calls to cudaMalloc
         float* host_kernel = new float[kernelDiameter];
         float* dev_kernel;
         CUDA_CHECK(cudaMalloc(&dev_kernel, kernelDiameter * sizeof(float)));
 
         const float sigma = kernelDiameter / 9.f;
         const float sigma2 = sigma * sigma;
-        const float normalizationFactor = 1.f / sqrtf(2 * glm::pi<float>() * sigma2);
-        const float exponentFactor = -1.f / (2.f * sigma2);
+        const float normalizationFactor = 1.f / sqrtf(glm::two_pi<float>() * sigma2);
+        const float exponentFactor = -0.5f / sigma2;
 
         for (int i = 0; i < kernelDiameter; ++i)
         {
@@ -461,7 +413,7 @@ void NodePaintinator::evaluate()
         // PAINT LAYER
         // =========================
 
-        kernCalculateColorDifference<<<blocksPerGrid1d, blockSize1d>>>(
+        kernCalculateColorDifference<<<pixelsBlocksPerGrid1d, pixelsBlockSize1d>>>(
             *outTex, *refTex, dev_colorDiff, numPixels
         );
 
@@ -469,11 +421,11 @@ void NodePaintinator::evaluate()
 
         // gridSize is always even and at least 4
         int gridSize = (int)(strokeSize * 2 * gridSizeFactor);
+        gridSize = std::max(gridSize, 4);
         if (gridSize % 2 != 0)
         {
             --gridSize;
         }
-        gridSize = std::max(gridSize, 4);
         int halfGridSize = gridSize / 2;
 
         std::vector<PaintStroke> host_strokes;
@@ -487,6 +439,12 @@ void NodePaintinator::evaluate()
                 int yMax = std::min(cellY + halfGridSize, height);
 
                 int numGridPixels = (xMax - xMin) * (yMax - yMin);
+
+                // unsure if this is necessary
+                if (numGridPixels == 0)
+                {
+                    continue;
+                }
 
                 float totalError = 0.f;
                 float maxError = -FLT_MAX;
@@ -525,10 +483,12 @@ void NodePaintinator::evaluate()
         CUDA_CHECK(cudaMalloc(&dev_strokes, numStrokes * sizeof(PaintStroke)));
         CUDA_CHECK(cudaMemcpy(dev_strokes, host_strokes.data(), numStrokes * sizeof(PaintStroke), cudaMemcpyHostToDevice));
 
-        auto rng = makeSeededRandomEngine((int)strokeSize);
+        auto rng = makeSeededRandomEngine(layerIdx, (int)strokeSize);
         thrust::shuffle(thrust::device, dev_strokes, dev_strokes + numStrokes, rng);
 
-        kernPrepareStrokes<<<blocksPerGrid1d, blockSize1d>>>(
+        const dim3 strokesBlockSize1d(256);
+        const dim3 strokesBlocksPerGrid1d(calculateNumBlocksPerGrid(numStrokes, strokesBlockSize1d.x));
+        kernPrepareStrokes<<<strokesBlocksPerGrid1d, strokesBlockSize1d>>>(
             *refTex, dev_strokes, numStrokes
         );
 
@@ -549,4 +509,3 @@ std::string NodePaintinator::debugGetSrcFileName() const
 {
     return __FILE__;
 }
-
