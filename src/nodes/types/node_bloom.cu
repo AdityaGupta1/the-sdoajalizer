@@ -2,8 +2,7 @@
 
 #include "cuda_includes.hpp"
 
-#include <npp.h>
-#include <nppi.h>
+#include "npp_includes.hpp"
 
 std::array<float*, NodeBloom::numBloomKernels> NodeBloom::dev_bloomKernels = {};
 
@@ -139,11 +138,6 @@ bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
     }
 }
 
-#include <iostream>
-#define NPP_CHECK_NPP(S) NppStatus eStatusNPP; \
-        eStatusNPP = S; \
-        if (eStatusNPP != NPP_SUCCESS) printf("brokey\n");
-
 void NodeBloom::evaluate()
 {
     Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
@@ -184,14 +178,16 @@ void NodeBloom::evaluate()
     NppiPoint oSrcOffset = { 0, 0 };
 
     NppiSize oSizeROI = { width, height };
+
     NppiPoint oAnchor = { kernelRadius, kernelRadius };
 
-    NPP_CHECK_NPP(
+    NPP_CHECK(
         nppiFilterBorder_32f_C4R(
             (Npp32f*)outTex1->dev_pixels, width * 4 * sizeof(float),
             oSrcSize, oSrcOffset,
             (Npp32f*)outTex2->dev_pixels, width * 4 * sizeof(float),
-            oSizeROI, (Npp32f*)dev_kernel, oKernelSize, oAnchor,
+            oSizeROI, 
+            (Npp32f*)dev_kernel, oKernelSize, oAnchor,
             NPP_BORDER_REPLICATE)
     );
     std::swap(outTex1, outTex2);

@@ -8,13 +8,13 @@ class NodePaintinator : public Node
 {
 private:
     int backupNumStrokes{ 16 };
-    int backupMinStrokeSize{ 5 };
-    int backupMaxStrokeSize{ 50 };
+    int backupMinStrokeSize{ 20 };
+    int backupMaxStrokeSize{ 250 };
     float backupSizeBias{ 1.3f };
 
     static bool hasLoadedBrushes;
-    static cudaArray_t pixelArray;
-    static cudaTextureObject_t textureObject;
+    static cudaArray_t brushPixelArray;
+    static cudaTextureObject_t brushTextureObj;
 
 public:
     NodePaintinator();
@@ -24,6 +24,8 @@ public:
 protected:
     bool drawPinExtras(const Pin* pin, int pinNumber) override;
     void evaluate() override;
+
+    void loadBrushes();
 
     std::string debugGetSrcFileName() const override;
 };
