@@ -125,6 +125,9 @@ Node::Node(std::string name)
     Node::nextId += NODE_ID_STRIDE;
 }
 
+Node::~Node()
+{}
+
 Pin& Node::addPin(PinType type, const std::string& name)
 {
     int pinId = this->id + inputPins.size() + outputPins.size() + 1;

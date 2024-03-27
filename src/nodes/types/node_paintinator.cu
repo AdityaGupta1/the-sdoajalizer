@@ -30,6 +30,11 @@ NodePaintinator::NodePaintinator()
     setExpensive();
 }
 
+NodePaintinator::~NodePaintinator()
+{
+    CUDA_CHECK(cudaFree(dev_strokes));
+}
+
 void NodePaintinator::freeDeviceMemory()
 {
     cudaDestroyTextureObject(brushTextureObj);
@@ -60,23 +65,6 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
         throw std::runtime_error("invalid pin number");
     }
 }
-
-struct PaintStroke
-{
-    glm::ivec2 pos;
-    glm::mat2 matRotate;
-    float scale;
-    glm::vec3 color;
-    glm::vec2 uv;
-};
-
-struct PaintStrokeComparator
-{
-    __host__ __device__ bool operator()(const PaintStroke& stroke1, const PaintStroke& stroke2)
-    {
-        return stroke1.scale < stroke2.scale;
-    }
-};
 
 void NodePaintinator::loadBrushes()
 {
@@ -303,7 +291,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
 
 // TODO: make these into node parameters
 static constexpr int numLayers = 12;
-static constexpr float gridSizeFactor = 0.15f;
+static constexpr float gridSizeFactor = 0.25f;
 static constexpr float blurKernelSizeFactor = 0.5f;
 static constexpr float newStrokeErrorThreshold = 0.05f;
 
@@ -419,10 +407,9 @@ void NodePaintinator::evaluate()
 
         CUDA_CHECK(cudaMemcpy(host_colorDiff, dev_colorDiff, numPixels * sizeof(float), cudaMemcpyDeviceToHost));
 
-        // gridSize is always even and at least 4
         int gridSize = (int)(strokeSize * 2 * gridSizeFactor);
-        gridSize = std::max(gridSize, 4);
-        if (gridSize % 2 != 0)
+        gridSize = std::max(gridSize, 2);
+        if (gridSize % 2 != 0) // ensure gridSize is even
         {
             --gridSize;
         }
@@ -477,10 +464,13 @@ void NodePaintinator::evaluate()
             }
         }
 
-        // TODO: cudaMalloc dev_strokes only once based on maximum number of strokes for a layer
-        PaintStroke* dev_strokes;
         const int numStrokes = host_strokes.size();
-        CUDA_CHECK(cudaMalloc(&dev_strokes, numStrokes * sizeof(PaintStroke)));
+        if (numStrokes > numDevStrokes)
+        {
+            CUDA_CHECK(cudaFree(dev_strokes));
+            CUDA_CHECK(cudaMalloc(&dev_strokes, numStrokes * sizeof(PaintStroke)));
+        }
+
         CUDA_CHECK(cudaMemcpy(dev_strokes, host_strokes.data(), numStrokes * sizeof(PaintStroke), cudaMemcpyHostToDevice));
 
         auto rng = makeSeededRandomEngine(layerIdx, (int)strokeSize);
@@ -495,8 +485,6 @@ void NodePaintinator::evaluate()
         kernPaint<<<blocksPerGrid2d, blockSize2d>>>(
             *outTex, dev_strokes, numStrokes, brushTextureObj
         );
-
-        CUDA_CHECK(cudaFree(dev_strokes));
     }
 
     delete[] host_colorDiff;

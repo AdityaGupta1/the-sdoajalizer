@@ -89,6 +89,10 @@ protected:
 
     Node(std::string name);
 
+public:
+    virtual ~Node();
+
+protected:
     Pin& addPin(PinType type, const std::string& name);
     Pin& addPin(PinType type);
 
