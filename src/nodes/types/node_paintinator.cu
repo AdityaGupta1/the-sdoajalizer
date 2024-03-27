@@ -374,25 +374,23 @@ void NodePaintinator::evaluate()
         Npp32s nMaskSize = kernelDiameter;
         Npp32s nAnchor = kernelRadius;
 
-        NPP_CHECK(
-            nppiFilterColumnBorder_32f_C4R(
-                (Npp32f*)inTex->dev_pixels, width * 4 * sizeof(float),
-                oSrcSize, oSrcOffset,
-                (Npp32f*)scratchTex->dev_pixels, width * 4 * sizeof(float),
-                oSizeROI,
-                (Npp32f*)dev_kernel, nMaskSize, nAnchor,
-                NPP_BORDER_REPLICATE)
-        );
+        NPP_CHECK(nppiFilterColumnBorder_32f_C4R(
+            (Npp32f*)inTex->dev_pixels, width * 4 * sizeof(float),
+            oSrcSize, oSrcOffset,
+            (Npp32f*)scratchTex->dev_pixels, width * 4 * sizeof(float),
+            oSizeROI,
+            (Npp32f*)dev_kernel, nMaskSize, nAnchor,
+            NPP_BORDER_REPLICATE
+        ));
 
-        NPP_CHECK(
-            nppiFilterRowBorder_32f_C4R(
-                (Npp32f*)scratchTex->dev_pixels, width * 4 * sizeof(float),
-                oSrcSize, oSrcOffset,
-                (Npp32f*)refTex->dev_pixels, width * 4 * sizeof(float),
-                oSizeROI,
-                (Npp32f*)dev_kernel, nMaskSize, nAnchor,
-                NPP_BORDER_REPLICATE)
-        );
+        NPP_CHECK(nppiFilterRowBorder_32f_C4R(
+            (Npp32f*)scratchTex->dev_pixels, width * 4 * sizeof(float),
+            oSrcSize, oSrcOffset,
+            (Npp32f*)refTex->dev_pixels, width * 4 * sizeof(float),
+            oSizeROI,
+            (Npp32f*)dev_kernel, nMaskSize, nAnchor,
+            NPP_BORDER_REPLICATE
+        ));
 
         delete[] host_kernel;
         CUDA_CHECK(cudaFree(dev_kernel));

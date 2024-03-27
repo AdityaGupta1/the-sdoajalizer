@@ -181,15 +181,14 @@ void NodeBloom::evaluate()
 
     NppiPoint oAnchor = { kernelRadius, kernelRadius };
 
-    NPP_CHECK(
-        nppiFilterBorder_32f_C4R(
-            (Npp32f*)outTex1->dev_pixels, width * 4 * sizeof(float),
-            oSrcSize, oSrcOffset,
-            (Npp32f*)outTex2->dev_pixels, width * 4 * sizeof(float),
-            oSizeROI, 
-            (Npp32f*)dev_kernel, oKernelSize, oAnchor,
-            NPP_BORDER_REPLICATE)
-    );
+    NPP_CHECK(nppiFilterBorder_32f_C4R(
+        (Npp32f*)outTex1->dev_pixels, width * 4 * sizeof(float),
+        oSrcSize, oSrcOffset,
+        (Npp32f*)outTex2->dev_pixels, width * 4 * sizeof(float),
+        oSizeROI,
+        (Npp32f*)dev_kernel, oKernelSize, oAnchor,
+        NPP_BORDER_REPLICATE
+    ));
     std::swap(outTex1, outTex2);
 
     kernAdd<<<blocksPerGrid, blockSize>>>(*inTex, *outTex1, backupMix, *outTex2);
