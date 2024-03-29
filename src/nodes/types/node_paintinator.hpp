@@ -26,7 +26,8 @@ class NodePaintinator : public Node
 private:
     int backupMinStrokeSize{ 5 };
     int backupMaxStrokeSize{ 400 };
-    // TODO: parameter for brush alpha
+    float backupBrushAlpha{ 1.f };
+    float backupNewStrokeThreshold{ 0.05f };
 
     static bool hasLoadedBrushes;
     static cudaArray_t brushPixelArray;

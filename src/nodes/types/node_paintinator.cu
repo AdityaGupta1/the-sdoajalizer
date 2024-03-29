@@ -26,6 +26,8 @@ NodePaintinator::NodePaintinator()
     addPin(PinType::INPUT, "image");
     addPin(PinType::INPUT, "min stroke size").setNoConnect();
     addPin(PinType::INPUT, "max stroke size").setNoConnect();
+    addPin(PinType::INPUT, "brush alpha").setNoConnect();
+    addPin(PinType::INPUT, "new stroke threshold").setNoConnect();
 
     setExpensive();
 }
@@ -61,6 +63,12 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
     case 2: // max stroke size
         ImGui::SameLine();
         return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, maxMaxStrokeSize);
+    case 3: // brush alpha
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupBrushAlpha, 0.01f, 0.f, 1.f);
+    case 4: // new stroke threshold
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupNewStrokeThreshold, 0.01f, 0.f, 3.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -184,7 +192,7 @@ __device__ glm::vec4 blendPaintColors(const glm::vec4& bottomColor, const glm::v
 
 #define NUM_SHARED_STROKES 512
 
-__global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, cudaTextureObject_t brushTex)
+__global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, cudaTextureObject_t brushTex, float brushAlpha)
 {
     __shared__ PaintStroke shared_strokes[NUM_SHARED_STROKES];
     __shared__ int shared_numFinishedThreads;
@@ -258,6 +266,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
                 {
                     continue;
                 }
+                brushColor.w *= brushAlpha;
 
                 glm::vec4 bottomColor(glm::vec3(brushColor.x, brushColor.y, brushColor.z) * stroke.color, brushColor.w);
                 topColor = blendPaintColors(bottomColor, topColor);
@@ -293,7 +302,6 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
 static constexpr int numLayers = 12;
 static constexpr float gridSizeFactor = 0.25f;
 static constexpr float blurKernelSizeFactor = 0.5f;
-static constexpr float newStrokeErrorThreshold = 0.05f;
 
 // reference paper: https://dl.acm.org/doi/10.1145/280814.280951
 void NodePaintinator::evaluate()
@@ -449,7 +457,7 @@ void NodePaintinator::evaluate()
                 }
 
                 float areaError = totalError / numGridPixels;
-                if (areaError < newStrokeErrorThreshold)
+                if (areaError < backupNewStrokeThreshold)
                 {
                     continue;
                 }
@@ -481,7 +489,7 @@ void NodePaintinator::evaluate()
         );
 
         kernPaint<<<blocksPerGrid2d, blockSize2d>>>(
-            *outTex, dev_strokes, numStrokes, brushTextureObj
+            *outTex, dev_strokes, numStrokes, brushTextureObj, backupBrushAlpha
         );
     }
 
