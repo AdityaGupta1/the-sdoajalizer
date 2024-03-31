@@ -4829,6 +4829,7 @@ void ImGui::NewFrame()
         g.ActiveIdTimer += g.IO.DeltaTime;
     g.LastActiveIdTimer += g.IO.DeltaTime;
     g.ActiveIdPreviousFrame = g.ActiveId;
+    g.TempInputIdPreviousFrame = g.TempInputId;
     g.ActiveIdPreviousFrameWindow = g.ActiveIdWindow;
     g.ActiveIdPreviousFrameHasBeenEditedBefore = g.ActiveIdHasBeenEditedBefore;
     g.ActiveIdIsAlive = 0;

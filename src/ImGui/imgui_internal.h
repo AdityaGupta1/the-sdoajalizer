@@ -2341,6 +2341,7 @@ struct ImGuiContext
     ImGuiInputTextDeactivatedState InputTextDeactivatedState;
     ImFont                  InputTextPasswordFont;
     ImGuiID                 TempInputId;                        // Temporary text input when CTRL+clicking on a slider, etc.
+    ImGuiID                 TempInputIdPreviousFrame;
     ImGuiColorEditFlags     ColorEditOptions;                   // Store user options for color edit widgets
     ImGuiID                 ColorEditCurrentID;                 // Set temporarily while inside of the parent-most ColorEdit4/ColorPicker4 (because they call each others).
     ImGuiID                 ColorEditSavedID;                   // ID we are saving/restoring HS for
@@ -2572,6 +2573,7 @@ struct ImGuiContext
         MouseStationaryTimer = 0.0f;
 
         TempInputId = 0;
+        TempInputIdPreviousFrame = 0;
         ColorEditOptions = ImGuiColorEditFlags_DefaultOptions_;
         ColorEditCurrentID = ColorEditSavedID = 0;
         ColorEditSavedHue = ColorEditSavedSat = 0.0f;
@@ -3736,6 +3738,7 @@ namespace ImGui
     IMGUI_API bool          TempInputText(const ImRect& bb, ImGuiID id, const char* label, char* buf, int buf_size, ImGuiInputTextFlags flags);
     IMGUI_API bool          TempInputScalar(const ImRect& bb, ImGuiID id, const char* label, ImGuiDataType data_type, void* p_data, const char* format, const void* p_clamp_min = NULL, const void* p_clamp_max = NULL);
     inline bool             TempInputIsActive(ImGuiID id)       { ImGuiContext& g = *GImGui; return (g.ActiveId == id && g.TempInputId == id); }
+    inline bool             TempInputIsOrWasActive(ImGuiID id) { ImGuiContext& g = *GImGui; return (g.ActiveId == id && g.TempInputId == id) || (g.ActiveIdPreviousFrame == id && g.TempInputIdPreviousFrame == id); }
     inline ImGuiInputTextState* GetInputTextState(ImGuiID id)   { ImGuiContext& g = *GImGui; return (id != 0 && g.InputTextState.ID == id) ? &g.InputTextState : NULL; } // Get input text state if active
 
     // Color
