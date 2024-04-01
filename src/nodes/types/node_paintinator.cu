@@ -227,8 +227,23 @@ __global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int num
     float sinVal, cosVal;
     sincosf(u01(rng) * glm::two_pi<float>(), &sinVal, &cosVal);
     glm::mat2 matRotate = { cosVal, sinVal, -sinVal, cosVal };
-    glm::mat2 matScale = glm::mat2(stroke.color.x, 0, 0, stroke.color.y);
+
+    float sx = stroke.color.x;
+    float sy = stroke.color.y;
+    thrust::uniform_int_distribution ui01(0, 1);
+    if (ui01(rng) == 0)
+    {
+        sx = -sx;
+    }
+    if (ui01(rng) == 0)
+    {
+        sy = -sy;
+    }
+    glm::mat2 matScale = glm::mat2(sx, 0, 0, sy);
+
+
     glm::mat3 matTranslate = { 1, 0, 0, 0, 1, 0, -stroke.pos.x, -stroke.pos.y, 1 };
+
     stroke.transform = glm::mat3(matScale * matRotate) * matTranslate;
 
     stroke.color = glm::vec3(refTex.dev_pixels[stroke.pos.y * refTex.resolution.x + stroke.pos.x]);
