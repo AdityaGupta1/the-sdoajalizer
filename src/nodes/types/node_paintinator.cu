@@ -14,13 +14,16 @@
 
 #include "npp_includes.hpp"
 
-BrushesTexture NodePaintinator::brushesTex = { "assets/brushes/variety.png", "variety" };
+std::vector<BrushTexture> NodePaintinator::brushTextures = {
+    { "assets/brushes/variety.png", "variety" },
+    { "assets/brushes/debug_stars.png", "(DEBUG) stars" }
+};
 
-BrushesTexture::BrushesTexture(const std::string& filePath, const std::string& displayName)
+BrushTexture::BrushTexture(const std::string& filePath, const std::string& displayName)
     : filePath(filePath), displayName(displayName)
 {}
 
-void BrushesTexture::load()
+void BrushTexture::load()
 {
     int width, height, channels;
     unsigned char* host_pixels = stbi_load(filePath.c_str(), &width, &height, &channels, 4);
@@ -77,12 +80,13 @@ NodePaintinator::NodePaintinator()
     addPin(PinType::OUTPUT, "image");
 
     addPin(PinType::INPUT, "image");
+    addPin(PinType::INPUT, "brushes").setNoConnect();
+    addPin(PinType::INPUT, "brush alpha").setNoConnect();
     addPin(PinType::INPUT, "min stroke size").setNoConnect();
     addPin(PinType::INPUT, "max stroke size").setNoConnect();
     addPin(PinType::INPUT, "grid size factor").setNoConnect();
     addPin(PinType::INPUT, "blur size factor").setNoConnect();
     addPin(PinType::INPUT, "new stroke threshold").setNoConnect();
-    addPin(PinType::INPUT, "brush alpha").setNoConnect();
 
     setExpensive();
 }
@@ -94,8 +98,14 @@ NodePaintinator::~NodePaintinator()
 
 void NodePaintinator::freeDeviceMemory()
 {
-    cudaDestroyTextureObject(brushesTex.textureObj);
-    cudaFreeArray(brushesTex.pixelArray);
+    for (const auto& brushTex : brushTextures)
+    {
+        if (brushTex.pixelArray != nullptr)
+        {
+            cudaDestroyTextureObject(brushTex.textureObj);
+            cudaFreeArray(brushTex.pixelArray);
+        }
+    }
 }
 
 bool NodePaintinator::drawPinBeforeExtras(const Pin* pin, int pinNumber)
@@ -107,14 +117,14 @@ bool NodePaintinator::drawPinBeforeExtras(const Pin* pin, int pinNumber)
 
     switch (pinNumber)
     {
-    case 1: // min stroke size
+    case 1: // brushes
+        NodeUI::Separator("brushes");
+        return false;
+    case 3: // min stroke size
         NodeUI::Separator("stroke size");
         return false;
-    case 3: // grid size factor
+    case 5: // grid size factor
         NodeUI::Separator("stroke placement");
-        return false;
-    case 6: // brush alpha
-        NodeUI::Separator("stroke color");
         return false;
     default:
         return false;
@@ -135,24 +145,29 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
     {
     case 0: // image
         return false;
-    case 1: // min stroke size
+    case 1: // brushes
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, minMinStrokeSize, backupMaxStrokeSize);
-    case 2: // max stroke size
-        ImGui::SameLine();
-        return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, maxMaxStrokeSize);
-    case 3: // grid size factor
-        ImGui::SameLine();
-        return NodeUI::FloatEdit(backupGridSizeFactor, 0.01f, 0.f, 1.f);
-    case 4: // blur size factor
-        ImGui::SameLine();
-        return NodeUI::FloatEdit(backupBlurKernelSizeFactor, 0.01f, 0.f, 3.f);
-    case 5: // new stroke threshold
-        ImGui::SameLine();
-        return NodeUI::FloatEdit(backupNewStrokeThreshold, 0.01f, 0.f, 3.f);
-    case 6: // brush alpha
+        return NodeUI::Dropdown<BrushTexture>(backupBrushTexturePtr, brushTextures, [](const BrushTexture& brushTex) -> const char* {
+            return brushTex.displayName.c_str();
+        });
+    case 2: // brush alpha
         ImGui::SameLine();
         return NodeUI::FloatEdit(backupBrushAlpha, 0.01f, 0.f, 1.f);
+    case 3: // min stroke size
+        ImGui::SameLine();
+        return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, minMinStrokeSize, backupMaxStrokeSize);
+    case 4: // max stroke size
+        ImGui::SameLine();
+        return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, maxMaxStrokeSize);
+    case 5: // grid size factor
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupGridSizeFactor, 0.01f, 0.f, 1.f);
+    case 6: // blur size factor
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupBlurKernelSizeFactor, 0.01f, 0.f, 3.f);
+    case 7: // new stroke threshold
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupNewStrokeThreshold, 0.01f, 0.f, 3.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -357,9 +372,9 @@ void NodePaintinator::evaluate()
         return;
     }
 
-    if (!brushesTex.isLoaded)
+    if (!backupBrushTexturePtr->isLoaded)
     {
-        brushesTex.load();
+        backupBrushTexturePtr->load();
     }
 
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
@@ -507,8 +522,8 @@ void NodePaintinator::evaluate()
 
                 PaintStroke newStroke;
                 newStroke.pos = maxErrorPos;
-                newStroke.color.x = 1.f / (strokeSize * brushesTex.scale.x);
-                newStroke.color.y = 1.f / (strokeSize * brushesTex.scale.y);
+                newStroke.color.x = 1.f / (strokeSize * backupBrushTexturePtr->scale.x);
+                newStroke.color.y = 1.f / (strokeSize * backupBrushTexturePtr->scale.y);
                 // transform, color, and cornerUv are set by kernPrepareStrokes
                 host_strokes.push_back(newStroke);
             }
@@ -533,7 +548,7 @@ void NodePaintinator::evaluate()
         );
 
         kernPaint<<<blocksPerGrid2d, blockSize2d>>>(
-            *outTex, dev_strokes, numStrokes, brushesTex.textureObj, backupBrushAlpha
+            *outTex, dev_strokes, numStrokes, backupBrushTexturePtr->textureObj, backupBrushAlpha
         );
     }
 

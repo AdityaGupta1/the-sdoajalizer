@@ -12,7 +12,7 @@ struct PaintStroke
     glm::vec2 cornerUv;
 };
 
-struct BrushesTexture
+struct BrushTexture
 {
     bool isLoaded{ false };
     const std::string filePath;
@@ -23,7 +23,7 @@ struct BrushesTexture
 
     glm::vec2 scale{ 1.f, 1.f };
 
-    BrushesTexture(const std::string& filePath, const std::string& displayName);
+    BrushTexture(const std::string& filePath, const std::string& displayName);
 
     void load();
 };
@@ -31,14 +31,15 @@ struct BrushesTexture
 class NodePaintinator : public Node
 {
 private:
+    BrushTexture* backupBrushTexturePtr{ &brushTextures[0] };
+    float backupBrushAlpha{ 1.f };
     int backupMinStrokeSize{ 5 };
     int backupMaxStrokeSize{ 200 };
     float backupGridSizeFactor{ 0.25f };
     float backupBlurKernelSizeFactor{ 0.3f };
     float backupNewStrokeThreshold{ 0.15f };
-    float backupBrushAlpha{ 1.f };
 
-    static BrushesTexture brushesTex;
+    static std::vector<BrushTexture> brushTextures;
 
     PaintStroke* dev_strokes{ nullptr };
     int numDevStrokes{ 0 };

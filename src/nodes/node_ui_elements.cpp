@@ -1,6 +1,5 @@
 #include "node_ui_elements.hpp"
 
-#include "ImGui/imgui.h"
 #include "ImGui/imgui_internal.h"
 
 #include "portable_file_dialogs.h"

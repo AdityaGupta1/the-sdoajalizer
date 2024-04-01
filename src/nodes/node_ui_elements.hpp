@@ -1,10 +1,13 @@
 #pragma once
 
+#include "ImGui/imgui.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace NodeUI
 {
@@ -23,4 +26,34 @@ namespace NodeUI
     bool FilePicker(std::string* filePath);
 
     bool Dropdown(int& selectedItem, const std::vector<const char*>& items);
+    template <typename T>
+    bool Dropdown(T*& selectedItem, std::vector<T>& items, std::function<const char* (const T&)> converter)
+    {
+        ImGui::PushID(&selectedItem);
+        ImGui::PushItemWidth(120);
+
+        bool didParameterChange = false;
+        if (ImGui::BeginCombo("", converter(*selectedItem)))
+        {
+            for (int itemIdx = 0; itemIdx < items.size(); ++itemIdx)
+            {
+                bool isSelected = (selectedItem == &items[itemIdx]);
+                if (ImGui::Selectable(converter(items[itemIdx]), isSelected))
+                {
+                    selectedItem = &items[itemIdx];
+                    didParameterChange = true;
+                }
+                if (isSelected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::PopID();
+        ImGui::PopItemWidth();
+
+        return didParameterChange;
+    }
 }
