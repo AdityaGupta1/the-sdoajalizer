@@ -491,6 +491,18 @@ void filterSearch(const ImGui::ComboFilterSearchCallbackData<T>& cbd)
 
 void Gui::updateNodeCreatorWindow()
 {
+    if (controls.shouldCreateWindowBeVisible && !createWindowData.visible)
+    {
+        createWindowData.visible = true;
+        createWindowData.pos = ImGui::GetMousePos();
+
+        createWindowData.justOpened = true;
+
+        ++createWindowData.id;
+
+        ImGui::OpenPopup("node creator");
+    }
+
     if (createWindowData.visible) {
         ImGui::SetNextWindowPos(createWindowData.pos);
 
@@ -500,38 +512,38 @@ void Gui::updateNodeCreatorWindow()
             ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_AlwaysAutoResize |
             ImGuiWindowFlags_NoTitleBar;
-        ImGui::Begin("node creator", nullptr, windowFlags);
+        if (ImGui::BeginPopup("node creator", windowFlags))
+        {
+            ImGui::PushItemWidth(400);
+            ImGui::PushID(createWindowData.id);
 
-        ImGui::PushItemWidth(400);
-        ImGui::PushID(createWindowData.id);
+            int selectedItem = -1;
+            if (ImGui::ComboFilter("##nodeSearch", selectedItem, nodeCreators, itemGetter, filterSearch, createWindowData.justOpened, ImGuiComboFlags_NoArrowButton) && selectedItem != -1)
+            {
+                int newNodeId = addNode(nodeCreators[selectedItem].second());
+                ImNodes::SetNodeScreenSpacePos(newNodeId, ImGui::GetMousePos());
 
-        int selectedItem = -1;
-        if (ImGui::ComboFilter("##nodeSearch", selectedItem, nodeCreators, itemGetter, filterSearch, createWindowData.justOpened, ImGuiComboFlags_NoArrowButton) && selectedItem != -1) {
-            int newNodeId = addNode(nodeCreators[selectedItem].second());
-            ImNodes::SetNodeScreenSpacePos(newNodeId, ImGui::GetMousePos());
+                controls.shouldCreateWindowBeVisible = false;
+            }
 
-            controls.shouldCreateWindowBeVisible = false;
+            ImGui::PopID();
+            ImGui::PopItemWidth();
+
+            ImGui::EndPopup();
+
+            createWindowData.justOpened = false;
         }
-
-        ImGui::PopID();
-        ImGui::PopItemWidth();
-
-        ImGui::End();
-
-        createWindowData.justOpened = false;
-    }
-
-    if (controls.shouldCreateWindowBeVisible && !createWindowData.visible) {
-        createWindowData.visible = true;
-        createWindowData.pos = ImGui::GetMousePos();
-
-        createWindowData.justOpened = true;
-
-        ++createWindowData.id;
+        else
+        {
+            controls.shouldCreateWindowBeVisible = false;
+            createWindowData.visible = false;
+        }
     }
 
     if (!controls.shouldCreateWindowBeVisible && createWindowData.visible) {
         createWindowData.visible = false;
+
+        ImGui::CloseCurrentPopup();
     }
 }
 
