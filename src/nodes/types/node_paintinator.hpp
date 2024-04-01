@@ -7,18 +7,9 @@
 struct PaintStroke
 {
     glm::ivec2 pos;
-    glm::mat2 matRotate;
-    float scale;
+    glm::mat3 transform;
     glm::vec3 color;
-    glm::vec2 uv;
-};
-
-struct PaintStrokeComparator
-{
-    __host__ __device__ bool operator()(const PaintStroke& stroke1, const PaintStroke& stroke2)
-    {
-        return stroke1.scale < stroke2.scale;
-    }
+    glm::vec2 cornerUv;
 };
 
 class NodePaintinator : public Node

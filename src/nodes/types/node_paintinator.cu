@@ -206,12 +206,24 @@ __global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int num
     thrust::uniform_real_distribution<float> u01(0, 1);
     float sinVal, cosVal;
     sincosf(u01(rng) * glm::two_pi<float>(), &sinVal, &cosVal);
-    stroke.matRotate = { cosVal, sinVal, -sinVal, cosVal };
+    //glm::mat2 matRotate = { cosVal, sinVal, -sinVal, cosVal };
+    //glm::mat2 matScale = glm::mat2(1.f / stroke.color.x);
+    //glm::mat3 matTranslate = { 1, 0, 0, 0, 1, 0, -stroke.pos.x, -stroke.pos.y, 1 };
+    //stroke.transform = glm::mat3(matRotate * matScale) * matTranslate;
+    float sx = 1.f / stroke.color.x;
+    float sy = 1.f / stroke.color.y;
+    float tx = -stroke.pos.x * sx;
+    float ty = -stroke.pos.y * sy;
+    stroke.transform = {
+        sx * cosVal, sx * sinVal, 0,
+        -sy * sinVal, sy * cosVal, 0,
+        tx * cosVal - ty * sinVal, tx * sinVal + ty * cosVal, 1
+    };
 
     stroke.color = glm::vec3(refTex.dev_pixels[stroke.pos.y * refTex.resolution.x + stroke.pos.x]);
 
     thrust::uniform_int_distribution<int> distUv(0, 3);
-    stroke.uv = glm::vec2(distUv(rng) * 0.25f, distUv(rng) * 0.25f);
+    stroke.cornerUv = glm::vec2(distUv(rng), distUv(rng)) * 0.25f;
 }
 
 // probably not how real paint mixes but whatever
@@ -219,6 +231,12 @@ __device__ glm::vec4 blendPaintColors(const glm::vec4& bottomColor, const glm::v
 {
     float newAlpha = bottomColor.a + ((1.f - bottomColor.a) * topColor.a);
     return glm::vec4(glm::mix(glm::vec3(bottomColor), glm::vec3(topColor), topColor.a), newAlpha);
+}
+
+__device__ glm::vec2 matMul(const glm::mat3& mat, const glm::vec2 v)
+{
+    glm::vec3 mul = mat * glm::vec3(v, 1.f);
+    return glm::vec2(mul) / mul.z;
 }
 
 #define NUM_SHARED_STROKES 512
@@ -283,15 +301,16 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
                     break;
                 }
 
-                glm::vec2 localPos = stroke.matRotate * (thisPos - glm::vec2(stroke.pos));
-                if (glm::compMax(glm::abs(localPos)) > stroke.scale)
+                glm::vec2 localPos = matMul(stroke.transform, thisPos);
+                if (glm::compMax(glm::abs(localPos)) > 1.f)
                 {
                     continue;
                 }
 
-                glm::vec2 uv = ((localPos / stroke.scale) + 1.f) * 0.5f;
+                //glm::vec2 uv = (localPos + 1.f) * 0.5f;
+                //uv = stroke.cornerUv + uv * 0.25f;
+                glm::vec2 uv = stroke.cornerUv + (localPos + 1.f) * 0.125f;
 
-                uv = stroke.uv + uv * 0.25f;
                 float4 brushColor = tex2D<float4>(brushTex, uv.x, uv.y);
                 if (brushColor.w == 0.f)
                 {
@@ -493,8 +512,9 @@ void NodePaintinator::evaluate()
 
                 PaintStroke newStroke;
                 newStroke.pos = maxErrorPos;
-                newStroke.scale = strokeSize;
-                // other fields are set by kernPrepareStrokes
+                newStroke.color.x = strokeSize; // x scale
+                newStroke.color.y = strokeSize; // y scale
+                // transform, color, and cornerUv are set by kernPrepareStrokes
                 host_strokes.push_back(newStroke);
             }
         }
