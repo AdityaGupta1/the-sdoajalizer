@@ -16,6 +16,7 @@
 
 std::vector<BrushTexture> NodePaintinator::brushTextures = {
     { "assets/brushes/variety.png", "variety" },
+    { "assets/brushes/grunge.png", "grunge" },
     //{ "assets/brushes/debug_stars.png", "(DEBUG) stars" }
 };
 
