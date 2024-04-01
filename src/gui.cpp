@@ -163,10 +163,12 @@ Pin& Gui::getPin(int pinId)
     return this->nodes[pinId - (pinId % NODE_ID_STRIDE)]->getPin(pinId);
 }
 
-void Gui::addNode(std::unique_ptr<Node> node)
+int Gui::addNode(std::unique_ptr<Node> node)
 {
     node->setNodeEvaluator(&this->nodeEvaluator);
-    this->nodes[node->id] = std::move(node);
+    int newNodeId = node->id;
+    this->nodes[newNodeId] = std::move(node);
+    return newNodeId;
 }
 
 void Gui::addEdge(int startPinId, int endPinId)
@@ -505,10 +507,7 @@ void Gui::updateNodeCreatorWindow()
 
         int selectedItem = -1;
         if (ImGui::ComboFilter("##nodeSearch", selectedItem, nodeCreators, itemGetter, filterSearch, createWindowData.justOpened, ImGuiComboFlags_NoArrowButton) && selectedItem != -1) {
-            auto newNodeUptr = nodeCreators[selectedItem].second();
-            int newNodeId = newNodeUptr->id;
-            addNode(std::move(newNodeUptr));
-
+            int newNodeId = addNode(nodeCreators[selectedItem].second());
             ImNodes::SetNodeScreenSpacePos(newNodeId, ImGui::GetMousePos());
 
             controls.shouldCreateWindowBeVisible = false;

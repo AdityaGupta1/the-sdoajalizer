@@ -53,7 +53,7 @@ private:
 
     Pin& getPin(int pinId);
 
-    void addNode(std::unique_ptr<Node> node);
+    int addNode(std::unique_ptr<Node> node);
     void addEdge(int startPinId, int endPinId);
 
     void deleteNode(int nodeId);
