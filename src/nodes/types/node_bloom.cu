@@ -126,13 +126,13 @@ bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
         return false;
     case 1: // threshold
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupThreshold, 0.01f, 0.f, FLT_MAX);
+        return NodeUI::FloatEdit(constParams.threshold, 0.01f, 0.f, FLT_MAX);
     case 2: // size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupSize, 0.02f, sizeMin, sizeMax);
+        return NodeUI::IntEdit(constParams.size, 0.02f, sizeMin, sizeMax);
     case 3: // mix
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupMix, 0.01f, -1.f, 1.f);
+        return NodeUI::FloatEdit(constParams.mix, 0.01f, -1.f, 1.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -156,13 +156,13 @@ void NodeBloom::evaluate()
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
 
-    kernCopyWithThreshold<<<blocksPerGrid, blockSize>>>(*inTex, backupThreshold, *outTex1);
+    kernCopyWithThreshold<<<blocksPerGrid, blockSize>>>(*inTex, constParams.threshold, *outTex1);
 
-    const int kernelRadius = 1 << backupSize;
+    const int kernelRadius = 1 << constParams.size;
     const int kernelDiameter = 2 * kernelRadius + 1;
     NppiSize oKernelSize = { kernelDiameter, kernelDiameter };
 
-    float*& dev_kernel = dev_bloomKernels[backupSize - sizeMin];
+    float*& dev_kernel = dev_bloomKernels[constParams.size - sizeMin];
 
     if (dev_kernel == nullptr)
     {
@@ -191,7 +191,7 @@ void NodeBloom::evaluate()
     ));
     std::swap(outTex1, outTex2);
 
-    kernAdd<<<blocksPerGrid, blockSize>>>(*inTex, *outTex1, backupMix, *outTex2);
+    kernAdd<<<blocksPerGrid, blockSize>>>(*inTex, *outTex1, constParams.mix, *outTex2);
 
     outputPins[0].propagateTexture(outTex2);
 }

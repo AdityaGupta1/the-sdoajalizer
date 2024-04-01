@@ -14,7 +14,7 @@ bool NodeColor::drawPinExtras(const Pin* pin, int pinNumber)
     {
     case 0: // image
         ImGui::SameLine();
-        return NodeUI::ColorEdit4(backupCol);
+        return NodeUI::ColorEdit4(constParams.color);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -23,7 +23,7 @@ bool NodeColor::drawPinExtras(const Pin* pin, int pinNumber)
 void NodeColor::evaluate()
 {
     Texture* outTex = nodeEvaluator->requestSingleColorTexture();
-    outTex->setSingleColor(ColorUtils::srgbToLinear(backupCol));
+    outTex->setSingleColor(ColorUtils::srgbToLinear(constParams.color));
     outputPins[0].propagateTexture(outTex);
 }
 

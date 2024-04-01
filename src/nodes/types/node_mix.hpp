@@ -5,9 +5,12 @@
 class NodeMix : public Node
 {
 private:
-    glm::vec4 backupCol1{ NodeUI::defaultBackupVec4 };
-    glm::vec4 backupCol2{ NodeUI::defaultBackupVec4 };
-    float backupFactor{ NodeUI::defaultBackupFloat };
+    struct
+    {
+        glm::vec4 color1{ NodeUI::defaultBackupVec4 };
+        glm::vec4 color2{ NodeUI::defaultBackupVec4 };
+        float factor{ NodeUI::defaultBackupFloat };
+    } constParams;
 
 public:
     NodeMix();

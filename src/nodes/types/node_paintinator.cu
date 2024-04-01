@@ -16,7 +16,7 @@
 
 std::vector<BrushTexture> NodePaintinator::brushTextures = {
     { "assets/brushes/variety.png", "variety" },
-    { "assets/brushes/debug_stars.png", "(DEBUG) stars" }
+    //{ "assets/brushes/debug_stars.png", "(DEBUG) stars" }
 };
 
 BrushTexture::BrushTexture(const std::string& filePath, const std::string& displayName)
@@ -147,27 +147,27 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
         return false;
     case 1: // brushes
         ImGui::SameLine();
-        return NodeUI::Dropdown<BrushTexture>(backupBrushTexturePtr, brushTextures, [](const BrushTexture& brushTex) -> const char* {
+        return NodeUI::Dropdown<BrushTexture>(constParams.brushTexturePtr, brushTextures, [](const BrushTexture& brushTex) -> const char* {
             return brushTex.displayName.c_str();
         });
     case 2: // brush alpha
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupBrushAlpha, 0.01f, 0.f, 1.f);
+        return NodeUI::FloatEdit(constParams.brushAlpha, 0.01f, 0.f, 1.f);
     case 3: // min stroke size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupMinStrokeSize, 0.15f, minMinStrokeSize, backupMaxStrokeSize);
+        return NodeUI::IntEdit(constParams.minStrokeSize, 0.15f, minMinStrokeSize, constParams.maxStrokeSize);
     case 4: // max stroke size
         ImGui::SameLine();
-        return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, maxMaxStrokeSize);
+        return NodeUI::IntEdit(constParams.maxStrokeSize, 0.15f, constParams.minStrokeSize, maxMaxStrokeSize);
     case 5: // grid size factor
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupGridSizeFactor, 0.01f, 0.f, 1.f);
+        return NodeUI::FloatEdit(constParams.gridSizeFactor, 0.01f, 0.f, 1.f);
     case 6: // blur size factor
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupBlurKernelSizeFactor, 0.01f, 0.f, 3.f);
+        return NodeUI::FloatEdit(constParams.blurKernelSizeFactor, 0.01f, 0.f, 3.f);
     case 7: // new stroke threshold
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupNewStrokeThreshold, 0.01f, 0.f, 3.f);
+        return NodeUI::FloatEdit(constParams.newStrokeThreshold, 0.01f, 0.f, 3.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -372,9 +372,9 @@ void NodePaintinator::evaluate()
         return;
     }
 
-    if (!backupBrushTexturePtr->isLoaded)
+    if (!constParams.brushTexturePtr->isLoaded)
     {
-        backupBrushTexturePtr->load();
+        constParams.brushTexturePtr->load();
     }
 
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
@@ -404,8 +404,8 @@ void NodePaintinator::evaluate()
     const dim3 blockSize2d(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid2d = calculateNumBlocksPerGrid(inTex->resolution, blockSize2d);
 
-    float logMinStrokeSize = logf(backupMinStrokeSize);
-    float logMaxStrokeSize = logf(backupMaxStrokeSize);
+    float logMinStrokeSize = logf(constParams.minStrokeSize);
+    float logMaxStrokeSize = logf(constParams.maxStrokeSize);
     for (int layerIdx = 0; layerIdx < numLayers; ++layerIdx)
     {
         // =========================
@@ -415,7 +415,7 @@ void NodePaintinator::evaluate()
         float logStrokeSize = glm::mix(logMaxStrokeSize, logMinStrokeSize, (float)layerIdx / std::max(numLayers - 1, 1));
         float strokeSize = expf(logStrokeSize);
 
-        const int kernelRadius = std::max((int)(strokeSize * backupBlurKernelSizeFactor), 2); // radius < 2 leads to incorrect values (see https://www.desmos.com/calculator/jtsmwtzrc2)
+        const int kernelRadius = std::max((int)(strokeSize * constParams.blurKernelSizeFactor), 2); // radius < 2 leads to incorrect values (see https://www.desmos.com/calculator/jtsmwtzrc2)
         const int kernelDiameter = kernelRadius * 2 + 1;
 
         // TODO: malloc space for all kernels at once and fill them all using one kernel invocation
@@ -471,7 +471,7 @@ void NodePaintinator::evaluate()
 
         CUDA_CHECK(cudaMemcpy(host_colorDiff, dev_colorDiff, numPixels * sizeof(float), cudaMemcpyDeviceToHost));
 
-        int gridSize = (int)(strokeSize * 2 * backupGridSizeFactor);
+        int gridSize = (int)(strokeSize * 2 * constParams.gridSizeFactor);
         gridSize = std::max(gridSize, 2);
         if (gridSize % 2 != 0) // ensure gridSize is even
         {
@@ -515,15 +515,15 @@ void NodePaintinator::evaluate()
                 }
 
                 float areaError = totalError / numGridPixels;
-                if (areaError < backupNewStrokeThreshold)
+                if (areaError < constParams.newStrokeThreshold)
                 {
                     continue;
                 }
 
                 PaintStroke newStroke;
                 newStroke.pos = maxErrorPos;
-                newStroke.color.x = 1.f / (strokeSize * backupBrushTexturePtr->scale.x);
-                newStroke.color.y = 1.f / (strokeSize * backupBrushTexturePtr->scale.y);
+                newStroke.color.x = 1.f / (strokeSize * constParams.brushTexturePtr->scale.x);
+                newStroke.color.y = 1.f / (strokeSize * constParams.brushTexturePtr->scale.y);
                 // transform, color, and cornerUv are set by kernPrepareStrokes
                 host_strokes.push_back(newStroke);
             }
@@ -548,7 +548,7 @@ void NodePaintinator::evaluate()
         );
 
         kernPaint<<<blocksPerGrid2d, blockSize2d>>>(
-            *outTex, dev_strokes, numStrokes, backupBrushTexturePtr->textureObj, backupBrushAlpha
+            *outTex, dev_strokes, numStrokes, constParams.brushTexturePtr->textureObj, constParams.brushAlpha
         );
     }
 

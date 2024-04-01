@@ -37,10 +37,10 @@ bool NodeExposure::drawPinExtras(const Pin* pin, int pinNumber)
     {
     case 0: // image
         ImGui::SameLine();
-        return NodeUI::ColorEdit4(backupCol);
+        return NodeUI::ColorEdit4(constParams.color);
     case 1: // exposure
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupExposure, 0.01f);
+        return NodeUI::FloatEdit(constParams.exposure, 0.01f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -48,17 +48,17 @@ bool NodeExposure::drawPinExtras(const Pin* pin, int pinNumber)
 
 void NodeExposure::evaluate()
 {
-    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(backupCol));
+    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
 
     if (inTex->isSingleColor()) {
         Texture* outTex = nodeEvaluator->requestSingleColorTexture();
 
-        if (backupExposure == 0.f) {
+        if (constParams.exposure == 0.f) {
             outTex->setSingleColor(inTex->singleColor);
         }
         else
         {
-            glm::vec4 outCol = glm::vec4(glm::vec3(inTex->singleColor) * powf(2.f, backupExposure), inTex->singleColor.a);
+            glm::vec4 outCol = glm::vec4(glm::vec3(inTex->singleColor) * powf(2.f, constParams.exposure), inTex->singleColor.a);
             outTex->setSingleColor(outCol);
         }
 
@@ -67,17 +67,17 @@ void NodeExposure::evaluate()
     }
 
     // inTex is not a single color
-    if (backupExposure == 0.0f) {
+    if (constParams.exposure == 0.f) {
         outputPins[0].propagateTexture(inTex);
         return;
     }
 
-    // inTex is not a single color and backupExposure != 0.f
+    // inTex is not a single color and constParams.exposure != 0.f
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
-    kernExposure<<<blocksPerGrid, blockSize>>>(*inTex, powf(2.f, backupExposure), *outTex);
+    kernExposure<<<blocksPerGrid, blockSize>>>(*inTex, powf(2.f, constParams.exposure), *outTex);
 
     outputPins[0].propagateTexture(outTex);
 }

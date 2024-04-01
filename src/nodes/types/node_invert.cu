@@ -41,7 +41,7 @@ bool NodeInvert::drawPinExtras(const Pin* pin, int pinNumber)
     {
     case 0: // in color
         ImGui::SameLine();
-        return NodeUI::ColorEdit4(backupCol);
+        return NodeUI::ColorEdit4(constParams.color);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -49,7 +49,7 @@ bool NodeInvert::drawPinExtras(const Pin* pin, int pinNumber)
 
 void NodeInvert::evaluate()
 {
-    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(backupCol));
+    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
 
     if (inTex->isSingleColor())
     {

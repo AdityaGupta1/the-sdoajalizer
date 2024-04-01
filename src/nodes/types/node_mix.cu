@@ -45,13 +45,13 @@ bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
     {
     case 0: // in color 1
         ImGui::SameLine();
-        return NodeUI::ColorEdit4(backupCol1);
+        return NodeUI::ColorEdit4(constParams.color1);
     case 1: // in color 2
         ImGui::SameLine();
-        return NodeUI::ColorEdit4(backupCol2);
+        return NodeUI::ColorEdit4(constParams.color2);
     case 2: // factor
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupFactor, 0.01f, 0.f, 1.f);
+        return NodeUI::FloatEdit(constParams.factor, 0.01f, 0.f, 1.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -60,9 +60,9 @@ bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
 // should work for differing resolutions but that hasn't been tested yet
 void NodeMix::evaluate()
 {
-    Texture* inTex1 = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(backupCol1));
-    Texture* inTex2 = getPinTextureOrSingleColor(inputPins[1], ColorUtils::srgbToLinear(backupCol2));
-    Texture* inTexFactor = getPinTextureOrSingleColor(inputPins[2], backupFactor);
+    Texture* inTex1 = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color1));
+    Texture* inTex2 = getPinTextureOrSingleColor(inputPins[1], ColorUtils::srgbToLinear(constParams.color2));
+    Texture* inTexFactor = getPinTextureOrSingleColor(inputPins[2], constParams.factor);
 
     if (inTex1->isSingleColor() && inTex2->isSingleColor() && inTexFactor->isSingleColor())
     {

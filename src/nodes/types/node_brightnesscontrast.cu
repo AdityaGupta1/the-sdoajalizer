@@ -42,13 +42,13 @@ bool NodeBrightnessContrast::drawPinExtras(const Pin* pin, int pinNumber)
     {
     case 0: // image
         ImGui::SameLine();
-        return NodeUI::ColorEdit4(backupCol);
+        return NodeUI::ColorEdit4(constParams.color);
     case 1: // brightness
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupBrightness, 0.01f);
+        return NodeUI::FloatEdit(constParams.brightness, 0.01f);
     case 2: // contrast
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupContrast, 0.01f, -1.f, FLT_MAX);
+        return NodeUI::FloatEdit(constParams.contrast, 0.01f, -1.f, FLT_MAX);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -56,17 +56,17 @@ bool NodeBrightnessContrast::drawPinExtras(const Pin* pin, int pinNumber)
 
 void NodeBrightnessContrast::evaluate()
 {
-    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(backupCol));
+    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
 
     if (inTex->isSingleColor()) {
         Texture* outTex = nodeEvaluator->requestSingleColorTexture();
 
-        if (backupBrightness == 0.f && backupContrast == 0.f) {
+        if (constParams.brightness == 0.f && constParams.contrast == 0.f) {
             outTex->setSingleColor(inTex->singleColor);
         }
         else
         {
-            glm::vec4 outCol = applyBrightnessContrast(inTex->singleColor, backupBrightness, backupContrast);
+            glm::vec4 outCol = applyBrightnessContrast(inTex->singleColor, constParams.brightness, constParams.contrast);
             outTex->setSingleColor(outCol);
         }
 
@@ -75,7 +75,7 @@ void NodeBrightnessContrast::evaluate()
     }
 
     // inTex is not a single color
-    if (backupBrightness == 0.f && backupContrast == 0.f) {
+    if (constParams.brightness == 0.f && constParams.contrast == 0.f) {
         outputPins[0].propagateTexture(inTex);
         return;
     }
@@ -85,7 +85,7 @@ void NodeBrightnessContrast::evaluate()
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
-    kernBrightnessContrast<<<blocksPerGrid, blockSize>>>(*inTex, backupBrightness, backupContrast, *outTex);
+    kernBrightnessContrast<<<blocksPerGrid, blockSize>>>(*inTex, constParams.brightness, constParams.contrast, *outTex);
 
     outputPins[0].propagateTexture(outTex);
 }

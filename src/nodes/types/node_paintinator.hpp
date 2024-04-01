@@ -31,13 +31,16 @@ struct BrushTexture
 class NodePaintinator : public Node
 {
 private:
-    BrushTexture* backupBrushTexturePtr{ &brushTextures[0] };
-    float backupBrushAlpha{ 1.f };
-    int backupMinStrokeSize{ 5 };
-    int backupMaxStrokeSize{ 200 };
-    float backupGridSizeFactor{ 0.25f };
-    float backupBlurKernelSizeFactor{ 0.3f };
-    float backupNewStrokeThreshold{ 0.15f };
+    struct
+    {
+        BrushTexture* brushTexturePtr{ &brushTextures[0] };
+        float brushAlpha{ 1.f };
+        int minStrokeSize{ 5 };
+        int maxStrokeSize{ 200 };
+        float gridSizeFactor{ 0.25f };
+        float blurKernelSizeFactor{ 0.3f };
+        float newStrokeThreshold{ 0.15f };
+    } constParams;
 
     static std::vector<BrushTexture> brushTextures;
 

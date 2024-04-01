@@ -5,8 +5,11 @@
 class NodeExposure : public Node
 {
 private:
-    glm::vec4 backupCol{ NodeUI::defaultBackupVec4 };
-    float backupExposure{ 0.f };
+    struct
+    {
+        glm::vec4 color{ NodeUI::defaultBackupVec4 };
+        float exposure{ 0.f };
+    } constParams;
 
 public:
     NodeExposure();

@@ -5,7 +5,10 @@
 class NodeColor : public Node
 {
 private:
-    glm::vec4 backupCol{ NodeUI::defaultBackupVec4 };
+    struct
+    {
+        glm::vec4 color{ NodeUI::defaultBackupVec4 };
+    } constParams;
 
 public:
     NodeColor();

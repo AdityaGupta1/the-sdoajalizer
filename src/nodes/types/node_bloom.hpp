@@ -13,9 +13,12 @@ private:
     static constexpr int numBloomKernels = sizeMax - sizeMin + 1;
     static std::array<float*, numBloomKernels> dev_bloomKernels;
 
-    float backupThreshold{ 1.f };
-    int backupSize{ 5 };
-    float backupMix{ 0.f };
+    struct
+    {
+        float threshold{ 1.f };
+        int size{ 5 };
+        float mix{ 0.f };
+    } constParams;
 
 public:
     NodeBloom();

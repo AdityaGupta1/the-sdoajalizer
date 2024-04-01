@@ -5,9 +5,12 @@
 class NodeBrightnessContrast : public Node
 {
 private:
-    glm::vec4 backupCol{ NodeUI::defaultBackupVec4 };
-    float backupBrightness{ 0.f };
-    float backupContrast{ 0.f };
+    struct
+    {
+        glm::vec4 color{ NodeUI::defaultBackupVec4 };
+        float brightness{ 0.f };
+        float contrast{ 0.f };
+    } constParams;
 
 public:
     NodeBrightnessContrast();
