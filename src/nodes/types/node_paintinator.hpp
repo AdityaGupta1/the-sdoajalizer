@@ -12,6 +12,22 @@ struct PaintStroke
     glm::vec2 cornerUv;
 };
 
+struct BrushesTexture
+{
+    bool isLoaded{ false };
+    const std::string filePath;
+    const std::string displayName;
+
+    cudaArray_t pixelArray{ nullptr };
+    cudaTextureObject_t textureObj;
+
+    glm::vec2 scale{ 1.f, 1.f };
+
+    BrushesTexture(const std::string& filePath, const std::string& displayName);
+
+    void load();
+};
+
 class NodePaintinator : public Node
 {
 private:
@@ -22,9 +38,7 @@ private:
     float backupNewStrokeThreshold{ 0.15f };
     float backupBrushAlpha{ 1.f };
 
-    static bool hasLoadedBrushes;
-    static cudaArray_t brushPixelArray;
-    static cudaTextureObject_t brushTextureObj;
+    static BrushesTexture brushesTex;
 
     PaintStroke* dev_strokes{ nullptr };
     int numDevStrokes{ 0 };
@@ -36,8 +50,6 @@ public:
     static void freeDeviceMemory();
 
 protected:
-    void loadBrushes();
-
     bool drawPinBeforeExtras(const Pin* pin, int pinNumber) override;
     bool drawPinExtras(const Pin* pin, int pinNumber) override;
     void evaluate() override;

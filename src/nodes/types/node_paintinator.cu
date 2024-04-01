@@ -14,9 +14,62 @@
 
 #include "npp_includes.hpp"
 
-bool NodePaintinator::hasLoadedBrushes = false;
-cudaArray_t NodePaintinator::brushPixelArray;
-cudaTextureObject_t NodePaintinator::brushTextureObj;
+BrushesTexture NodePaintinator::brushesTex = { "assets/brushes/variety.png", "variety" };
+
+BrushesTexture::BrushesTexture(const std::string& filePath, const std::string& displayName)
+    : filePath(filePath), displayName(displayName)
+{}
+
+void BrushesTexture::load()
+{
+    int width, height, channels;
+    unsigned char* host_pixels = stbi_load(filePath.c_str(), &width, &height, &channels, 4);
+
+    // TODO: set aspect ratio
+
+    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<uchar4>();
+    int pitch = width * sizeof(uchar4);
+
+    CUDA_CHECK(cudaMallocArray(
+        &pixelArray,
+        &channelDesc,
+        width,
+        height
+    ));
+
+    CUDA_CHECK(cudaMemcpy2DToArray(pixelArray,
+        0, // wOffset
+        0, // hOffset
+        host_pixels,
+        pitch,
+        pitch,
+        height,
+        cudaMemcpyHostToDevice
+    ));
+
+    stbi_image_free(host_pixels);
+
+    cudaResourceDesc resDesc = {};
+    resDesc.resType = cudaResourceTypeArray;
+    resDesc.res.array.array = pixelArray;
+
+    cudaTextureDesc texDesc = {};
+    texDesc.addressMode[0] = cudaAddressModeClamp;
+    texDesc.addressMode[1] = cudaAddressModeClamp;
+    texDesc.filterMode = cudaFilterModePoint;
+    texDesc.readMode = cudaReadModeNormalizedFloat;
+    texDesc.normalizedCoords = 1;
+    texDesc.maxAnisotropy = 1;
+    texDesc.maxMipmapLevelClamp = 99;
+    texDesc.minMipmapLevelClamp = 0;
+    texDesc.mipmapFilterMode = cudaFilterModePoint;
+    texDesc.borderColor[0] = 1.0f;
+    texDesc.sRGB = 0;
+
+    CUDA_CHECK(cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr));
+
+    isLoaded = true;
+}
 
 NodePaintinator::NodePaintinator()
     : Node("paint-inator")
@@ -41,8 +94,8 @@ NodePaintinator::~NodePaintinator()
 
 void NodePaintinator::freeDeviceMemory()
 {
-    cudaDestroyTextureObject(brushTextureObj);
-    cudaFreeArray(brushPixelArray);
+    cudaDestroyTextureObject(brushesTex.textureObj);
+    cudaFreeArray(brushesTex.pixelArray);
 }
 
 bool NodePaintinator::drawPinBeforeExtras(const Pin* pin, int pinNumber)
@@ -105,55 +158,6 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
     }
 }
 
-void NodePaintinator::loadBrushes()
-{
-    int width, height, channels;
-    unsigned char* host_pixels = stbi_load("assets/brushes/test.png", &width, &height, &channels, 4);
-
-    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<uchar4>();
-    int pitch = width * sizeof(uchar4);
-
-    CUDA_CHECK(cudaMallocArray(
-        &brushPixelArray,
-        &channelDesc,
-        width,
-        height
-    ));
-
-    CUDA_CHECK(cudaMemcpy2DToArray(brushPixelArray,
-        0, // wOffset
-        0, // hOffset
-        host_pixels,
-        pitch,
-        pitch,
-        height,
-        cudaMemcpyHostToDevice
-    ));
-
-    stbi_image_free(host_pixels);
-
-    cudaResourceDesc resDesc = {};
-    resDesc.resType = cudaResourceTypeArray;
-    resDesc.res.array.array = brushPixelArray;
-
-    cudaTextureDesc texDesc = {};
-    texDesc.addressMode[0] = cudaAddressModeClamp;
-    texDesc.addressMode[1] = cudaAddressModeClamp;
-    texDesc.filterMode = cudaFilterModePoint;
-    texDesc.readMode = cudaReadModeNormalizedFloat;
-    texDesc.normalizedCoords = 1;
-    texDesc.maxAnisotropy = 1;
-    texDesc.maxMipmapLevelClamp = 99;
-    texDesc.minMipmapLevelClamp = 0;
-    texDesc.mipmapFilterMode = cudaFilterModePoint;
-    texDesc.borderColor[0] = 1.0f;
-    texDesc.sRGB = 0;
-
-    CUDA_CHECK(cudaCreateTextureObject(&brushTextureObj, &resDesc, &texDesc, nullptr));
-
-    hasLoadedBrushes = true;
-}
-
 __global__ void kernFillEmptyTexture(Texture tex, int numPixels)
 {
     const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -206,19 +210,10 @@ __global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int num
     thrust::uniform_real_distribution<float> u01(0, 1);
     float sinVal, cosVal;
     sincosf(u01(rng) * glm::two_pi<float>(), &sinVal, &cosVal);
-    //glm::mat2 matRotate = { cosVal, sinVal, -sinVal, cosVal };
-    //glm::mat2 matScale = glm::mat2(1.f / stroke.color.x);
-    //glm::mat3 matTranslate = { 1, 0, 0, 0, 1, 0, -stroke.pos.x, -stroke.pos.y, 1 };
-    //stroke.transform = glm::mat3(matRotate * matScale) * matTranslate;
-    float sx = 1.f / stroke.color.x;
-    float sy = 1.f / stroke.color.y;
-    float tx = -stroke.pos.x * sx;
-    float ty = -stroke.pos.y * sy;
-    stroke.transform = {
-        sx * cosVal, sx * sinVal, 0,
-        -sy * sinVal, sy * cosVal, 0,
-        tx * cosVal - ty * sinVal, tx * sinVal + ty * cosVal, 1
-    };
+    glm::mat2 matRotate = { cosVal, sinVal, -sinVal, cosVal };
+    glm::mat2 matScale = glm::mat2(stroke.color.x, 0, 0, stroke.color.y);
+    glm::mat3 matTranslate = { 1, 0, 0, 0, 1, 0, -stroke.pos.x, -stroke.pos.y, 1 };
+    stroke.transform = glm::mat3(matScale * matRotate) * matTranslate;
 
     stroke.color = glm::vec3(refTex.dev_pixels[stroke.pos.y * refTex.resolution.x + stroke.pos.x]);
 
@@ -362,9 +357,9 @@ void NodePaintinator::evaluate()
         return;
     }
 
-    if (!hasLoadedBrushes)
+    if (!brushesTex.isLoaded)
     {
-        loadBrushes();
+        brushesTex.load();
     }
 
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
@@ -512,8 +507,8 @@ void NodePaintinator::evaluate()
 
                 PaintStroke newStroke;
                 newStroke.pos = maxErrorPos;
-                newStroke.color.x = strokeSize; // x scale
-                newStroke.color.y = strokeSize; // y scale
+                newStroke.color.x = 1.f / (strokeSize * brushesTex.scale.x);
+                newStroke.color.y = 1.f / (strokeSize * brushesTex.scale.y);
                 // transform, color, and cornerUv are set by kernPrepareStrokes
                 host_strokes.push_back(newStroke);
             }
@@ -538,7 +533,7 @@ void NodePaintinator::evaluate()
         );
 
         kernPaint<<<blocksPerGrid2d, blockSize2d>>>(
-            *outTex, dev_strokes, numStrokes, brushTextureObj, backupBrushAlpha
+            *outTex, dev_strokes, numStrokes, brushesTex.textureObj, backupBrushAlpha
         );
     }
 
