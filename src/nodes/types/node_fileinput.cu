@@ -155,6 +155,7 @@ void NodeFileInput::evaluate()
     }
 
     ++outTex->numReferences; // cache this texture
+                             // numReferences is decremented by reloadFile()
     outputPins[0].propagateTexture(outTex);
 }
 
