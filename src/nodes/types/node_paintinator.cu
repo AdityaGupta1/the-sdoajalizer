@@ -25,7 +25,7 @@ void BrushesTexture::load()
     int width, height, channels;
     unsigned char* host_pixels = stbi_load(filePath.c_str(), &width, &height, &channels, 4);
 
-    // TODO: set aspect ratio
+    scale = glm::vec2(width, height) / (float)std::max(width, height);
 
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<uchar4>();
     int pitch = width * sizeof(uchar4);
