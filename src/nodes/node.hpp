@@ -106,7 +106,9 @@ protected:
     Texture* getPinTextureOrSingleColor(const Pin& pin, float col);
     void clearInputTextures();
 
+    virtual bool drawPinBeforeExtras(const Pin* pin, int pinNumber);
     virtual bool drawPinExtras(const Pin* pin, int pinNumber);
+    virtual bool drawPinAfterExtras(const Pin* pin, int pinNumber);
 
     virtual std::string debugGetSrcFileName() const = 0;
 

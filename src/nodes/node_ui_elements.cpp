@@ -5,14 +5,22 @@
 
 #include "portable_file_dialogs.h"
 
-constexpr unsigned int colorEditFlags =
-    ImGuiColorEditFlags_NoOptions |
-    ImGuiColorEditFlags_NoInputs |
-    ImGuiColorEditFlags_AlphaBar |
-    ImGuiColorEditFlags_AlphaPreview |
-    ImGuiColorEditFlags_HDR |
-    ImGuiColorEditFlags_Float |
-    ImGuiColorEditFlags_PickerHueWheel;
+void NodeUI::Separator(const std::string& text)
+{
+    ImGui::Spacing();
+
+    ImGui::Text(text.c_str());
+
+    ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
+    ImVec2 lineStart = ImGui::GetCursorScreenPos();
+    lineStart.y -= 4.f;
+    ImVec2 lineEnd = ImVec2(lineStart.x + textSize.x, lineStart.y);
+
+    ImGui::GetWindowDrawList()->AddLine(
+        lineStart, lineEnd,
+        ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]),
+        1.0f);
+}
 
 // somewhat hacky way to limit true values to using the slider or confirming after typing into temp input (i.e. not for each individual character typed into temp input)
 bool changeGate(bool didParameterChange)
@@ -21,6 +29,15 @@ bool changeGate(bool didParameterChange)
     return (didParameterChange && !tempActive) // slider
         || (!didParameterChange && tempActive && ImGui::IsItemDeactivatedAfterEdit()); // temp input
 }
+
+constexpr unsigned int colorEditFlags =
+ImGuiColorEditFlags_NoOptions |
+ImGuiColorEditFlags_NoInputs |
+ImGuiColorEditFlags_AlphaBar |
+ImGuiColorEditFlags_AlphaPreview |
+ImGuiColorEditFlags_HDR |
+ImGuiColorEditFlags_Float |
+ImGuiColorEditFlags_PickerHueWheel;
 
 bool NodeUI::ColorEdit4(glm::vec4& col)
 {

@@ -206,6 +206,8 @@ void Node::setNodeEvaluator(NodeEvaluator* nodeEvaluator)
 
 void Node::drawPin(const Pin& pin, int pinNumber, bool& didParameterChange)
 {
+    didParameterChange |= drawPinBeforeExtras(&pin, pinNumber);
+
     if (pin.getCanConnect())
     {
         if (pin.pinType == PinType::INPUT)
@@ -232,6 +234,8 @@ void Node::drawPin(const Pin& pin, int pinNumber, bool& didParameterChange)
             ImNodes::EndOutputAttribute();
         }
     }
+
+    didParameterChange |= drawPinAfterExtras(&pin, pinNumber);
 }
 
 bool Node::draw()
@@ -275,7 +279,19 @@ bool Node::draw()
     return didParameterChange;
 }
 
+bool Node::drawPinBeforeExtras(const Pin* pin, int pinNumber)
+{
+    // do nothing, should be overridden by nodes with parameters
+    return false;
+}
+
 bool Node::drawPinExtras(const Pin* pin, int pinNumber)
+{
+    // do nothing, should be overridden by nodes with parameters
+    return false;
+}
+
+bool Node::drawPinAfterExtras(const Pin* pin, int pinNumber)
 {
     // do nothing, should be overridden by nodes with parameters
     return false;

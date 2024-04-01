@@ -26,8 +26,10 @@ NodePaintinator::NodePaintinator()
     addPin(PinType::INPUT, "image");
     addPin(PinType::INPUT, "min stroke size").setNoConnect();
     addPin(PinType::INPUT, "max stroke size").setNoConnect();
-    addPin(PinType::INPUT, "brush alpha").setNoConnect();
+    addPin(PinType::INPUT, "grid size factor").setNoConnect();
+    addPin(PinType::INPUT, "blur size factor").setNoConnect();
     addPin(PinType::INPUT, "new stroke threshold").setNoConnect();
+    addPin(PinType::INPUT, "brush alpha").setNoConnect();
 
     setExpensive();
 }
@@ -41,6 +43,29 @@ void NodePaintinator::freeDeviceMemory()
 {
     cudaDestroyTextureObject(brushTextureObj);
     cudaFreeArray(brushPixelArray);
+}
+
+bool NodePaintinator::drawPinBeforeExtras(const Pin* pin, int pinNumber)
+{
+    if (pin->pinType == PinType::OUTPUT)
+    {
+        return false;
+    }
+
+    switch (pinNumber)
+    {
+    case 1: // min stroke size
+        NodeUI::Separator("stroke size");
+        return false;
+    case 3: // grid size factor
+        NodeUI::Separator("stroke placement");
+        return false;
+    case 6: // brush alpha
+        NodeUI::Separator("stroke color");
+        return false;
+    default:
+        return false;
+    }
 }
 
 static constexpr int minMinStrokeSize = 5;
@@ -63,12 +88,18 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
     case 2: // max stroke size
         ImGui::SameLine();
         return NodeUI::IntEdit(backupMaxStrokeSize, 0.15f, backupMinStrokeSize, maxMaxStrokeSize);
-    case 3: // brush alpha
+    case 3: // grid size factor
         ImGui::SameLine();
-        return NodeUI::FloatEdit(backupBrushAlpha, 0.01f, 0.f, 1.f);
-    case 4: // new stroke threshold
+        return NodeUI::FloatEdit(backupGridSizeFactor, 0.01f, 0.f, 1.f);
+    case 4: // blur size factor
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupBlurKernelSizeFactor, 0.01f, 0.f, 3.f);
+    case 5: // new stroke threshold
         ImGui::SameLine();
         return NodeUI::FloatEdit(backupNewStrokeThreshold, 0.01f, 0.f, 3.f);
+    case 6: // brush alpha
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(backupBrushAlpha, 0.01f, 0.f, 1.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -299,9 +330,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
 }
 
 // TODO: make these into node parameters
-static constexpr int numLayers = 12;
-static constexpr float gridSizeFactor = 0.25f;
-static constexpr float blurKernelSizeFactor = 0.5f;
+static constexpr int numLayers = 7;
 
 // reference paper: https://dl.acm.org/doi/10.1145/280814.280951
 void NodePaintinator::evaluate()
@@ -357,7 +386,7 @@ void NodePaintinator::evaluate()
         float logStrokeSize = glm::mix(logMaxStrokeSize, logMinStrokeSize, (float)layerIdx / std::max(numLayers - 1, 1));
         float strokeSize = expf(logStrokeSize);
 
-        const int kernelRadius = std::max((int)(strokeSize * blurKernelSizeFactor), 2); // radius < 2 leads to incorrect values (see https://www.desmos.com/calculator/jtsmwtzrc2)
+        const int kernelRadius = std::max((int)(strokeSize * backupBlurKernelSizeFactor), 2); // radius < 2 leads to incorrect values (see https://www.desmos.com/calculator/jtsmwtzrc2)
         const int kernelDiameter = kernelRadius * 2 + 1;
 
         // TODO: malloc space for all kernels at once and fill them all using one kernel invocation
@@ -413,7 +442,7 @@ void NodePaintinator::evaluate()
 
         CUDA_CHECK(cudaMemcpy(host_colorDiff, dev_colorDiff, numPixels * sizeof(float), cudaMemcpyDeviceToHost));
 
-        int gridSize = (int)(strokeSize * 2 * gridSizeFactor);
+        int gridSize = (int)(strokeSize * 2 * backupGridSizeFactor);
         gridSize = std::max(gridSize, 2);
         if (gridSize % 2 != 0) // ensure gridSize is even
         {
