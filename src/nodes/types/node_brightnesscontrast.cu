@@ -89,9 +89,3 @@ void NodeBrightnessContrast::evaluate()
 
     outputPins[0].propagateTexture(outTex);
 }
-
-std::string NodeBrightnessContrast::debugGetSrcFileName() const
-{
-    return __FILE__;
-}
-

@@ -34,9 +34,3 @@ void NodeNoise::evaluate()
 
     outputPins[0].propagateTexture(outTex);
 }
-
-std::string NodeNoise::debugGetSrcFileName() const
-{
-    return __FILE__;
-}
-

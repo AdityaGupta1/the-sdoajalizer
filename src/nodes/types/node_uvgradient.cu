@@ -32,8 +32,3 @@ void NodeUvGradient::evaluate()
 
     outputPins[0].propagateTexture(outTex);
 }
-
-std::string NodeUvGradient::debugGetSrcFileName() const
-{
-    return __FILE__;
-}

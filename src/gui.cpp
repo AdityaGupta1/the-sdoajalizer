@@ -426,14 +426,7 @@ void Gui::drawNodeEditor()
         }
     }
 
-    if (controls.debugOpenSrcFile && numSelectedNodes == 1) 
-    {
-        controls.debugOpenSrcFile = false;
-        this->nodes[selectedNodes[0]]->debugOpenSrcFile();
-    }
-
     controls.deleteComponents = false;
-    controls.debugOpenSrcFile = false;
 }
 
 const char* itemGetter(const std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>>>& items, int index) {
@@ -568,9 +561,6 @@ void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
             break;
         case GLFW_KEY_ESCAPE:
             controls.shouldCreateWindowBeVisible = false;
-            break;
-        case GLFW_KEY_SLASH:
-            controls.debugOpenSrcFile = !io->WantTextInput;
             break;
         }
     }

@@ -158,8 +158,3 @@ void NodeFileInput::evaluate()
                              // numReferences is decremented by reloadFile()
     outputPins[0].propagateTexture(outTex);
 }
-
-std::string NodeFileInput::debugGetSrcFileName() const
-{
-    return __FILE__;
-}

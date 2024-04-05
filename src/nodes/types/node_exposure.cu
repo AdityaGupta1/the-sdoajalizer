@@ -81,9 +81,3 @@ void NodeExposure::evaluate()
 
     outputPins[0].propagateTexture(outTex);
 }
-
-std::string NodeExposure::debugGetSrcFileName() const
-{
-    return __FILE__;
-}
-

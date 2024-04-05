@@ -195,9 +195,3 @@ void NodeBloom::evaluate()
 
     outputPins[0].propagateTexture(outTex2);
 }
-
-std::string NodeBloom::debugGetSrcFileName() const
-{
-    return __FILE__;
-}
-

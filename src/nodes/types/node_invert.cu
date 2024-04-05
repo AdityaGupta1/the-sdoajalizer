@@ -67,9 +67,3 @@ void NodeInvert::evaluate()
 
     outputPins[0].propagateTexture(outTex);
 }
-
-std::string NodeInvert::debugGetSrcFileName() const
-{
-    return __FILE__;
-}
-

@@ -83,9 +83,3 @@ void NodeMix::evaluate()
 
     outputPins[0].propagateTexture(outTex);
 }
-
-std::string NodeMix::debugGetSrcFileName() const
-{
-    return __FILE__;
-}
-

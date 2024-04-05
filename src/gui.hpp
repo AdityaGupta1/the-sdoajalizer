@@ -31,8 +31,6 @@ private:
     struct {
         bool deleteComponents{ false };
         bool shouldCreateWindowBeVisible{ false };
-
-        bool debugOpenSrcFile{ false };
     } controls;
 
     struct {

@@ -12,6 +12,4 @@ public:
 
 protected:
     void evaluate() override;
-
-    std::string debugGetSrcFileName() const override;
 };

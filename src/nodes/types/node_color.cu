@@ -26,8 +26,3 @@ void NodeColor::evaluate()
     outTex->setSingleColor(ColorUtils::srgbToLinear(constParams.color));
     outputPins[0].propagateTexture(outTex);
 }
-
-std::string NodeColor::debugGetSrcFileName() const
-{
-    return __FILE__;
-}

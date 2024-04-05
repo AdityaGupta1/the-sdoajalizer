@@ -16,8 +16,3 @@ void NodeDebug::evaluate()
 {
     // do nothing
 }
-
-std::string NodeDebug::debugGetSrcFileName() const
-{
-    return __FILE__;
-}

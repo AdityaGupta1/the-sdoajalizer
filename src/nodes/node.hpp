@@ -110,8 +110,6 @@ protected:
     virtual bool drawPinExtras(const Pin* pin, int pinNumber);
     virtual bool drawPinAfterExtras(const Pin* pin, int pinNumber);
 
-    virtual std::string debugGetSrcFileName() const = 0;
-
 public:
     const int id;
 
@@ -127,7 +125,4 @@ private:
 
 public:
     bool draw();
-
-    // I would rather not implement this but it was suggested so I have no choice
-    void debugOpenSrcFile();
 };

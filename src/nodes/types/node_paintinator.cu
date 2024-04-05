@@ -573,8 +573,3 @@ void NodePaintinator::evaluate()
 
     outputPins[0].propagateTexture(outTex);
 }
-
-std::string NodePaintinator::debugGetSrcFileName() const
-{
-    return __FILE__;
-}
