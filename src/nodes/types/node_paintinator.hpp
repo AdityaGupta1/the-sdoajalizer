@@ -28,18 +28,28 @@ struct BrushTexture
     void load();
 };
 
+struct BrushParams
+{
+    float brushAlpha;
+    int minStrokeSize;
+    int maxStrokeSize;
+    float gridSizeFactor;
+    float blurKernelSizeFactor;
+    float newStrokeThreshold;
+};
+
 class NodePaintinator : public Node
 {
 private:
     struct
     {
         BrushTexture* brushTexturePtr{ &brushTextures[0] };
-        float brushAlpha{ 1.f };
-        int minStrokeSize{ 5 };
-        int maxStrokeSize{ 200 };
-        float gridSizeFactor{ 0.25f };
-        float blurKernelSizeFactor{ 0.3f };
-        float newStrokeThreshold{ 0.15f };
+        std::unordered_map<BrushTexture*, BrushParams> brushParamsMap;
+
+        BrushParams& getBrushParams()
+        {
+            return brushParamsMap[brushTexturePtr];
+        }
     } constParams;
 
     static std::vector<BrushTexture> brushTextures;
