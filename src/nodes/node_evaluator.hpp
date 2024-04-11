@@ -42,8 +42,9 @@ public:
     Texture* requestTexture(); // defaults to output resolution
     Texture* requestSingleColorTexture(); // resolution = (0, 0)
 
+    Texture* getOutputTexture() const;
     void setOutputTexture(Texture* texture);
-    bool hasOutputTexture();
+    bool hasOutputTexture() const;
 
     void setChangedNode(Node* changedNode);
 

@@ -84,12 +84,17 @@ Texture* NodeEvaluator::requestSingleColorTexture()
     return this->requestTexture(glm::ivec2(0));
 }
 
+Texture* NodeEvaluator::getOutputTexture() const
+{
+    return this->outputTexture;
+}
+
 void NodeEvaluator::setOutputTexture(Texture* texture)
 {
     this->outputTexture = texture;
 }
 
-bool NodeEvaluator::hasOutputTexture()
+bool NodeEvaluator::hasOutputTexture() const
 {
     return this->outputTexture != nullptr;
 }

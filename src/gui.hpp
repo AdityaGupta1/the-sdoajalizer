@@ -59,6 +59,8 @@ private:
     void deleteEdge(Edge* edge);
     void deletePinEdges(Pin& pin);
 
+    void saveImage();
+
     void drawOutputImageViewer();
     void drawNodeEditor();
     void updateNodeCreatorWindow();

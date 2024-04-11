@@ -11,6 +11,10 @@
 
 #include "nodes/all_nodes.hpp"
 
+#include "portable_file_dialogs.h"
+#include "stb_image_write.h"
+#include <filesystem>
+
 static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>>> nodeCreators = {
     { "color", std::make_unique<NodeColor> },
     { "file input", std::make_unique<NodeFileInput> },
@@ -240,6 +244,43 @@ void Gui::deletePinEdges(Pin& pin)
     pin.clearEdges();
 }
 
+void Gui::saveImage()
+{
+    Texture* outputTex = nodeEvaluator.getOutputTexture();
+
+    if (outputTex == nullptr || outputTex->isSingleColor())
+    {
+        return;
+    }
+
+    int numPixels = outputTex->resolution.x * outputTex->resolution.y;
+    float* host_floatPixels = new float[numPixels * 4];
+    uint8_t* host_charPixels = new uint8_t[numPixels * 4];
+
+    CUDA_CHECK(cudaMemcpy(host_floatPixels, outputTex->dev_pixels, numPixels * 4 * sizeof(float), cudaMemcpyDeviceToHost));
+    for (int i = 0; i < numPixels * 4; ++i)
+    {
+        host_charPixels[i] = min((int)(host_floatPixels[i] * 255.99f), 255);
+    }
+
+    delete[] host_floatPixels;
+
+    std::string fileName = pfd::save_file("Save", "", { "Image Files (.png)", "*.png" }).result();
+    if (fileName == "")
+    {
+        return;
+    }
+
+    if (std::filesystem::path(fileName).extension().string() != ".png")
+    {
+        fileName += ".png";
+    }
+
+    stbi_write_png(fileName.c_str(), outputTex->resolution.x, outputTex->resolution.y, 4, host_charPixels, outputTex->resolution.x * 4);
+
+    delete[] host_charPixels;
+}
+
 void Gui::render()
 {
     if (isNetworkDirty)
@@ -261,9 +302,9 @@ void Gui::render()
     {
         if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::MenuItem("New", "Ctrl+N")) // this only displays the shortcut text, doesn't actually make it work
+            if (ImGui::MenuItem("Save", "Ctrl+S")) // this only displays the shortcut text, doesn't actually make it work
             {
-                printf("New\n");
+                saveImage();
             }
 
             ImGui::EndMenu();
@@ -561,6 +602,12 @@ void Gui::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
             break;
         case GLFW_KEY_ESCAPE:
             controls.shouldCreateWindowBeVisible = false;
+            break;
+        case GLFW_KEY_S:
+            if (mods & GLFW_MOD_CONTROL)
+            {
+                saveImage();
+            }
             break;
         }
     }
