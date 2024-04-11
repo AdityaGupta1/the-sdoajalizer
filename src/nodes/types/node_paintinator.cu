@@ -132,6 +132,16 @@ void NodePaintinator::freeDeviceMemory()
     }
 }
 
+unsigned int NodePaintinator::getTitleBarColor() const
+{
+    return IM_COL32(125, 11, 191, 255);
+}
+
+unsigned int NodePaintinator::getTitleBarSelectedColor() const
+{
+    return IM_COL32(177, 81, 204, 255);
+}
+
 bool NodePaintinator::drawPinBeforeExtras(const Pin* pin, int pinNumber)
 {
     if (pin->pinType == PinType::OUTPUT)

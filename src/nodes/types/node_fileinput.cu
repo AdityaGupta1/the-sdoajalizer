@@ -16,6 +16,16 @@ NodeFileInput::NodeFileInput()
     addPin(PinType::INPUT, "color space").setNoConnect();
 }
 
+unsigned int NodeFileInput::getTitleBarColor() const
+{
+    return IM_COL32(7, 94, 11, 255);
+}
+
+unsigned int NodeFileInput::getTitleBarSelectedColor() const
+{
+    return IM_COL32(47, 153, 53, 255);
+}
+
 __global__ void kernSrgbToLinear(Texture tex)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;

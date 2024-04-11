@@ -16,6 +16,10 @@ private:
 public:
     NodeFileInput();
 
+protected:
+    unsigned int getTitleBarColor() const override;
+    unsigned int getTitleBarSelectedColor() const override;
+
 private:
     bool isFileExr() const;
 

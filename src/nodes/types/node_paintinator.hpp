@@ -65,6 +65,9 @@ public:
     static void freeDeviceMemory();
 
 protected:
+    unsigned int getTitleBarColor() const override;
+    unsigned int getTitleBarSelectedColor() const override;
+
     bool drawPinBeforeExtras(const Pin* pin, int pinNumber) override;
     bool drawPinExtras(const Pin* pin, int pinNumber) override;
     void evaluate() override;
