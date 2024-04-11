@@ -36,6 +36,11 @@ namespace ColorUtils
 		return glm::dot(v, glm::vec3(0.2126f, 0.7152f, 0.0722f));
 	}
 
+	__host__ __device__ inline float luminance(glm::vec4 v)
+	{
+		return luminance(glm::vec3(v));
+	}
+
 	// ==================================================================
 	// SRGB/LINEAR CONVERSION
 	// ==================================================================

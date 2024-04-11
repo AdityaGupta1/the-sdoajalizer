@@ -36,6 +36,7 @@ struct BrushParams
     float gridSizeFactor;
     float blurKernelSizeFactor;
     float newStrokeThreshold;
+    float gradientRotationFactor;
 };
 
 class NodePaintinator : public Node

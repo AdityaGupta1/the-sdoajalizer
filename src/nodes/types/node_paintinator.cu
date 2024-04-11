@@ -14,6 +14,8 @@
 
 #include "npp_includes.hpp"
 
+#define SOBEL_BLOCK_SIZE 32
+
 std::vector<BrushTexture> NodePaintinator::brushTextures = {
     { "assets/brushes/variety.png", "variety" },
     { "assets/brushes/grunge.png", "grunge" },
@@ -88,6 +90,7 @@ NodePaintinator::NodePaintinator()
     addPin(PinType::INPUT, "grid size factor").setNoConnect();
     addPin(PinType::INPUT, "blur size factor").setNoConnect();
     addPin(PinType::INPUT, "new stroke threshold").setNoConnect();
+    addPin(PinType::INPUT, "gradient rotation").setNoConnect();
 
     setExpensive();
 
@@ -96,17 +99,19 @@ NodePaintinator::NodePaintinator()
         1.f, // brush alpha
         5, 200, // min/max stroke size
         0.25f, // grid size factor
-        0.3f, // blur size factor
-        0.15f // new stroke threshold
+        0.7f, // blur size factor
+        0.15f, // new stroke threshold
+        0.f // gradient rotation
     };
 
     // grunge
     constParams.brushParamsMap[&brushTextures[1]] = {
-        1.f, // brush alpha
-        15, 400, // min/max stroke size
-        0.25f, // grid size factor
-        0.2f, // blur size factor
-        0.3f // new stroke threshold
+        0.95f, // brush alpha
+        15, 500, // min/max stroke size
+        0.2f, // grid size factor
+        1.0f, // blur size factor
+        0.08f, // new stroke threshold
+        0.9f // gradient rotation
     };
 }
 
@@ -189,6 +194,9 @@ bool NodePaintinator::drawPinExtras(const Pin* pin, int pinNumber)
     case 7: // new stroke threshold
         ImGui::SameLine();
         return NodeUI::FloatEdit(brushParams.newStrokeThreshold, 0.01f, 0.f, 3.f);
+    case 8: // gradient rotation
+        ImGui::SameLine();
+        return NodeUI::FloatEdit(brushParams.gradientRotationFactor, 0.01f, 0.f, 1.f);
     default:
         throw std::runtime_error("invalid pin number");
     }
@@ -204,6 +212,65 @@ __global__ void kernFillEmptyTexture(Texture tex, int numPixels)
     }
 
     tex.dev_pixels[idx] = glm::vec4(0, 0, 0, 0);
+}
+
+#define sl(x, y) shared_luminance[(y) * sharedSideLength + (x)]
+
+__global__ void kernSobelAngle(Texture inTex, float* outAngle)
+{
+    constexpr int sharedSideLength = SOBEL_BLOCK_SIZE + 2;
+    __shared__ float shared_luminance[sharedSideLength * sharedSideLength];
+
+    int localX = threadIdx.x;
+    int localY = threadIdx.y;
+    int localIdx = localY * SOBEL_BLOCK_SIZE + localX;
+
+    const int cornerX = blockIdx.x * blockDim.x;
+    const int cornerY = blockIdx.y * blockDim.y;
+    const int x = cornerX + localX;
+    const int y = cornerY + localY;
+
+    // TODO: don't load into shared memory if too far from actual image?
+
+    // top-left square (SOBEL_BLOCK_SIZE, SOBEL_BLOCK_SIZE)
+    shared_luminance[localY * sharedSideLength + localX] = ColorUtils::luminance(inTex.getColorReplicate(x - 1, y - 1));
+
+    // right two columns (2, SOBEL_BLOCK_SIZE)
+    if (localY < 2)
+    {
+        int columnX = SOBEL_BLOCK_SIZE + localY;
+        int columnY = localX;
+        shared_luminance[columnY * sharedSideLength + columnX] = ColorUtils::luminance(inTex.getColorReplicate(cornerX + columnX - 1, cornerY + columnY - 1));
+    }
+
+    // bottom two rows and bottom-right corner (SOBEL_BLOCK_SIZE + 2, 2)
+    localIdx -= 2 * SOBEL_BLOCK_SIZE;
+    if (localIdx >= 0 && localIdx < 2 * sharedSideLength)
+    {
+        bool firstRow = localIdx < sharedSideLength;
+        int rowX = firstRow ? localIdx : localIdx - sharedSideLength;
+        int rowY = firstRow ? SOBEL_BLOCK_SIZE : SOBEL_BLOCK_SIZE + 1;
+        shared_luminance[rowY * sharedSideLength + rowX] = ColorUtils::luminance(inTex.getColorReplicate(cornerX + rowX - 1, cornerY + rowY - 1));
+    }
+
+    __syncthreads();
+
+    if (x >= inTex.resolution.x || y >= inTex.resolution.y)
+    {
+        return;
+    }
+
+    localX += 1;
+    localY += 1;
+    float dx = -sl(localX - 1, localY - 1) + sl(localX + 1, localY - 1)
+        - 2 * sl(localX - 1, localY) + 2 * sl(localX + 1, localY)
+        - sl(localX - 1, localY + 1) + sl(localX + 1, localY + 1);
+    float dy = -sl(localX - 1, localY - 1) - 2 * sl(localX, localY - 1) - sl(localX + 1, localY - 1)
+        + sl(localX - 1, localY + 1) + 2 * sl(localX, localY + 1) + sl(localX + 1, localY + 1);
+    //float angle = atan2f(dx, -dy);
+    float angle = atan2f(dy, -dx) + glm::half_pi<float>();
+
+    outAngle[y * inTex.resolution.x + x] = angle;
 }
 
 __global__ void kernCalculateColorDifference(Texture paintedTex, Texture refTex, float* colorDiff, int numPixels)
@@ -231,7 +298,7 @@ __global__ void kernCalculateColorDifference(Texture paintedTex, Texture refTex,
 }
 
 // I doubt this has coalesced memory accesses, which is probably not a good thing
-__global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int numStrokes)
+__global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int numStrokes, float* gradientAngles, float gradientRotationFactor)
 {
     const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
@@ -242,10 +309,18 @@ __global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int num
 
     PaintStroke& stroke = strokes[idx];
 
+    int texIdx = stroke.pos.y * refTex.resolution.x + stroke.pos.x;
+
     auto rng = makeSeededRandomEngine(idx, numStrokes);
-    thrust::uniform_real_distribution<float> u01(0, 1);
+    thrust::uniform_real_distribution<float> u2pi(0, glm::two_pi<float>());
+    float angle = u2pi(rng);
+    if (gradientAngles != nullptr && gradientRotationFactor > 0.f)
+    {
+        float gradientAngle = gradientAngles[texIdx];
+        angle = glm::mix(angle, gradientAngle, gradientRotationFactor);
+    }
     float sinVal, cosVal;
-    sincosf(u01(rng) * glm::two_pi<float>(), &sinVal, &cosVal);
+    sincosf(angle, &sinVal, &cosVal);
     glm::mat2 matRotate = { cosVal, sinVal, -sinVal, cosVal };
 
     float sx = stroke.color.x;
@@ -266,7 +341,7 @@ __global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int num
 
     stroke.transform = glm::mat3(matScale * matRotate) * matTranslate;
 
-    stroke.color = glm::vec3(refTex.dev_pixels[stroke.pos.y * refTex.resolution.x + stroke.pos.x]);
+    stroke.color = glm::vec3(refTex.dev_pixels[texIdx]);
 
     thrust::uniform_int_distribution<int> distUv(0, 3);
     stroke.cornerUv = glm::vec2(distUv(rng), distUv(rng)) * 0.25f;
@@ -304,7 +379,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
 
-    const bool inBounds = x < outTex.resolution.x&& y < outTex.resolution.y;
+    const bool inBounds = x < outTex.resolution.x && y < outTex.resolution.y;
 
     if (!inBounds)
     {
@@ -442,6 +517,16 @@ void NodePaintinator::evaluate()
 
     const auto& brushParams = constParams.getBrushParams();
 
+    const bool usingGradient = (brushParams.gradientRotationFactor != 0.f);
+    float* dev_gradientAngles = nullptr;
+    dim3 blockSize2dSobel, blocksPerGrid2dSobel;
+    if (usingGradient)
+    {
+        CUDA_CHECK(cudaMalloc(&dev_gradientAngles, numPixels * sizeof(float)));
+        blockSize2dSobel = dim3(SOBEL_BLOCK_SIZE, SOBEL_BLOCK_SIZE);
+        blocksPerGrid2dSobel = calculateNumBlocksPerGrid(inTex->resolution, blockSize2dSobel);
+    }
+
     float logMinStrokeSize = logf(brushParams.minStrokeSize);
     float logMaxStrokeSize = logf(brushParams.maxStrokeSize);
     for (int layerIdx = 0; layerIdx < numLayers; ++layerIdx)
@@ -498,6 +583,13 @@ void NodePaintinator::evaluate()
 
         delete[] host_kernel;
         CUDA_CHECK(cudaFree(dev_kernel));
+
+        if (usingGradient)
+        {
+            kernSobelAngle<<<blocksPerGrid2dSobel, blockSize2dSobel>>>(
+                *refTex, dev_gradientAngles
+            );
+        }
 
         // =========================
         // PAINT LAYER
@@ -582,7 +674,7 @@ void NodePaintinator::evaluate()
         const dim3 strokesBlockSize1d(256);
         const dim3 strokesBlocksPerGrid1d(calculateNumBlocksPerGrid(numStrokes, strokesBlockSize1d.x));
         kernPrepareStrokes<<<strokesBlocksPerGrid1d, strokesBlockSize1d>>>(
-            *refTex, dev_strokes, numStrokes
+            *refTex, dev_strokes, numStrokes, dev_gradientAngles, brushParams.gradientRotationFactor
         );
 
         kernPaint<<<blocksPerGrid2d, blockSize2d>>>(
@@ -592,6 +684,11 @@ void NodePaintinator::evaluate()
 
     delete[] host_colorDiff;
     CUDA_CHECK(cudaFree(dev_colorDiff));
+
+    if (usingGradient)
+    {
+        CUDA_CHECK(cudaFree(dev_gradientAngles));
+    }
 
     outputPins[0].propagateTexture(outTex);
 }

@@ -31,24 +31,36 @@ struct Texture
         return this->resolution.x == 0;
     }
 
-    __host__ __device__ inline glm::vec4 getColor(int x, int y, glm::vec4 backup = glm::vec4(0, 0, 0, 1))
+    __device__ inline glm::vec4 getColorClamp(int x, int y, glm::vec4 backup = glm::vec4(0, 0, 0, 1))
     {
         if (isSingleColor())
         {
             return singleColor;
         }
-        else
+
+        if (x < resolution.x && y < resolution.y)
         {
-            if (x < resolution.x && y < resolution.y)
-            {
-                int idx = y * resolution.x + x;
-                return dev_pixels[idx];
-            }
-            else
-            {
-                return backup;
-            }
+            return dev_pixels[y * resolution.x + x];
         }
+
+        return backup;
+    }
+
+    __device__ inline glm::vec4 getColorReplicate(int x, int y)
+    {
+        if (isSingleColor())
+        {
+            return singleColor;
+        }
+
+        x = glm::clamp(x, 0, resolution.x - 1);
+        y = glm::clamp(y, 0, resolution.y - 1);
+        return dev_pixels[y * resolution.x + x];
+    }
+
+    __device__ inline void setColor(int x, int y, glm::vec4 col)
+    {
+        dev_pixels[y * resolution.x + x] = col;
     }
 
     static glm::ivec2 getFirstResolution(std::initializer_list<Texture*> textures);

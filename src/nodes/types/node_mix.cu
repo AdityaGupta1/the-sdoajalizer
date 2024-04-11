@@ -27,9 +27,9 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, Texture inTexFactor, glm
         return;
     }
 
-    glm::vec4 col1 = inTex1.getColor(x, y);
-    glm::vec4 col2 = inTex2.getColor(x, y);
-    float factor = inTexFactor.getColor(x, y).r;
+    glm::vec4 col1 = inTex1.getColorClamp(x, y);
+    glm::vec4 col2 = inTex2.getColorClamp(x, y);
+    float factor = inTexFactor.getColorClamp(x, y).r;
 
     outTex.dev_pixels[y * outRes.x + x] = mixCols(col1, col2, factor);
 }
