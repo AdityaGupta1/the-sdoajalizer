@@ -75,7 +75,7 @@ bool NodeUI::IntEdit(int& v, float v_speed, int v_min, int v_max, const char* fo
     return didParameterChange;
 }
 
-bool NodeUI::FilePicker(std::string* filePath)
+bool NodeUI::FilePicker(std::string* filePath, const std::vector<std::string>& filters)
 {
     ImGui::PushItemWidth(160);
     char* fileName = const_cast<char*>(filePath->c_str()) + filePath->find_last_of("/\\") + 1;
@@ -88,7 +88,7 @@ bool NodeUI::FilePicker(std::string* filePath)
         return false;
     }
 
-    auto selections = pfd::open_file("Open", "", { "Image Files (.png, .jpg, .jpeg, .exr)", "*.png *.jpg *.jpeg *.exr" }).result();
+    auto selections = pfd::open_file("Open", "", filters).result();
     if (selections.empty()) {
         return false;
     }

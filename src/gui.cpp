@@ -25,7 +25,8 @@ static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>
     { "exposure", std::make_unique<NodeExposure> },
     { "brightness/contrast", std::make_unique<NodeBrightnessContrast> },
     { "bloom", std::make_unique<NodeBloom> },
-    { "paint-inator", std::make_unique<NodePaintinator> }
+    { "paint-inator", std::make_unique<NodePaintinator> },
+    { "LUT", std::make_unique<NodeLUT> }
 };
 
 void Gui::init(GLFWwindow* window)
@@ -55,7 +56,7 @@ void Gui::init(GLFWwindow* window)
 
     // TEMP
     addNode(std::make_unique<NodeFileInput>());
-    addNode(std::make_unique<NodePaintinator>());
+    addNode(std::make_unique<NodeLUT>());
 
     this->nodeEvaluator.setOutputNode(this->outputNode);
 }

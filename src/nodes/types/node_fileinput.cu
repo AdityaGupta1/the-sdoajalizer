@@ -127,7 +127,7 @@ bool NodeFileInput::drawPinExtras(const Pin* pin, int pinNumber)
         switch (pinNumber)
         {
         case 0: // file input
-            didParameterChange = NodeUI::FilePicker(&filePath);
+            didParameterChange = NodeUI::FilePicker(&filePath, { "Image Files (.png, .jpg, .jpeg, .exr)", "*.png *.jpg *.jpeg *.exr" });
 
             if (didParameterChange)
             {

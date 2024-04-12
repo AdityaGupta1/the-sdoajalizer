@@ -14,3 +14,4 @@
 #include "types/node_brightnesscontrast.hpp"
 #include "types/node_bloom.hpp"
 #include "types/node_paintinator.hpp"
+#include "types/node_lut.hpp"
