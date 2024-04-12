@@ -136,7 +136,6 @@ void NodeLUT::reloadFile()
     texDesc.maxMipmapLevelClamp = 99;
     texDesc.minMipmapLevelClamp = 0;
     texDesc.mipmapFilterMode = cudaFilterModeLinear;
-    texDesc.borderColor[0] = 1.0f;
     texDesc.sRGB = 0;
 
     CUDA_CHECK(cudaCreateTextureObject(&lutTexObj, &resDesc, &texDesc, nullptr));
@@ -198,7 +197,7 @@ void NodeLUT::evaluate()
         needsReloadFile = false;
     }
 
-    Texture* inTex = inputPins[0].getSingleTexture();
+    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
 
     // TODO: make this node work properly for single color textures?
     //       probably unimportant since there's no good reason to apply a LUT to a single color

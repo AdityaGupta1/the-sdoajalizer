@@ -58,9 +58,6 @@ void Gui::init(GLFWwindow* window)
     addNode(std::make_unique<NodeFileInput>());
     addNode(std::make_unique<NodeToneMapping>());
 
-    // TEMP
-    addNode(std::make_unique<NodeLUT>());
-
     this->nodeEvaluator.setOutputNode(this->outputNode);
 }
 

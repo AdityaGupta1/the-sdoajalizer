@@ -62,14 +62,13 @@ void BrushTexture::load()
     cudaTextureDesc texDesc = {};
     texDesc.addressMode[0] = cudaAddressModeClamp;
     texDesc.addressMode[1] = cudaAddressModeClamp;
-    texDesc.filterMode = cudaFilterModePoint;
+    texDesc.filterMode = cudaFilterModeLinear;
     texDesc.readMode = cudaReadModeNormalizedFloat;
     texDesc.normalizedCoords = 1;
     texDesc.maxAnisotropy = 1;
     texDesc.maxMipmapLevelClamp = 99;
     texDesc.minMipmapLevelClamp = 0;
-    texDesc.mipmapFilterMode = cudaFilterModePoint;
-    texDesc.borderColor[0] = 1.0f;
+    texDesc.mipmapFilterMode = cudaFilterModeLinear;
     texDesc.sRGB = 0;
 
     CUDA_CHECK(cudaCreateTextureObject(&lutTexObj, &resDesc, &texDesc, nullptr));
