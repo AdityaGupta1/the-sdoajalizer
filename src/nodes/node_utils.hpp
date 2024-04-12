@@ -12,3 +12,8 @@ inline dim3 calculateNumBlocksPerGrid(const glm::ivec2& res, const dim3& blockSi
 {
     return dim3(calculateNumBlocksPerGrid(res.x, blockSize.x), calculateNumBlocksPerGrid(res.y, blockSize.y));
 }
+
+inline dim3 calculateNumBlocksPerGrid(const glm::ivec3& res, const dim3& blockSize)
+{
+    return dim3(calculateNumBlocksPerGrid(res.x, blockSize.x), calculateNumBlocksPerGrid(res.y, blockSize.y), calculateNumBlocksPerGrid(res.z, blockSize.z));
+}

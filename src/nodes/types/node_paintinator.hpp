@@ -19,7 +19,7 @@ struct BrushTexture
     const std::string displayName;
 
     cudaArray_t pixelArray{ nullptr };
-    cudaTextureObject_t textureObj;
+    cudaTextureObject_t lutTexObj;
 
     glm::vec2 scale{ 1.f, 1.f };
 

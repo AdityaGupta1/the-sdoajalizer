@@ -72,7 +72,7 @@ void BrushTexture::load()
     texDesc.borderColor[0] = 1.0f;
     texDesc.sRGB = 0;
 
-    CUDA_CHECK(cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr));
+    CUDA_CHECK(cudaCreateTextureObject(&lutTexObj, &resDesc, &texDesc, nullptr));
 
     isLoaded = true;
 }
@@ -126,7 +126,7 @@ void NodePaintinator::freeDeviceMemory()
     {
         if (brushTex.pixelArray != nullptr)
         {
-            cudaDestroyTextureObject(brushTex.textureObj);
+            cudaDestroyTextureObject(brushTex.lutTexObj);
             cudaFreeArray(brushTex.pixelArray);
         }
     }
@@ -480,7 +480,6 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
     outTex.dev_pixels[idx] = blendPaintColors(outTex.dev_pixels[idx], topColor);
 }
 
-// TODO: make these into node parameters
 static constexpr int numLayers = 7;
 
 // reference paper: https://dl.acm.org/doi/10.1145/280814.280951
@@ -689,7 +688,7 @@ void NodePaintinator::evaluate()
         );
 
         kernPaint<<<blocksPerGrid2d, blockSize2d>>>(
-            *outTex, dev_strokes, numStrokes, constParams.brushTexturePtr->textureObj, brushParams.brushAlpha
+            *outTex, dev_strokes, numStrokes, constParams.brushTexturePtr->lutTexObj, brushParams.brushAlpha
         );
     }
 

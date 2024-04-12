@@ -149,8 +149,8 @@ bool NodeFileInput::drawPinExtras(const Pin* pin, int pinNumber)
 void NodeFileInput::evaluate()
 {
     if (needsReloadFile) {
-        needsReloadFile = false;
         reloadFile();
+        needsReloadFile = false;
     }
 
     Texture* outTex;
