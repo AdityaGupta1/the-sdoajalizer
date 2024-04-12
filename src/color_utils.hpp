@@ -139,7 +139,7 @@ namespace ColorUtils
 		// sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
 		// NOTE: We're linearizing the output here. Comment/adjust when
 		// *not* using a sRGB render target
-		//val = glm::pow(val, glm::vec3(2.2)); // linearization happens in NodeOutput
+		val = srgbToLinear(val);
 
 		return val;
 	}

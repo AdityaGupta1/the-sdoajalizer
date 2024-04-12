@@ -2,7 +2,7 @@
 
 #include "cuda_includes.hpp"
 
-std::vector<const char*> NodeOutput::toneMappingOptions = { "none", "reinhard", "ACES filmic", "AgX", "AgX (golden)", "AgX (punchy)"};
+std::vector<const char*> NodeOutput::toneMappingOptions = { "none", "AgX", "AgX (golden)", "AgX (punchy)", "reinhard", "ACES filmic" };
 
 NodeOutput::NodeOutput()
     : Node("output")
@@ -30,26 +30,23 @@ __host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col, int toneMapping)
     case 0:
         break;
     case 1:
-        rgb = ColorUtils::reinhard(rgb);
-        break;
-    case 2:
-        rgb = ColorUtils::ACESFilm(rgb);
-        break;
-    case 3:
         rgb = ColorUtils::AgX(rgb, 0);
         break;
-    case 4:
+    case 2:
         rgb = ColorUtils::AgX(rgb, 1);
         break;
-    case 5:
+    case 3:
         rgb = ColorUtils::AgX(rgb, 2);
+        break;
+    case 4:
+        rgb = ColorUtils::reinhard(rgb);
+        break;
+    case 5:
+        rgb = ColorUtils::ACESFilm(rgb);
         break;
     }
 
-    if (toneMapping < 3)
-    {
-        rgb = ColorUtils::linearToSrgb(rgb);
-    }
+    rgb = ColorUtils::linearToSrgb(rgb);
 
     return glm::vec4(rgb, col.a);
 }
