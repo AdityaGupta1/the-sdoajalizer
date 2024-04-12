@@ -200,7 +200,9 @@ void NodeLUT::evaluate()
 
     Texture* inTex = inputPins[0].getSingleTexture();
 
-    if (lutArray == nullptr)
+    // TODO: make this node work properly for single color textures?
+    //       probably unimportant since there's no good reason to apply a LUT to a single color
+    if (inTex->isSingleColor() || lutArray == nullptr)
     {
         outputPins[0].propagateTexture(inTex);
         return;

@@ -15,3 +15,4 @@
 #include "types/node_bloom.hpp"
 #include "types/node_paintinator.hpp"
 #include "types/node_lut.hpp"
+#include "types/node_tonemapping.hpp"

@@ -2,52 +2,31 @@
 
 #include "cuda_includes.hpp"
 
-std::vector<const char*> NodeOutput::toneMappingOptions = { "none", "AgX", "AgX (golden)", "AgX (punchy)", "reinhard", "ACES filmic" };
-
 NodeOutput::NodeOutput()
     : Node("output")
 {
     addPin(PinType::INPUT, "image");
-    addPin(PinType::INPUT, "tone mapping").setNoConnect();
 }
 
 unsigned int NodeOutput::getTitleBarColor() const
 {
-    return IM_COL32(255, 85, 0, 255);
+    return IM_COL32(190, 85, 0, 255);
 }
 
 unsigned int NodeOutput::getTitleBarSelectedColor() const
 {
-    return IM_COL32(255, 128, 0, 255);
+    return IM_COL32(255, 129, 66, 255);
 }
 
-__host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col, int toneMapping)
+bool NodeOutput::drawPinExtras(const Pin* pin, int pinNumber)
+{
+    return false;
+}
+
+__host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col)
 {
     glm::vec3 rgb = glm::max(glm::vec3(col), 0.f);
-    
-    switch (toneMapping)
-    {
-    case 0:
-        break;
-    case 1:
-        rgb = ColorUtils::AgX(rgb, 0);
-        break;
-    case 2:
-        rgb = ColorUtils::AgX(rgb, 1);
-        break;
-    case 3:
-        rgb = ColorUtils::AgX(rgb, 2);
-        break;
-    case 4:
-        rgb = ColorUtils::reinhard(rgb);
-        break;
-    case 5:
-        rgb = ColorUtils::ACESFilm(rgb);
-        break;
-    }
-
     rgb = ColorUtils::linearToSrgb(rgb);
-
     return glm::vec4(rgb, col.a);
 }
 
@@ -64,7 +43,7 @@ __global__ void kernFillSingleColor(Texture outTex, glm::vec4 col)
     outTex.dev_pixels[y * outTex.resolution.x + x] = col;
 }
 
-__global__ void kernCopyToOutTex(Texture inTex, int toneMapping, Texture outTex)
+__global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
@@ -81,21 +60,10 @@ __global__ void kernCopyToOutTex(Texture inTex, int toneMapping, Texture outTex)
     }
     else
     {
-        col = hdrToLdr(inTex.dev_pixels[y * inTex.resolution.x + x], toneMapping);
+        col = hdrToLdr(inTex.dev_pixels[y * inTex.resolution.x + x]);
     }
 
     outTex.dev_pixels[y * outTex.resolution.x + x] = col;
-}
-
-bool NodeOutput::drawPinExtras(const Pin* pin, int pinNumber)
-{
-    if (pinNumber == 1)
-    {
-        ImGui::SameLine();
-        return NodeUI::Dropdown(selectedToneMapping, toneMappingOptions);
-    }
-
-    return false;
 }
 
 void NodeOutput::evaluate()
@@ -114,12 +82,12 @@ void NodeOutput::evaluate()
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);
     if (inTex->isSingleColor())
     {
-        auto ldrCol = hdrToLdr(inTex->singleColor, selectedToneMapping);
+        auto ldrCol = hdrToLdr(inTex->singleColor);
         kernFillSingleColor<<<blocksPerGrid, blockSize>>>(*outTex, ldrCol);
     }
     else
     {
-        kernCopyToOutTex<<<blocksPerGrid, blockSize>>>(*inTex, selectedToneMapping, *outTex);
+        kernCopyToOutTex<<<blocksPerGrid, blockSize>>>(*inTex, *outTex);
     }
 
     nodeEvaluator->setOutputTexture(outTex);

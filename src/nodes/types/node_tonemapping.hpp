@@ -1,12 +1,15 @@
 #pragma once
 
 #include "nodes/node.hpp"
-#include "texture.hpp"
 
-class NodeOutput : public Node
+class NodeToneMapping : public Node
 {
+private:
+    static std::vector<const char*> toneMappingOptions;
+    int selectedToneMapping{ 1 }; // AgX
+
 public:
-    NodeOutput();
+    NodeToneMapping();
 
 protected:
     unsigned int getTitleBarColor() const override;

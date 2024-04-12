@@ -26,7 +26,8 @@ static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>
     { "brightness/contrast", std::make_unique<NodeBrightnessContrast> },
     { "bloom", std::make_unique<NodeBloom> },
     { "paint-inator", std::make_unique<NodePaintinator> },
-    { "LUT", std::make_unique<NodeLUT> }
+    { "LUT", std::make_unique<NodeLUT> },
+    { "tone mapping", std::make_unique<NodeToneMapping> }
 };
 
 void Gui::init(GLFWwindow* window)
@@ -54,8 +55,10 @@ void Gui::init(GLFWwindow* window)
     this->outputNode = outputNodeUptr.get();
     addNode(std::move(outputNodeUptr));
 
-    // TEMP
     addNode(std::make_unique<NodeFileInput>());
+    addNode(std::make_unique<NodeToneMapping>());
+
+    // TEMP
     addNode(std::make_unique<NodeLUT>());
 
     this->nodeEvaluator.setOutputNode(this->outputNode);
@@ -351,7 +354,12 @@ void Gui::render()
     if (isFirstRender)
     {
         ImVec2 windowSize = ImGui::GetWindowSize();
-        ImNodes::SetNodeEditorSpacePos(0, ImVec2(windowSize.x * 0.8f, windowSize.y * 0.5f)); // 0 = output node
+        ImNodes::SetNodeEditorSpacePos(0, ImVec2(windowSize.x * 0.7f, windowSize.y * 0.5f)); // output
+        ImNodes::SetNodeEditorSpacePos(NODE_ID_STRIDE, ImVec2(windowSize.x * 0.3f, windowSize.y * 0.5f)); // file input
+        ImNodes::SetNodeEditorSpacePos(2 * NODE_ID_STRIDE, ImVec2(windowSize.x * 0.5f, windowSize.y * 0.5f)); // tone mapping
+
+        addEdge(NODE_ID_STRIDE + 1, 2 * NODE_ID_STRIDE + 2); // file input --> tone mapping
+        addEdge(2 * NODE_ID_STRIDE + 1, 1); // tone mapping --> output
     }
 
     drawNodeEditor();
