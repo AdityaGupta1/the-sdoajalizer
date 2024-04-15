@@ -237,4 +237,11 @@ void NodeEvaluator::evaluate()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, outputResolution.x, outputResolution.y, false, GL_RGBA, GL_FLOAT, host_pixels);
 
     CUDA_CHECK(cudaFreeHost(host_pixels));
+
+    int numTextures = 0;
+    for (const auto& [res, textures] : this->textures)
+    {
+        numTextures += textures.size();
+    }
+    printf("number of allocated textures: %d\n", numTextures);
 }
