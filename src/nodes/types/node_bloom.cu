@@ -42,7 +42,7 @@ __global__ void kernCopyWithThreshold(Texture inTex, float threshold, Texture ou
     }
 
     int idx = y * inTex.resolution.x + x;
-    glm::vec4 inCol = inTex.dev_pixels[idx];
+    glm::vec4 inCol = inTex.getColor(idx);
     glm::vec3 inRgb = glm::vec3(inCol) * inCol.a;
 
     glm::vec4 outCol;
@@ -55,7 +55,7 @@ __global__ void kernCopyWithThreshold(Texture inTex, float threshold, Texture ou
         outCol = glm::vec4(0, 0, 0, 1);
     }
 
-    outTex.dev_pixels[idx] = outCol;
+    outTex.setColor(idx, outCol);
 }
 
 __device__ float calculateKernelWeight(float u, float v, float scale)
@@ -96,8 +96,8 @@ __global__ void kernAdd(Texture inTexBase, Texture inTexProcessed, float mix, Te
     }
 
     int idx = y * inTexBase.resolution.x + x;
-    glm::vec3 baseRgb(inTexBase.dev_pixels[idx]);
-    glm::vec3 processedCol(inTexProcessed.dev_pixels[idx]);
+    glm::vec3 baseRgb(inTexBase.getColor(idx));
+    glm::vec3 processedCol(inTexProcessed.getColor(idx));
 
     glm::vec3 fullRgb(baseRgb + processedCol);
     glm::vec3 outRgb;
@@ -110,7 +110,7 @@ __global__ void kernAdd(Texture inTexBase, Texture inTexProcessed, float mix, Te
         outRgb = glm::mix(fullRgb, processedCol, mix);
     }
 
-    outTex.dev_pixels[idx] = glm::vec4(outRgb, 1);
+    outTex.setColor(idx, glm::vec4(outRgb, 1));
 }
 
 bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
@@ -182,9 +182,9 @@ void NodeBloom::_evaluate()
     NppiPoint oAnchor = { kernelRadius, kernelRadius };
 
     NPP_CHECK(nppiFilterBorder_32f_C4R(
-        (Npp32f*)outTex1->dev_pixels, width * 4 * sizeof(float),
+        (Npp32f*)outTex1->getDevPixels(), width * 4 * sizeof(float),
         oSrcSize, oSrcOffset,
-        (Npp32f*)outTex2->dev_pixels, width * 4 * sizeof(float),
+        (Npp32f*)outTex2->getDevPixels(), width * 4 * sizeof(float),
         oSizeROI,
         (Npp32f*)dev_kernel, oKernelSize, oAnchor,
         NPP_BORDER_REPLICATE

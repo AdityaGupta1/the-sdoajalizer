@@ -40,7 +40,7 @@ __global__ void kernFillSingleColor(Texture outTex, glm::vec4 col)
         return;
     }
 
-    outTex.dev_pixels[y * outTex.resolution.x + x] = col;
+    outTex.setColor(x, y, col);
 }
 
 __global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
@@ -60,10 +60,10 @@ __global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
     }
     else
     {
-        col = hdrToLdr(inTex.dev_pixels[y * inTex.resolution.x + x]);
+        col = hdrToLdr(inTex.getColor(x, y));
     }
 
-    outTex.dev_pixels[y * outTex.resolution.x + x] = col;
+    outTex.setColor(x, y, col);
 }
 
 void NodeOutput::_evaluate()

@@ -1,15 +1,19 @@
 #include "texture.hpp"
 
-Texture Texture::nullCheck(Texture* inTex)
+void Texture::malloc(glm::ivec2 resolution)
 {
-    if (inTex == nullptr)
-    {
-        return { .dev_pixels = nullptr };
-    }
-    else
-    {
-        return *inTex;
-    }
+    this->resolution = resolution;
+    CUDA_CHECK(cudaMalloc(&dev_pixels, resolution.x * resolution.y * sizeof(glm::vec4)));
+}
+
+void Texture::free()
+{
+    CUDA_CHECK(cudaFree(dev_pixels));
+}
+
+glm::vec4* Texture::getDevPixels() const
+{
+    return dev_pixels;
 }
 
 void Texture::setSingleColor(glm::vec4 col)

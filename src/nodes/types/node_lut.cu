@@ -180,13 +180,13 @@ __global__ void kernApplyLUT(Texture inTex, Texture outTex, cudaTextureObject_t 
     }
 
     const int idx = y * outTex.resolution.x + x;
-    glm::vec4 inColLinear = inTex.dev_pixels[idx];
+    glm::vec4 inColLinear = inTex.getColor(idx);
 
     glm::vec3 inColSrgb = ColorUtils::linearToSrgb(glm::vec3(inColLinear));
     float4 lutColSrgb = tex3D<float4>(lutTex, inColSrgb.x, inColSrgb.y, inColSrgb.z);
     glm::vec3 outColLinear = ColorUtils::srgbToLinear(glm::vec3(lutColSrgb.x, lutColSrgb.y, lutColSrgb.z));
 
-    outTex.dev_pixels[idx] = glm::vec4(outColLinear, inColLinear.a);
+    outTex.setColor(idx, glm::vec4(outColLinear, inColLinear.a));
 }
 
 void NodeLUT::_evaluate()

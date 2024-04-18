@@ -26,8 +26,7 @@ __global__ void kernInvert(Texture inTex, Texture outTex)
     }
 
     int idx = y * inTex.resolution.x + x;
-    glm::vec4 col = inTex.dev_pixels[idx];
-    outTex.dev_pixels[idx] = invertCol(col);
+    outTex.setColor(idx, invertCol(inTex.getColor(idx)));
 }
 
 bool NodeInvert::drawPinExtras(const Pin* pin, int pinNumber)

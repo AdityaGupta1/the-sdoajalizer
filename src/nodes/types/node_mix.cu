@@ -31,7 +31,7 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, Texture inTexFactor, glm
     glm::vec4 col2 = inTex2.getColorClamp(x, y);
     float factor = inTexFactor.getColorClamp(x, y).r;
 
-    outTex.dev_pixels[y * outRes.x + x] = mixCols(col1, col2, factor);
+    outTex.setColor(x, y, mixCols(col1, col2, factor));
 }
 
 bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)

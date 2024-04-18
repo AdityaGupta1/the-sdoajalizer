@@ -21,7 +21,7 @@ __global__ void kernNoise(Texture outTex)
     }
 
     float noise = glm::simplex(glm::vec2(x, y) * 0.005f);
-    outTex.dev_pixels[y * outTex.resolution.x + x] = glm::vec4(glm::vec3(noise), 1);
+    outTex.setColor(x, y, glm::vec4(glm::vec3(noise), 1));
 }
 
 void NodeNoise::_evaluate()

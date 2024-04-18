@@ -22,8 +22,8 @@ __global__ void kernExposure(Texture inTex, float multiplier, Texture outTex)
     }
 
     int idx = y * inTex.resolution.x + x;
-    glm::vec4 col = inTex.dev_pixels[idx];
-    outTex.dev_pixels[idx] = glm::vec4(glm::vec3(col) * multiplier, col.a);
+    glm::vec4 col = inTex.getColor(idx);
+    outTex.setColor(idx, glm::vec4(glm::vec3(col) * multiplier, col.a));
 }
 
 bool NodeExposure::drawPinExtras(const Pin* pin, int pinNumber)

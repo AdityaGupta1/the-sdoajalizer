@@ -12,11 +12,11 @@ NodeEvaluator::~NodeEvaluator()
 {
     for (const auto& [res, resTextures] : this->textures)
     {
-        for (const auto& texture : resTextures)
+        for (const auto& tex : resTextures)
         {
-            if (texture->dev_pixels != nullptr)
+            if (tex->hasDevPixels())
             {
-                CUDA_CHECK(cudaFree(texture->dev_pixels));
+                tex->free();
             }
         }
     }
@@ -61,8 +61,7 @@ Texture* NodeEvaluator::requestTexture(glm::ivec2 resolution)
     
     if (resolution.x != 0)
     {
-        CUDA_CHECK(cudaMalloc(&tex->dev_pixels, resolution.x * resolution.y * sizeof(glm::vec4)));
-        tex->resolution = resolution;
+        tex->malloc(resolution);
     }
 
     Texture* texPtr = tex.get();
@@ -238,7 +237,7 @@ void NodeEvaluator::evaluate()
     float* host_pixels;
     int sizeBytes = outputResolution.x * outputResolution.y * sizeof(glm::vec4);
     CUDA_CHECK(cudaMallocHost(&host_pixels, sizeBytes));
-    CUDA_CHECK(cudaMemcpy(host_pixels, outputTexture->dev_pixels, sizeBytes, cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(host_pixels, outputTexture->getDevPixels(), sizeBytes, cudaMemcpyDeviceToHost));
 
     // TODO: CUDA/OpenGL interop (may need to request a special texture from NodeEvaluator)
     // TODO: replace with glTexSubImage2D?

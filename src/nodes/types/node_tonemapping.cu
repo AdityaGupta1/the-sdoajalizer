@@ -81,7 +81,7 @@ __global__ void kernApplyToneMapping(Texture inTex, int toneMapping, Texture out
     }
 
     const int idx = y * inTex.resolution.x + x;
-    outTex.dev_pixels[idx] = applyToneMapping(inTex.dev_pixels[idx], toneMapping);
+    outTex.setColor(idx, applyToneMapping(inTex.getColor(idx), toneMapping));
 }
 
 void NodeToneMapping::_evaluate()

@@ -220,7 +220,7 @@ __global__ void kernFillEmptyTexture(Texture tex, int numPixels)
         return;
     }
 
-    tex.dev_pixels[idx] = glm::vec4(0, 0, 0, 0);
+    tex.setColor(idx, glm::vec4(0, 0, 0, 0));
 }
 
 #define sl(x, y) shared_luminance[(y) * sharedSideLength + (x)]
@@ -291,7 +291,7 @@ __global__ void kernCalculateColorDifference(Texture paintedTex, Texture refTex,
         return;
     }
 
-    glm::vec4 paintedCol = paintedTex.dev_pixels[idx];
+    glm::vec4 paintedCol = paintedTex.getColor(idx);
 
     float diff;
     if (paintedCol.a == 0.f)
@@ -300,7 +300,7 @@ __global__ void kernCalculateColorDifference(Texture paintedTex, Texture refTex,
     }
     else
     {
-        diff = glm::distance(glm::vec3(paintedCol), glm::vec3(refTex.dev_pixels[idx]));
+        diff = glm::distance(glm::vec3(paintedCol), glm::vec3(refTex.getColor(idx)));
     }
 
     colorDiff[idx] = diff;
@@ -351,7 +351,7 @@ __global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int num
 
     stroke.transform = glm::mat3(matScale * matRotate) * matTranslate;
 
-    stroke.color = glm::vec3(refTex.dev_pixels[texIdx]);
+    stroke.color = glm::vec3(refTex.getColor(texIdx));
 
     thrust::uniform_int_distribution<int> distUv(0, 3);
     stroke.cornerUv = glm::vec2(distUv(rng), distUv(rng)) * 0.25f;
@@ -476,7 +476,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
     }
 
     const int idx = y * outTex.resolution.x + x;
-    outTex.dev_pixels[idx] = blendPaintColors(outTex.dev_pixels[idx], topColor);
+    outTex.setColor(idx, blendPaintColors(outTex.getColor(idx), topColor));
 }
 
 static constexpr int numLayers = 7;
@@ -573,18 +573,18 @@ void NodePaintinator::_evaluate()
         Npp32s nAnchor = kernelRadius;
 
         NPP_CHECK(nppiFilterColumnBorder_32f_C4R(
-            (Npp32f*)inTex->dev_pixels, width * 4 * sizeof(float),
+            (Npp32f*)inTex->getDevPixels(), width * 4 * sizeof(float),
             oSrcSize, oSrcOffset,
-            (Npp32f*)scratchTex->dev_pixels, width * 4 * sizeof(float),
+            (Npp32f*)scratchTex->getDevPixels(), width * 4 * sizeof(float),
             oSizeROI,
             (Npp32f*)dev_kernel, nMaskSize, nAnchor,
             NPP_BORDER_REPLICATE
         ));
 
         NPP_CHECK(nppiFilterRowBorder_32f_C4R(
-            (Npp32f*)scratchTex->dev_pixels, width * 4 * sizeof(float),
+            (Npp32f*)scratchTex->getDevPixels(), width * 4 * sizeof(float),
             oSrcSize, oSrcOffset,
-            (Npp32f*)refTex->dev_pixels, width * 4 * sizeof(float),
+            (Npp32f*)refTex->getDevPixels(), width * 4 * sizeof(float),
             oSizeROI,
             (Npp32f*)dev_kernel, nMaskSize, nAnchor,
             NPP_BORDER_REPLICATE

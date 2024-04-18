@@ -28,7 +28,7 @@ __global__ void kernBrightnessContrast(Texture inTex, float brightness, float co
     }
 
     int idx = y * inTex.resolution.x + x;
-    outTex.dev_pixels[idx] = applyBrightnessContrast(inTex.dev_pixels[idx], brightness, contrast);
+    outTex.setColor(idx, applyBrightnessContrast(inTex.getColor(idx), brightness, contrast));
 }
 
 bool NodeBrightnessContrast::drawPinExtras(const Pin* pin, int pinNumber)

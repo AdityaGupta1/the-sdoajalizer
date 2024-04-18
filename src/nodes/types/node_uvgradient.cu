@@ -19,7 +19,7 @@ __global__ void kernUvGradient(Texture outTex)
     }
 
     glm::vec2 uv = glm::vec2(x, y) / glm::vec2(outTex.resolution);
-    outTex.dev_pixels[y * outTex.resolution.x + x] = glm::vec4(uv, 0, 1);
+    outTex.setColor(x, y, glm::vec4(uv, 0, 1));
 }
 
 void NodeUvGradient::_evaluate()

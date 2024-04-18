@@ -258,7 +258,7 @@ void Gui::saveImage()
     float* host_floatPixels = new float[numPixels * 4];
     uint8_t* host_charPixels = new uint8_t[numPixels * 4];
 
-    CUDA_CHECK(cudaMemcpy(host_floatPixels, outputTex->dev_pixels, numPixels * 4 * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(host_floatPixels, outputTex->getDevPixels(), numPixels * 4 * sizeof(float), cudaMemcpyDeviceToHost));
     for (int i = 0; i < numPixels * 4; ++i)
     {
         host_charPixels[i] = min((int)(host_floatPixels[i] * 255.99f), 255);
