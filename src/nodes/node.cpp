@@ -52,6 +52,11 @@ void Pin::propagateTexture(Texture* texture)
 {
     for (auto& edge : this->edges)
     {
+        if (!edge->endPin->getNode()->getIsBeingEvaluated())
+        {
+            continue;
+        }
+
         edge->setTexture(texture);
     }
 
@@ -140,6 +145,11 @@ Pin& Node::addPin(PinType type)
     return addPin(type, type == PinType::INPUT ? "input" : "output");
 }
 
+bool Node::getIsExpensive()
+{
+    return this->isExpensive;
+}
+
 void Node::setExpensive()
 {
     this->isExpensive = true;
@@ -173,12 +183,28 @@ Texture* Node::getPinTextureOrSingleColor(const Pin& pin, float col)
     return getPinTextureOrSingleColor(pin, glm::vec4(col, col, col, 1));
 }
 
+void Node::evaluate()
+{
+    _evaluate();
+    isBeingEvaluated = false;
+}
+
 void Node::clearInputTextures()
 {
     for (auto& inputPin : this->inputPins)
     {
         inputPin.clearTextures();
     }
+}
+
+bool Node::getIsBeingEvaluated()
+{
+    return this->isBeingEvaluated;
+}
+
+void Node::setIsBeingEvaluated()
+{
+    this->isBeingEvaluated = true;
 }
 
 Pin& Node::getPin(int pinId)

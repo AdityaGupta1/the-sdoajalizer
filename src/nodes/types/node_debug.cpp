@@ -12,7 +12,7 @@ NodeDebug::NodeDebug()
     }
 }
 
-void NodeDebug::evaluate()
+void NodeDebug::_evaluate()
 {
     // do nothing
 }

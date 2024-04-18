@@ -24,7 +24,7 @@ __global__ void kernNoise(Texture outTex)
     outTex.dev_pixels[y * outTex.resolution.x + x] = glm::vec4(glm::vec3(noise), 1);
 }
 
-void NodeNoise::evaluate()
+void NodeNoise::_evaluate()
 {
     Texture* outTex = nodeEvaluator->requestTexture();
 

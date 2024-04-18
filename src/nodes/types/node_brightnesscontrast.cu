@@ -54,7 +54,7 @@ bool NodeBrightnessContrast::drawPinExtras(const Pin* pin, int pinNumber)
     }
 }
 
-void NodeBrightnessContrast::evaluate()
+void NodeBrightnessContrast::_evaluate()
 {
     Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
 

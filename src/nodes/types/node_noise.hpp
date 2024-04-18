@@ -8,5 +8,5 @@ public:
     NodeNoise();
 
 protected:
-    void evaluate() override;
+    void _evaluate() override;
 };

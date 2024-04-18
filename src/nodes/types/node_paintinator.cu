@@ -482,7 +482,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
 static constexpr int numLayers = 7;
 
 // reference paper: https://dl.acm.org/doi/10.1145/280814.280951
-void NodePaintinator::evaluate()
+void NodePaintinator::_evaluate()
 {
     Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
 

@@ -66,7 +66,7 @@ __global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
     outTex.dev_pixels[y * outTex.resolution.x + x] = col;
 }
 
-void NodeOutput::evaluate()
+void NodeOutput::_evaluate()
 {
     Texture* inTex = inputPins[0].getSingleTexture();
 

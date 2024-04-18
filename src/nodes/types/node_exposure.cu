@@ -46,7 +46,7 @@ bool NodeExposure::drawPinExtras(const Pin* pin, int pinNumber)
     }
 }
 
-void NodeExposure::evaluate()
+void NodeExposure::_evaluate()
 {
     Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
 

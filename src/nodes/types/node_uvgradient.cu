@@ -22,7 +22,7 @@ __global__ void kernUvGradient(Texture outTex)
     outTex.dev_pixels[y * outTex.resolution.x + x] = glm::vec4(uv, 0, 1);
 }
 
-void NodeUvGradient::evaluate()
+void NodeUvGradient::_evaluate()
 {
     Texture* outTex = nodeEvaluator->requestTexture();
 

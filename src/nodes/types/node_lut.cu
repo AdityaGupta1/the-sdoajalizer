@@ -189,7 +189,7 @@ __global__ void kernApplyLUT(Texture inTex, Texture outTex, cudaTextureObject_t 
     outTex.dev_pixels[idx] = glm::vec4(outColLinear, inColLinear.a);
 }
 
-void NodeLUT::evaluate()
+void NodeLUT::_evaluate()
 {
     if (needsReloadFile)
     {

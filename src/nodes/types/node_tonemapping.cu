@@ -84,7 +84,7 @@ __global__ void kernApplyToneMapping(Texture inTex, int toneMapping, Texture out
     outTex.dev_pixels[idx] = applyToneMapping(inTex.dev_pixels[idx], toneMapping);
 }
 
-void NodeToneMapping::evaluate()
+void NodeToneMapping::_evaluate()
 {
     Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
 

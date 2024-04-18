@@ -75,8 +75,6 @@ public:
 
 class Node
 {
-    friend class NodeEvaluator;
-
 private:
     static int nextId;
 
@@ -86,6 +84,7 @@ protected:
     const std::string name;
 
     NodeEvaluator* nodeEvaluator{ nullptr };
+    bool isBeingEvaluated{ false };
 
     Node(std::string name);
 
@@ -101,10 +100,9 @@ protected:
     virtual unsigned int getTitleBarColor() const;
     virtual unsigned int getTitleBarSelectedColor() const;
 
-    virtual void evaluate() = 0;
+    virtual void _evaluate() = 0;
     Texture* getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col);
     Texture* getPinTextureOrSingleColor(const Pin& pin, float col);
-    void clearInputTextures();
 
     virtual bool drawPinBeforeExtras(const Pin* pin, int pinNumber);
     virtual bool drawPinExtras(const Pin* pin, int pinNumber);
@@ -119,6 +117,14 @@ public:
     Pin& getPin(int pinId);
 
     void setNodeEvaluator(NodeEvaluator* nodeEvaluator);
+
+    void evaluate();
+    void clearInputTextures();
+
+    bool getIsExpensive();
+
+    bool getIsBeingEvaluated();
+    void setIsBeingEvaluated();
 
 private:
     void drawPin(const Pin& pin, int pinNumber, bool& didParameterChange);

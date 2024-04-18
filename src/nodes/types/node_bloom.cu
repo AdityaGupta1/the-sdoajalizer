@@ -138,7 +138,7 @@ bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
     }
 }
 
-void NodeBloom::evaluate()
+void NodeBloom::_evaluate()
 {
     Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
 

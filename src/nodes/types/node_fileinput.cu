@@ -146,11 +146,10 @@ bool NodeFileInput::drawPinExtras(const Pin* pin, int pinNumber)
     return didParameterChange;
 }
 
-void NodeFileInput::evaluate()
+void NodeFileInput::_evaluate()
 {
     if (needsReloadFile) {
         reloadFile();
-        needsReloadFile = false;
     }
 
     Texture* outTex;
@@ -164,7 +163,10 @@ void NodeFileInput::evaluate()
         outTex = texFile;
     }
 
-    ++outTex->numReferences; // cache this texture
-                             // numReferences is decremented by reloadFile()
+    if (needsReloadFile)
+    {
+        ++outTex->numReferences; // cache this texture; numReferences is decremented by reloadFile()
+        needsReloadFile = false;
+    }
     outputPins[0].propagateTexture(outTex);
 }

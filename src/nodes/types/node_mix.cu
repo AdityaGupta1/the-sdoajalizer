@@ -58,7 +58,7 @@ bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
 }
 
 // should work for differing resolutions but that hasn't been tested yet
-void NodeMix::evaluate()
+void NodeMix::_evaluate()
 {
     Texture* inTex1 = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color1));
     Texture* inTex2 = getPinTextureOrSingleColor(inputPins[1], ColorUtils::srgbToLinear(constParams.color2));

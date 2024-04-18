@@ -11,5 +11,5 @@ public:
     NodeDebug();
 
 protected:
-    void evaluate() override;
+    void _evaluate() override;
 };

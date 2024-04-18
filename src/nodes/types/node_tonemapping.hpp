@@ -16,5 +16,5 @@ protected:
     unsigned int getTitleBarSelectedColor() const override;
 
     bool drawPinExtras(const Pin* pin, int pinNumber) override;
-    void evaluate() override;
+    void _evaluate() override;
 };

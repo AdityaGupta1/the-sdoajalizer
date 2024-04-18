@@ -201,7 +201,12 @@ void NodeEvaluator::evaluate()
 
     for (const auto& node : topoSortedNodes)
     {
-        if (node->isExpensive)
+        node->setIsBeingEvaluated();
+    }
+
+    for (const auto& node : topoSortedNodes)
+    {
+        if (node->getIsExpensive())
         {
             for (auto& outputPin : node->outputPins)
             {
@@ -238,10 +243,14 @@ void NodeEvaluator::evaluate()
 
     CUDA_CHECK(cudaFreeHost(host_pixels));
 
+#ifndef NDEBUG
     int numTextures = 0;
+    int numSingleColorTextures = 0;
     for (const auto& [res, textures] : this->textures)
     {
-        numTextures += textures.size();
+        (res.x == 0 ? numSingleColorTextures : numTextures) += textures.size();
     }
-    printf("number of allocated textures: %d\n", numTextures);
+    printf("num textures: %d\n", numTextures);
+    printf("num single color textures: %d\n", numSingleColorTextures);
+#endif
 }
