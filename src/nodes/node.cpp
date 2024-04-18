@@ -183,10 +183,10 @@ Texture* Node::getPinTextureOrSingleColor(const Pin& pin, float col)
     return getPinTextureOrSingleColor(pin, glm::vec4(col, col, col, 1));
 }
 
+// can potentially add pre- and post-effects to this function
 void Node::evaluate()
 {
     _evaluate();
-    isBeingEvaluated = false;
 }
 
 void Node::clearInputTextures()
@@ -202,9 +202,9 @@ bool Node::getIsBeingEvaluated()
     return this->isBeingEvaluated;
 }
 
-void Node::setIsBeingEvaluated()
+void Node::setIsBeingEvaluated(bool isBeingEvaluated)
 {
-    this->isBeingEvaluated = true;
+    this->isBeingEvaluated = isBeingEvaluated;
 }
 
 Pin& Node::getPin(int pinId)

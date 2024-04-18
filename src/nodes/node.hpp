@@ -124,7 +124,7 @@ public:
     bool getIsExpensive();
 
     bool getIsBeingEvaluated();
-    void setIsBeingEvaluated();
+    void setIsBeingEvaluated(bool isBeingEvaluated);
 
 private:
     void drawPin(const Pin& pin, int pinNumber, bool& didParameterChange);

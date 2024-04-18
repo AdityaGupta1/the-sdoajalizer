@@ -287,6 +287,10 @@ void Gui::render()
     if (isNetworkDirty)
     {
         isNetworkDirty = false;
+        for (const auto& [id, node] : nodes)
+        {
+            node->setIsBeingEvaluated(false); // set to true for reachable nodes in nodeEvaluator::evalute()
+        }
         nodeEvaluator.evaluate();
     }
 
@@ -417,7 +421,10 @@ void Gui::drawNodeEditor()
         if (wasParameterChanged)
         {
             nodeEvaluator.setChangedNode(node.get());
-            isNetworkDirty = true;
+            if (node->getIsBeingEvaluated())
+            {
+                isNetworkDirty = true;
+            }
         }
     }
 

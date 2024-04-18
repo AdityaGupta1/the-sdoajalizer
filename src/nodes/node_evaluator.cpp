@@ -201,8 +201,12 @@ void NodeEvaluator::evaluate()
 
     for (const auto& node : topoSortedNodes)
     {
-        node->setIsBeingEvaluated();
+        node->setIsBeingEvaluated(true); // set to false in Gui::render()
     }
+
+#ifndef NDEBUG
+    printf("evaluating %d nodes\n", topoSortedNodes.size());
+#endif
 
     for (const auto& node : topoSortedNodes)
     {
@@ -252,5 +256,6 @@ void NodeEvaluator::evaluate()
     }
     printf("num textures: %d\n", numTextures);
     printf("num single color textures: %d\n", numSingleColorTextures);
+    printf("\n");
 #endif
 }
