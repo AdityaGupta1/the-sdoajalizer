@@ -155,8 +155,8 @@ void NodeFileInput::_evaluate()
     Texture* outTex;
     if (texFile == nullptr)
     {
-        outTex = nodeEvaluator->requestSingleColorTexture();
-        outTex->setSingleColor(glm::vec4(0, 0, 0, 1));
+        outTex = nodeEvaluator->requestUniformTexture();
+        outTex->setUniformColor(glm::vec4(0, 0, 0, 1));
     }
     else
     {

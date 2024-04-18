@@ -60,14 +60,14 @@ bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
 // should work for differing resolutions but that hasn't been tested yet
 void NodeMix::_evaluate()
 {
-    Texture* inTex1 = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color1));
-    Texture* inTex2 = getPinTextureOrSingleColor(inputPins[1], ColorUtils::srgbToLinear(constParams.color2));
-    Texture* inTexFactor = getPinTextureOrSingleColor(inputPins[2], constParams.factor);
+    Texture* inTex1 = getPinTextureOrUniformColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color1));
+    Texture* inTex2 = getPinTextureOrUniformColor(inputPins[1], ColorUtils::srgbToLinear(constParams.color2));
+    Texture* inTexFactor = getPinTextureOrUniformColor(inputPins[2], constParams.factor);
 
-    if (inTex1->isSingleColor() && inTex2->isSingleColor() && inTexFactor->isSingleColor())
+    if (inTex1->isUniform() && inTex2->isUniform() && inTexFactor->isUniform())
     {
-        Texture* outTex = nodeEvaluator->requestSingleColorTexture();
-        outTex->setSingleColor(mixCols(inTex1->singleColor, inTex2->singleColor, inTexFactor->singleColor.r));
+        Texture* outTex = nodeEvaluator->requestUniformTexture();
+        outTex->setUniformColor(mixCols(inTex1->getUniformColor(), inTex2->getUniformColor(), inTexFactor->getUniformColor().r));
 
         outputPins[0].propagateTexture(outTex);
         return;

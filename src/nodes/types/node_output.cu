@@ -30,7 +30,7 @@ __host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col)
     return glm::vec4(rgb, col.a);
 }
 
-__global__ void kernFillSingleColor(Texture outTex, glm::vec4 col)
+__global__ void kernFillUniformColor(Texture outTex, glm::vec4 col)
 {
     const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
     const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
@@ -80,10 +80,10 @@ void NodeOutput::_evaluate()
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);
-    if (inTex->isSingleColor())
+    if (inTex->isUniform())
     {
-        auto ldrCol = hdrToLdr(inTex->singleColor);
-        kernFillSingleColor<<<blocksPerGrid, blockSize>>>(*outTex, ldrCol);
+        auto ldrCol = hdrToLdr(inTex->getUniformColor());
+        kernFillUniformColor<<<blocksPerGrid, blockSize>>>(*outTex, ldrCol);
     }
     else
     {

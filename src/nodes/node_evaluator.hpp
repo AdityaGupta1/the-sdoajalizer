@@ -40,7 +40,7 @@ public:
 
     Texture* requestTexture(glm::ivec2 resolution);
     Texture* requestTexture(); // defaults to output resolution
-    Texture* requestSingleColorTexture(); // resolution = (0, 0)
+    Texture* requestUniformTexture(); // resolution = (0, 0)
 
     Texture* getOutputTexture() const;
     void setOutputTexture(Texture* texture);

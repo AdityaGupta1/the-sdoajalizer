@@ -86,12 +86,12 @@ __global__ void kernApplyToneMapping(Texture inTex, int toneMapping, Texture out
 
 void NodeToneMapping::_evaluate()
 {
-    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
+    Texture* inTex = getPinTextureOrUniformColor(inputPins[0], glm::vec4(0, 0, 0, 1));
 
-    if (inTex->isSingleColor())
+    if (inTex->isUniform())
     {
-        Texture* outTex = nodeEvaluator->requestSingleColorTexture();
-        outTex->setSingleColor(applyToneMapping(inTex->singleColor, selectedToneMapping));
+        Texture* outTex = nodeEvaluator->requestUniformTexture();
+        outTex->setUniformColor(applyToneMapping(inTex->getUniformColor(), selectedToneMapping));
         outputPins[0].propagateTexture(outTex);
         return;
     }

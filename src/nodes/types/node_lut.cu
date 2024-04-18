@@ -197,11 +197,11 @@ void NodeLUT::_evaluate()
         needsReloadFile = false;
     }
 
-    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
+    Texture* inTex = getPinTextureOrUniformColor(inputPins[0], glm::vec4(0, 0, 0, 1));
 
-    // TODO: make this node work properly for single color textures?
+    // TODO: make this node work properly for uniform textures?
     //       probably unimportant since there's no good reason to apply a LUT to a single color
-    if (inTex->isSingleColor() || lutArray == nullptr)
+    if (inTex->isUniform() || lutArray == nullptr)
     {
         outputPins[0].propagateTexture(inTex);
         return;

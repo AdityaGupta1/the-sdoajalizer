@@ -140,12 +140,12 @@ bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
 
 void NodeBloom::_evaluate()
 {
-    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
+    Texture* inTex = getPinTextureOrUniformColor(inputPins[0], glm::vec4(0, 0, 0, 1));
 
-    if (inTex->isSingleColor())
+    if (inTex->isUniform())
     {
-        // bloom has no real meaning for single color textures
-        // could run bloom on a texture made up of that single color but that feels kind of useless
+        // bloom has no real meaning for uniform textures
+        // could run bloom on a texture made up of the uniform color but that feels kind of useless
         outputPins[0].propagateTexture(inTex);
         return;
     }

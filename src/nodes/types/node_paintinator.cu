@@ -484,9 +484,9 @@ static constexpr int numLayers = 7;
 // reference paper: https://dl.acm.org/doi/10.1145/280814.280951
 void NodePaintinator::_evaluate()
 {
-    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], glm::vec4(0, 0, 0, 1));
+    Texture* inTex = getPinTextureOrUniformColor(inputPins[0], glm::vec4(0, 0, 0, 1));
 
-    if (inTex->isSingleColor())
+    if (inTex->isUniform())
     {
         outputPins[0].propagateTexture(inTex);
         return;

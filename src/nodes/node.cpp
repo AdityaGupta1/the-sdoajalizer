@@ -47,22 +47,22 @@ unsigned int Node::getTitleBarSelectedColor() const
     return IM_COL32(81, 148, 204, 255);
 }
 
-Texture* Node::getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col)
+Texture* Node::getPinTextureOrUniformColor(const Pin& pin, glm::vec4 col)
 {
     Texture* tex = pin.getSingleTexture();
 
     if (tex == nullptr)
     {
-        tex = nodeEvaluator->requestSingleColorTexture();
-        tex->setSingleColor(col);
+        tex = nodeEvaluator->requestUniformTexture();
+        tex->setUniformColor(col);
     }
 
     return tex;
 }
 
-Texture* Node::getPinTextureOrSingleColor(const Pin& pin, float col)
+Texture* Node::getPinTextureOrUniformColor(const Pin& pin, float col)
 {
-    return getPinTextureOrSingleColor(pin, glm::vec4(col, col, col, 1));
+    return getPinTextureOrUniformColor(pin, glm::vec4(col, col, col, 1));
 }
 
 // can potentially add pre- and post-effects to this function

@@ -78,7 +78,7 @@ Texture* NodeEvaluator::requestTexture()
     return this->requestTexture(this->outputResolution);
 }
 
-Texture* NodeEvaluator::requestSingleColorTexture()
+Texture* NodeEvaluator::requestUniformTexture()
 {
     return this->requestTexture(glm::ivec2(0));
 }
@@ -248,13 +248,13 @@ void NodeEvaluator::evaluate()
 
 #ifndef NDEBUG
     int numTextures = 0;
-    int numSingleColorTextures = 0;
+    int numUniformTextures = 0;
     for (const auto& [res, textures] : this->textures)
     {
-        (res.x == 0 ? numSingleColorTextures : numTextures) += textures.size();
+        (res.x == 0 ? numUniformTextures : numTextures) += textures.size();
     }
     printf("num textures: %d\n", numTextures);
-    printf("num single color textures: %d\n", numSingleColorTextures);
+    printf("num uniform textures: %d\n", numUniformTextures);
     printf("\n");
 #endif
 }

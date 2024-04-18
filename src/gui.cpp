@@ -249,7 +249,7 @@ void Gui::saveImage()
 {
     Texture* outputTex = nodeEvaluator.getOutputTexture();
 
-    if (outputTex == nullptr || outputTex->isSingleColor())
+    if (outputTex == nullptr || outputTex->isUniform())
     {
         return;
     }

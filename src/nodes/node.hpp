@@ -52,8 +52,8 @@ protected:
     virtual unsigned int getTitleBarSelectedColor() const;
 
     virtual void _evaluate() = 0;
-    Texture* getPinTextureOrSingleColor(const Pin& pin, glm::vec4 col);
-    Texture* getPinTextureOrSingleColor(const Pin& pin, float col);
+    Texture* getPinTextureOrUniformColor(const Pin& pin, glm::vec4 col);
+    Texture* getPinTextureOrUniformColor(const Pin& pin, float col);
 
     virtual bool drawPinBeforeExtras(const Pin* pin, int pinNumber);
     virtual bool drawPinExtras(const Pin* pin, int pinNumber);

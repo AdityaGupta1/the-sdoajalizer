@@ -48,12 +48,12 @@ bool NodeInvert::drawPinExtras(const Pin* pin, int pinNumber)
 
 void NodeInvert::_evaluate()
 {
-    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
+    Texture* inTex = getPinTextureOrUniformColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
 
-    if (inTex->isSingleColor())
+    if (inTex->isUniform())
     {
-        Texture* outTex = nodeEvaluator->requestSingleColorTexture();
-        outTex->setSingleColor(invertCol(inTex->singleColor));
+        Texture* outTex = nodeEvaluator->requestUniformTexture();
+        outTex->setUniformColor(invertCol(inTex->getUniformColor()));
         outputPins[0].propagateTexture(outTex);
         return;
     }

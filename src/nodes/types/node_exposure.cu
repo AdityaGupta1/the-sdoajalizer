@@ -48,31 +48,31 @@ bool NodeExposure::drawPinExtras(const Pin* pin, int pinNumber)
 
 void NodeExposure::_evaluate()
 {
-    Texture* inTex = getPinTextureOrSingleColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
+    Texture* inTex = getPinTextureOrUniformColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
 
-    if (inTex->isSingleColor()) {
-        Texture* outTex = nodeEvaluator->requestSingleColorTexture();
+    if (inTex->isUniform()) {
+        Texture* outTex = nodeEvaluator->requestUniformTexture();
 
         if (constParams.exposure == 0.f) {
-            outTex->setSingleColor(inTex->singleColor);
+            outTex->setUniformColor(inTex->getUniformColor());
         }
         else
         {
-            glm::vec4 outCol = glm::vec4(glm::vec3(inTex->singleColor) * powf(2.f, constParams.exposure), inTex->singleColor.a);
-            outTex->setSingleColor(outCol);
+            glm::vec4 outCol = glm::vec4(glm::vec3(inTex->getUniformColor()) * powf(2.f, constParams.exposure), inTex->getUniformColor().a);
+            outTex->setUniformColor(outCol);
         }
 
         outputPins[0].propagateTexture(outTex);
         return;
     }
 
-    // inTex is not a single color
+    // inTex is not uniform
     if (constParams.exposure == 0.f) {
         outputPins[0].propagateTexture(inTex);
         return;
     }
 
-    // inTex is not a single color and constParams.exposure != 0.f
+    // inTex is not uniform and constParams.exposure != 0.f
     Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
