@@ -220,7 +220,7 @@ __global__ void kernFillEmptyTexture(Texture tex, int numPixels)
         return;
     }
 
-    tex.setColor(idx, glm::vec4(0, 0, 0, 0));
+    tex.setColor<TextureType::MULTI>(idx, glm::vec4(0, 0, 0, 0));
 }
 
 #define sl(x, y) shared_luminance[(y) * sharedSideLength + (x)]
@@ -242,14 +242,16 @@ __global__ void kernSobelAngle(Texture inTex, float* outAngle)
     // TODO: don't load into shared memory if too far from actual image?
 
     // top-left square (SOBEL_BLOCK_SIZE, SOBEL_BLOCK_SIZE)
-    shared_luminance[localY * sharedSideLength + localX] = ColorUtils::luminance(inTex.getColorReplicate(x - 1, y - 1));
+    shared_luminance[localY * sharedSideLength + localX] =
+        ColorUtils::luminance(inTex.getColorReplicate<TextureType::MULTI>(x - 1, y - 1));
 
     // right two columns (2, SOBEL_BLOCK_SIZE)
     if (localY < 2)
     {
         int columnX = SOBEL_BLOCK_SIZE + localY;
         int columnY = localX;
-        shared_luminance[columnY * sharedSideLength + columnX] = ColorUtils::luminance(inTex.getColorReplicate(cornerX + columnX - 1, cornerY + columnY - 1));
+        shared_luminance[columnY * sharedSideLength + columnX] =
+            ColorUtils::luminance(inTex.getColorReplicate<TextureType::MULTI>(cornerX + columnX - 1, cornerY + columnY - 1));
     }
 
     // bottom two rows and bottom-right corner (SOBEL_BLOCK_SIZE + 2, 2)
@@ -259,7 +261,8 @@ __global__ void kernSobelAngle(Texture inTex, float* outAngle)
         bool firstRow = localIdx < sharedSideLength;
         int rowX = firstRow ? localIdx : localIdx - sharedSideLength;
         int rowY = firstRow ? SOBEL_BLOCK_SIZE : SOBEL_BLOCK_SIZE + 1;
-        shared_luminance[rowY * sharedSideLength + rowX] = ColorUtils::luminance(inTex.getColorReplicate(cornerX + rowX - 1, cornerY + rowY - 1));
+        shared_luminance[rowY * sharedSideLength + rowX] =
+            ColorUtils::luminance(inTex.getColorReplicate<TextureType::MULTI>(cornerX + rowX - 1, cornerY + rowY - 1));
     }
 
     __syncthreads();
@@ -291,7 +294,7 @@ __global__ void kernCalculateColorDifference(Texture paintedTex, Texture refTex,
         return;
     }
 
-    glm::vec4 paintedCol = paintedTex.getColor(idx);
+    glm::vec4 paintedCol = paintedTex.getColor<TextureType::MULTI>(idx);
 
     float diff;
     if (paintedCol.a == 0.f)
@@ -300,7 +303,7 @@ __global__ void kernCalculateColorDifference(Texture paintedTex, Texture refTex,
     }
     else
     {
-        diff = glm::distance(glm::vec3(paintedCol), glm::vec3(refTex.getColor(idx)));
+        diff = glm::distance(glm::vec3(paintedCol), glm::vec3(refTex.getColor<TextureType::MULTI>(idx)));
     }
 
     colorDiff[idx] = diff;
@@ -351,7 +354,7 @@ __global__ void kernPrepareStrokes(Texture refTex, PaintStroke* strokes, int num
 
     stroke.transform = glm::mat3(matScale * matRotate) * matTranslate;
 
-    stroke.color = glm::vec3(refTex.getColor(texIdx));
+    stroke.color = glm::vec3(refTex.getColor<TextureType::MULTI>(texIdx));
 
     thrust::uniform_int_distribution<int> distUv(0, 3);
     stroke.cornerUv = glm::vec2(distUv(rng), distUv(rng)) * 0.25f;
@@ -476,7 +479,7 @@ __global__ void kernPaint(Texture outTex, PaintStroke* strokes, int numStrokes, 
     }
 
     const int idx = y * outTex.resolution.x + x;
-    outTex.setColor(idx, blendPaintColors(outTex.getColor(idx), topColor));
+    outTex.setColor<TextureType::MULTI>(idx, blendPaintColors(outTex.getColor<TextureType::MULTI>(idx), topColor));
 }
 
 static constexpr int numLayers = 7;
@@ -497,7 +500,7 @@ void NodePaintinator::_evaluate()
         constParams.brushTexturePtr->load();
     }
 
-    Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
     const int numPixels = outTex->resolution.x * outTex->resolution.y;
     const dim3 pixelsBlockSize1d(256);
@@ -507,8 +510,8 @@ void NodePaintinator::_evaluate()
         *outTex, numPixels
     );
 
-    Texture* scratchTex = nodeEvaluator->requestTexture(inTex->resolution);
-    Texture* refTex = nodeEvaluator->requestTexture(inTex->resolution);
+    Texture* scratchTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
+    Texture* refTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
     const int width = inTex->resolution.x;
     const int height = inTex->resolution.y;
@@ -573,18 +576,18 @@ void NodePaintinator::_evaluate()
         Npp32s nAnchor = kernelRadius;
 
         NPP_CHECK(nppiFilterColumnBorder_32f_C4R(
-            (Npp32f*)inTex->getDevPixels(), width * 4 * sizeof(float),
+            (Npp32f*)inTex->getDevPixels<TextureType::MULTI>(), width * 4 * sizeof(float),
             oSrcSize, oSrcOffset,
-            (Npp32f*)scratchTex->getDevPixels(), width * 4 * sizeof(float),
+            (Npp32f*)scratchTex->getDevPixels<TextureType::MULTI>(), width * 4 * sizeof(float),
             oSizeROI,
             (Npp32f*)dev_kernel, nMaskSize, nAnchor,
             NPP_BORDER_REPLICATE
         ));
 
         NPP_CHECK(nppiFilterRowBorder_32f_C4R(
-            (Npp32f*)scratchTex->getDevPixels(), width * 4 * sizeof(float),
+            (Npp32f*)scratchTex->getDevPixels<TextureType::MULTI>(), width * 4 * sizeof(float),
             oSrcSize, oSrcOffset,
-            (Npp32f*)refTex->getDevPixels(), width * 4 * sizeof(float),
+            (Npp32f*)refTex->getDevPixels<TextureType::MULTI>(), width * 4 * sizeof(float),
             oSizeROI,
             (Npp32f*)dev_kernel, nMaskSize, nAnchor,
             NPP_BORDER_REPLICATE

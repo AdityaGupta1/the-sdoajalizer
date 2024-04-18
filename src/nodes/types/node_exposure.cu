@@ -22,8 +22,8 @@ __global__ void kernExposure(Texture inTex, float multiplier, Texture outTex)
     }
 
     int idx = y * inTex.resolution.x + x;
-    glm::vec4 col = inTex.getColor(idx);
-    outTex.setColor(idx, glm::vec4(glm::vec3(col) * multiplier, col.a));
+    glm::vec4 col = inTex.getColor<TextureType::MULTI>(idx);
+    outTex.setColor<TextureType::MULTI>(idx, glm::vec4(glm::vec3(col) * multiplier, col.a));
 }
 
 bool NodeExposure::drawPinExtras(const Pin* pin, int pinNumber)
@@ -73,7 +73,7 @@ void NodeExposure::_evaluate()
     }
 
     // inTex is not uniform and constParams.exposure != 0.f
-    Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);

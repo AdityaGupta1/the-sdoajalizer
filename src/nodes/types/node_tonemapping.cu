@@ -81,7 +81,8 @@ __global__ void kernApplyToneMapping(Texture inTex, int toneMapping, Texture out
     }
 
     const int idx = y * inTex.resolution.x + x;
-    outTex.setColor(idx, applyToneMapping(inTex.getColor(idx), toneMapping));
+    glm::vec4 outCol = applyToneMapping(inTex.getColor<TextureType::MULTI>(idx), toneMapping);
+    outTex.setColor<TextureType::MULTI>(idx, outCol);
 }
 
 void NodeToneMapping::_evaluate()
@@ -96,7 +97,7 @@ void NodeToneMapping::_evaluate()
         return;
     }
 
-    Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);

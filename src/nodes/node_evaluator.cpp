@@ -14,10 +14,7 @@ NodeEvaluator::~NodeEvaluator()
     {
         for (const auto& tex : resTextures)
         {
-            if (tex->hasDevPixels())
-            {
-                tex->free();
-            }
+            tex->free();
         }
     }
 }
@@ -38,49 +35,9 @@ void NodeEvaluator::setOutputNode(Node* outputNode)
     this->outputNode = outputNode;
 }
 
-Texture* NodeEvaluator::requestTexture(glm::ivec2 resolution)
-{
-    if (this->textures.contains(resolution))
-    {
-        for (const auto& texture : this->textures[resolution])
-        {
-            if (texture->numReferences == 0)
-            {
-                ++texture->numReferences;
-                requestedTextures.push_back(texture.get());
-                return texture.get();
-            }
-        }
-    }
-    else
-    {
-        this->textures[resolution] = std::vector<std::unique_ptr<Texture>>();
-    }
-
-    auto tex = std::make_unique<Texture>();
-    
-    if (resolution.x != 0)
-    {
-        tex->malloc(resolution);
-    }
-
-    Texture* texPtr = tex.get();
-    this->textures[resolution].push_back(std::move(tex));
-
-    ++texPtr->numReferences;
-    requestedTextures.push_back(texPtr);
-
-    return texPtr;
-}
-
-Texture* NodeEvaluator::requestTexture()
-{
-    return this->requestTexture(this->outputResolution);
-}
-
 Texture* NodeEvaluator::requestUniformTexture()
 {
-    return this->requestTexture(glm::ivec2(0));
+    return this->requestTexture<TextureType::MULTI>(glm::ivec2(0));
 }
 
 Texture* NodeEvaluator::getOutputTexture() const
@@ -237,7 +194,7 @@ void NodeEvaluator::evaluate()
     float* host_pixels;
     int sizeBytes = outputResolution.x * outputResolution.y * sizeof(glm::vec4);
     CUDA_CHECK(cudaMallocHost(&host_pixels, sizeBytes));
-    CUDA_CHECK(cudaMemcpy(host_pixels, outputTexture->getDevPixels(), sizeBytes, cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(host_pixels, outputTexture->getDevPixels<TextureType::MULTI>(), sizeBytes, cudaMemcpyDeviceToHost));
 
     // TODO: CUDA/OpenGL interop (may need to request a special texture from NodeEvaluator)
     // TODO: replace with glTexSubImage2D?

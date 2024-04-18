@@ -19,12 +19,12 @@ __global__ void kernUvGradient(Texture outTex)
     }
 
     glm::vec2 uv = glm::vec2(x, y) / glm::vec2(outTex.resolution);
-    outTex.setColor(x, y, glm::vec4(uv, 0, 1));
+    outTex.setColor<TextureType::MULTI>(x, y, glm::vec4(uv, 0, 1));
 }
 
 void NodeUvGradient::_evaluate()
 {
-    Texture* outTex = nodeEvaluator->requestTexture();
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>();
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);

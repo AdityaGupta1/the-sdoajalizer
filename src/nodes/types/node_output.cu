@@ -40,7 +40,7 @@ __global__ void kernFillUniformColor(Texture outTex, glm::vec4 col)
         return;
     }
 
-    outTex.setColor(x, y, col);
+    outTex.setColor<TextureType::MULTI>(x, y, col);
 }
 
 __global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
@@ -60,10 +60,10 @@ __global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
     }
     else
     {
-        col = hdrToLdr(inTex.getColor(x, y));
+        col = hdrToLdr(inTex.getColor<TextureType::MULTI>(x, y));
     }
 
-    outTex.setColor(x, y, col);
+    outTex.setColor<TextureType::MULTI>(x, y, col);
 }
 
 void NodeOutput::_evaluate()
@@ -76,7 +76,7 @@ void NodeOutput::_evaluate()
         return;
     }
 
-    Texture* outTex = nodeEvaluator->requestTexture();
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>();
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);

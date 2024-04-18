@@ -42,7 +42,7 @@ __global__ void kernCopyWithThreshold(Texture inTex, float threshold, Texture ou
     }
 
     int idx = y * inTex.resolution.x + x;
-    glm::vec4 inCol = inTex.getColor(idx);
+    glm::vec4 inCol = inTex.getColor<TextureType::MULTI>(idx);
     glm::vec3 inRgb = glm::vec3(inCol) * inCol.a;
 
     glm::vec4 outCol;
@@ -55,7 +55,7 @@ __global__ void kernCopyWithThreshold(Texture inTex, float threshold, Texture ou
         outCol = glm::vec4(0, 0, 0, 1);
     }
 
-    outTex.setColor(idx, outCol);
+    outTex.setColor<TextureType::MULTI>(idx, outCol);
 }
 
 __device__ float calculateKernelWeight(float u, float v, float scale)
@@ -96,8 +96,8 @@ __global__ void kernAdd(Texture inTexBase, Texture inTexProcessed, float mix, Te
     }
 
     int idx = y * inTexBase.resolution.x + x;
-    glm::vec3 baseRgb(inTexBase.getColor(idx));
-    glm::vec3 processedCol(inTexProcessed.getColor(idx));
+    glm::vec3 baseRgb(inTexBase.getColor<TextureType::MULTI>(idx));
+    glm::vec3 processedCol(inTexProcessed.getColor<TextureType::MULTI>(idx));
 
     glm::vec3 fullRgb(baseRgb + processedCol);
     glm::vec3 outRgb;
@@ -110,7 +110,7 @@ __global__ void kernAdd(Texture inTexBase, Texture inTexProcessed, float mix, Te
         outRgb = glm::mix(fullRgb, processedCol, mix);
     }
 
-    outTex.setColor(idx, glm::vec4(outRgb, 1));
+    outTex.setColor<TextureType::MULTI>(idx, glm::vec4(outRgb, 1));
 }
 
 bool NodeBloom::drawPinExtras(const Pin* pin, int pinNumber)
@@ -150,8 +150,8 @@ void NodeBloom::_evaluate()
         return;
     }
 
-    Texture* outTex1 = nodeEvaluator->requestTexture(inTex->resolution);
-    Texture* outTex2 = nodeEvaluator->requestTexture(inTex->resolution);
+    Texture* outTex1 = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
+    Texture* outTex2 = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
@@ -182,9 +182,9 @@ void NodeBloom::_evaluate()
     NppiPoint oAnchor = { kernelRadius, kernelRadius };
 
     NPP_CHECK(nppiFilterBorder_32f_C4R(
-        (Npp32f*)outTex1->getDevPixels(), width * 4 * sizeof(float),
+        (Npp32f*)outTex1->getDevPixels<TextureType::MULTI>(), width * 4 * sizeof(float),
         oSrcSize, oSrcOffset,
-        (Npp32f*)outTex2->getDevPixels(), width * 4 * sizeof(float),
+        (Npp32f*)outTex2->getDevPixels<TextureType::MULTI>(), width * 4 * sizeof(float),
         oSizeROI,
         (Npp32f*)dev_kernel, oKernelSize, oAnchor,
         NPP_BORDER_REPLICATE

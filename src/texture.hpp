@@ -13,23 +13,66 @@ struct ResolutionHash
     }
 };
 
+enum class TextureType
+{
+    SINGLE, MULTI
+};
+
 struct Texture
 {
 private:
-    glm::vec4* dev_pixels{ nullptr };
+    float* dev_pixelsSingle{ nullptr };
+    glm::vec4* dev_pixelsMulti{ nullptr };
     glm::vec4 uniformColor{ 0, 0, 0, 1 };
 
 public:
     glm::ivec2 resolution{ 0, 0 };
     int numReferences{ 0 };
 
-    void malloc(glm::ivec2 resolution);
-    void free();
+    template<TextureType type>
+    __host__ inline void malloc(glm::ivec2 resolution)
+    {
+        this->resolution = resolution;
+        if constexpr (type == TextureType::SINGLE)
+        {
+            CUDA_CHECK(cudaMalloc(&dev_pixelsSingle, resolution.x * resolution.y * sizeof(float)));
+        }
+        else
+        {
+            CUDA_CHECK(cudaMalloc(&dev_pixelsMulti, resolution.x * resolution.y * sizeof(glm::vec4)));
+        }
+    }
 
-    glm::vec4* getDevPixels() const;
+    __host__ inline void free()
+    {
+        CUDA_CHECK(cudaFree(dev_pixelsSingle));
+        CUDA_CHECK(cudaFree(dev_pixelsMulti));
+    }
+
+    template<TextureType type>
+    __host__ __device__ auto getDevPixels() const
+    {
+        if constexpr (type == TextureType::SINGLE)
+        {
+            return dev_pixelsSingle;
+        }
+        else
+        {
+            return dev_pixelsMulti;
+        }
+    }
+
+    template<TextureType type>
     __host__ __device__ inline bool hasDevPixels() const
     {
-        return dev_pixels != nullptr;
+        if constexpr (type == TextureType::SINGLE)
+        {
+            return dev_pixelsSingle != nullptr;
+        }
+        else
+        {
+            return dev_pixelsMulti != nullptr;
+        }
     }
 
     __host__ __device__ glm::vec4 getUniformColor()
@@ -45,7 +88,8 @@ public:
         return this->resolution.x == 0;
     }
 
-    __device__ inline glm::vec4 getColorClamp(int x, int y, glm::vec4 backup = glm::vec4(0, 0, 0, 1))
+    template<TextureType type>
+    __device__ inline auto getColorClamp(int x, int y, glm::vec4 backup = glm::vec4(0, 0, 0, 1))
     {
         if (isUniform())
         {
@@ -54,13 +98,14 @@ public:
 
         if (x < resolution.x && y < resolution.y)
         {
-            return dev_pixels[y * resolution.x + x];
+            return getDevPixels<type>()[y * resolution.x + x];
         }
 
         return backup;
     }
 
-    __device__ inline glm::vec4 getColorReplicate(int x, int y)
+    template<TextureType type>
+    __device__ inline auto getColorReplicate(int x, int y)
     {
         if (isUniform())
         {
@@ -69,27 +114,31 @@ public:
 
         x = glm::clamp(x, 0, resolution.x - 1);
         y = glm::clamp(y, 0, resolution.y - 1);
-        return dev_pixels[y * resolution.x + x];
+        return getDevPixels<type>()[y * resolution.x + x];
     }
 
-    __device__ inline glm::vec4 getColor(int idx)
+    template<TextureType type>
+    __device__ inline auto getColor(int idx)
     {
-        return dev_pixels[idx];
+        return getDevPixels<type>()[idx];
     }
 
-    __device__ inline glm::vec4 getColor(int x, int y)
+    template<TextureType type>
+    __device__ inline auto getColor(int x, int y)
     {
-        return dev_pixels[y * resolution.x + x];
+        return getDevPixels<type>()[y * resolution.x + x];
     }
 
+    template<TextureType type>
     __device__ inline void setColor(int idx, glm::vec4 col)
     {
-        dev_pixels[idx] = col;
+        getDevPixels<type>()[idx] = col;
     }
 
+    template<TextureType type>
     __device__ inline void setColor(int x, int y, glm::vec4 col)
     {
-        dev_pixels[y * resolution.x + x] = col;
+        getDevPixels<type>()[y * resolution.x + x] = col;
     }
 
     static glm::ivec2 getFirstResolution(std::initializer_list<Texture*> textures);

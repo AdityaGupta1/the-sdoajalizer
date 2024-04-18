@@ -28,7 +28,8 @@ __global__ void kernBrightnessContrast(Texture inTex, float brightness, float co
     }
 
     int idx = y * inTex.resolution.x + x;
-    outTex.setColor(idx, applyBrightnessContrast(inTex.getColor(idx), brightness, contrast));
+    glm::vec4 outCol = applyBrightnessContrast(inTex.getColor<TextureType::MULTI>(idx), brightness, contrast);
+    outTex.setColor<TextureType::MULTI>(idx, outCol);
 }
 
 bool NodeBrightnessContrast::drawPinExtras(const Pin* pin, int pinNumber)
@@ -81,7 +82,7 @@ void NodeBrightnessContrast::_evaluate()
     }
 
     // inTex is not uniform and backupExposure != 0.f
-    Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);

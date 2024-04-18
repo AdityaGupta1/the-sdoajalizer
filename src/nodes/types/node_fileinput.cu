@@ -37,7 +37,7 @@ __global__ void kernSrgbToLinear(Texture tex)
     }
 
     int idx = y * tex.resolution.x + x;
-    tex.setColor(idx, ColorUtils::srgbToLinear(tex.getColor(idx)));
+    tex.setColor<TextureType::MULTI>(idx, ColorUtils::srgbToLinear(tex.getColor<TextureType::MULTI>(idx)));
 }
 
 void NodeFileInput::reloadFile()
@@ -80,8 +80,8 @@ void NodeFileInput::reloadFile()
         return;
     }
 
-    texFile = nodeEvaluator->requestTexture(glm::ivec2(width, height));
-    CUDA_CHECK(cudaMemcpy(texFile->getDevPixels(), host_pixels, width * height * 4 * sizeof(float), cudaMemcpyHostToDevice));
+    texFile = nodeEvaluator->requestTexture<TextureType::MULTI>(glm::ivec2(width, height));
+    CUDA_CHECK(cudaMemcpy(texFile->getDevPixels<TextureType::MULTI>(), host_pixels, width * height * 4 * sizeof(float), cudaMemcpyHostToDevice));
 
     if (isExr)
     {

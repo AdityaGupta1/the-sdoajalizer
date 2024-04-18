@@ -26,7 +26,7 @@ __global__ void kernInvert(Texture inTex, Texture outTex)
     }
 
     int idx = y * inTex.resolution.x + x;
-    outTex.setColor(idx, invertCol(inTex.getColor(idx)));
+    outTex.setColor<TextureType::MULTI>(idx, invertCol(inTex.getColor<TextureType::MULTI>(idx)));
 }
 
 bool NodeInvert::drawPinExtras(const Pin* pin, int pinNumber)
@@ -58,7 +58,7 @@ void NodeInvert::_evaluate()
         return;
     }
 
-    Texture* outTex = nodeEvaluator->requestTexture(inTex->resolution);
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);

@@ -21,12 +21,12 @@ __global__ void kernNoise(Texture outTex)
     }
 
     float noise = glm::simplex(glm::vec2(x, y) * 0.005f);
-    outTex.setColor(x, y, glm::vec4(glm::vec3(noise), 1));
+    outTex.setColor<TextureType::MULTI>(x, y, glm::vec4(glm::vec3(noise), 1));
 }
 
 void NodeNoise::_evaluate()
 {
-    Texture* outTex = nodeEvaluator->requestTexture();
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>();
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);

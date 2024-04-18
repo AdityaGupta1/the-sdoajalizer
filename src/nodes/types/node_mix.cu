@@ -27,11 +27,11 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, Texture inTexFactor, glm
         return;
     }
 
-    glm::vec4 col1 = inTex1.getColorClamp(x, y);
-    glm::vec4 col2 = inTex2.getColorClamp(x, y);
-    float factor = inTexFactor.getColorClamp(x, y).r;
+    glm::vec4 col1 = inTex1.getColorClamp<TextureType::MULTI>(x, y);
+    glm::vec4 col2 = inTex2.getColorClamp<TextureType::MULTI>(x, y);
+    float factor = inTexFactor.getColorClamp<TextureType::MULTI>(x, y).r;
 
-    outTex.setColor(x, y, mixCols(col1, col2, factor));
+    outTex.setColor<TextureType::MULTI>(x, y, mixCols(col1, col2, factor));
 }
 
 bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
@@ -75,7 +75,7 @@ void NodeMix::_evaluate()
 
     glm::ivec2 outRes = Texture::getFirstResolution({ inTex1, inTex2, inTexFactor });
 
-    Texture* outTex = nodeEvaluator->requestTexture(outRes);
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(outRes);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outRes, blockSize);
