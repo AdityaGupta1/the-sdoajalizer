@@ -21,7 +21,7 @@ unsigned int NodeFileInput::getTitleBarColor() const
     return IM_COL32(7, 94, 11, 255);
 }
 
-unsigned int NodeFileInput::getTitleBarSelectedColor() const
+unsigned int NodeFileInput::getTitleBarHoveredColor() const
 {
     return IM_COL32(47, 153, 53, 255);
 }

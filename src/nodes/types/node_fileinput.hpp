@@ -18,7 +18,7 @@ public:
 
 protected:
     unsigned int getTitleBarColor() const override;
-    unsigned int getTitleBarSelectedColor() const override;
+    unsigned int getTitleBarHoveredColor() const override;
 
 private:
     bool isFileExr() const;

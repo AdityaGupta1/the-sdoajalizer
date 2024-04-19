@@ -13,7 +13,7 @@ unsigned int NodeOutput::getTitleBarColor() const
     return IM_COL32(190, 85, 0, 255);
 }
 
-unsigned int NodeOutput::getTitleBarSelectedColor() const
+unsigned int NodeOutput::getTitleBarHoveredColor() const
 {
     return IM_COL32(255, 129, 66, 255);
 }

@@ -49,7 +49,7 @@ protected:
     void setExpensive();
 
     virtual unsigned int getTitleBarColor() const;
-    virtual unsigned int getTitleBarSelectedColor() const;
+    virtual unsigned int getTitleBarHoveredColor() const;
 
     virtual void _evaluate() = 0;
     Texture* getPinTextureOrUniformColor(const Pin& pin, glm::vec4 col);

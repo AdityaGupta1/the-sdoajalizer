@@ -101,6 +101,16 @@ TextureType Pin::getTextureType() const
     return this->textureType;
 }
 
+unsigned int Pin::getColor() const
+{
+    return textureType == TextureType::SINGLE ? IM_COL32(175, 175, 175, 180) : IM_COL32(53, 150, 250, 180);
+}
+
+unsigned int Pin::getHoveredColor() const
+{
+    return textureType == TextureType::SINGLE ? IM_COL32(175, 175, 175, 255) : IM_COL32(53, 150, 250, 255);
+}
+
 PinCacheState Pin::getCacheState() const
 {
     return this->cacheState;

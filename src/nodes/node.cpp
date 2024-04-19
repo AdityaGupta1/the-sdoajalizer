@@ -42,7 +42,7 @@ unsigned int Node::getTitleBarColor() const
     return IM_COL32(11, 109, 191, 255);
 }
 
-unsigned int Node::getTitleBarSelectedColor() const
+unsigned int Node::getTitleBarHoveredColor() const
 {
     return IM_COL32(81, 148, 204, 255);
 }
@@ -114,10 +114,8 @@ void Node::setNodeEvaluator(NodeEvaluator* nodeEvaluator)
 
 void Node::drawPin(const Pin& pin, int pinNumber, bool& didParameterChange)
 {
-    ImNodes::PushColorStyle(ImNodesCol_Pin,
-        pin.getTextureType() == TextureType::SINGLE ? IM_COL32(175, 175, 175, 180) : IM_COL32(53, 150, 250, 180));
-    ImNodes::PushColorStyle(ImNodesCol_PinHovered,
-        pin.getTextureType() == TextureType::SINGLE ? IM_COL32(175, 175, 175, 255) : IM_COL32(53, 150, 250, 255));
+    ImNodes::PushColorStyle(ImNodesCol_Pin, pin.getColor());
+    ImNodes::PushColorStyle(ImNodesCol_PinHovered, pin.getHoveredColor());
 
     didParameterChange |= drawPinBeforeExtras(&pin, pinNumber);
 
@@ -157,8 +155,8 @@ void Node::drawPin(const Pin& pin, int pinNumber, bool& didParameterChange)
 bool Node::draw()
 {
     ImNodes::PushColorStyle(ImNodesCol_TitleBar, this->getTitleBarColor());
-    ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, this->getTitleBarSelectedColor());
-    ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, this->getTitleBarSelectedColor());
+    ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, this->getTitleBarHoveredColor());
+    ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, this->getTitleBarHoveredColor());
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5.f, 5.f)); // for padding inside popups
 

@@ -49,6 +49,9 @@ public:
     Pin& setSingleChannel();
     TextureType getTextureType() const;
 
+    unsigned int getColor() const;
+    unsigned int getHoveredColor() const;
+
     PinCacheState getCacheState() const;
     Texture* getCachedTexture() const;
     void prepareForCache();

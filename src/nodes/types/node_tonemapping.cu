@@ -18,7 +18,7 @@ unsigned int NodeToneMapping::getTitleBarColor() const
     return IM_COL32(130, 0, 0, 255);
 }
 
-unsigned int NodeToneMapping::getTitleBarSelectedColor() const
+unsigned int NodeToneMapping::getTitleBarHoveredColor() const
 {
     return IM_COL32(190, 0, 0, 255);
 }

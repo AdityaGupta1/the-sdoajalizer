@@ -136,7 +136,7 @@ unsigned int NodePaintinator::getTitleBarColor() const
     return IM_COL32(125, 11, 191, 255);
 }
 
-unsigned int NodePaintinator::getTitleBarSelectedColor() const
+unsigned int NodePaintinator::getTitleBarHoveredColor() const
 {
     return IM_COL32(177, 81, 204, 255);
 }
