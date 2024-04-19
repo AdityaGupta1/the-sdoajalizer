@@ -161,7 +161,7 @@ void NodeEvaluator::evaluate()
     }
 
 #ifndef NDEBUG
-    printf("evaluating %d nodes\n", topoSortedNodes.size());
+    printf("evaluating %d nodes\n", (int)topoSortedNodes.size());
 #endif
 
     for (const auto& node : topoSortedNodes)

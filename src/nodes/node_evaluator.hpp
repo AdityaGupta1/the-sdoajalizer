@@ -41,11 +41,13 @@ public:
     template<TextureType texType>
     Texture* requestTexture(glm::ivec2 resolution)
     {
+        bool isUniform = resolution.x == 0;
+
         if (this->textures.contains(resolution))
         {
             for (const auto& texture : this->textures[resolution])
             {
-                if (texture->isType<texType>() && texture->numReferences == 0)
+                if (texture->numReferences == 0 && (isUniform || texture->isType<texType>()))
                 {
                     ++texture->numReferences;
                     requestedTextures.push_back(texture.get());
@@ -60,7 +62,7 @@ public:
 
         auto tex = std::make_unique<Texture>();
 
-        if (resolution.x != 0)
+        if (!isUniform)
         {
             tex->malloc<texType>(resolution);
         }

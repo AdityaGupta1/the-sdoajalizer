@@ -132,7 +132,14 @@ public:
     template<TextureType type>
     __device__ inline auto getColor(int idx)
     {
-        return convertTo<type>(getDevPixels<type>()[idx]);
+        if (dev_pixelsSingle != nullptr)
+        {
+            return convertTo<type>(dev_pixelsSingle[idx]);
+        }
+        else
+        {
+            return convertTo<type>(dev_pixelsMulti[idx]);
+        }
     }
 
     template<TextureType type>
@@ -142,13 +149,13 @@ public:
     }
 
     template<TextureType type>
-    __device__ inline void setColor(int idx, glm::vec4 col)
+    __device__ inline void setColor(int idx, auto col)
     {
         getDevPixels<type>()[idx] = convertTo<type>(col);
     }
 
     template<TextureType type>
-    __device__ inline void setColor(int x, int y, glm::vec4 col)
+    __device__ inline void setColor(int x, int y, auto col)
     {
         setColor<type>(y * resolution.x + x, col);
     }
