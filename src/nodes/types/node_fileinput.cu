@@ -28,15 +28,13 @@ unsigned int NodeFileInput::getTitleBarHoveredColor() const
 
 __global__ void kernSrgbToLinear(Texture tex)
 {
-    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
-    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-    if (x >= tex.resolution.x || y >= tex.resolution.y)
+    if (idx >= tex.getNumPixels())
     {
         return;
     }
 
-    int idx = y * tex.resolution.x + x;
     tex.setColor<TextureType::MULTI>(idx, ColorUtils::srgbToLinear(tex.getColor<TextureType::MULTI>(idx)));
 }
 
@@ -89,8 +87,8 @@ void NodeFileInput::reloadFile()
 
         if (selectedColorSpace == 1) // sRGB
         {
-            const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-            const dim3 blocksPerGrid = calculateNumBlocksPerGrid(texFile->resolution, blockSize);
+            const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
+            const dim3 blocksPerGrid = calculateNumBlocksPerGrid(texFile->getNumPixels(), blockSize);
             kernSrgbToLinear<<<blocksPerGrid, blockSize>>>(*texFile);
         }
     }

@@ -26,7 +26,7 @@ void NodeUvGradient::_evaluate()
 {
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>();
 
-    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_2D_X, DEFAULT_BLOCK_SIZE_2D_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);
     kernUvGradient<<<blocksPerGrid, blockSize>>>(*outTex);
 

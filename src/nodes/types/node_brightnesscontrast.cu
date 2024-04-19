@@ -17,17 +17,15 @@ __host__ __device__ glm::vec4 applyBrightnessContrast(glm::vec4 col, float brigh
     return glm::vec4((contrast + 1.f) * (glm::vec3(col) - 0.5f) + 0.5f + brightness, col.a);
 }
 
-__global__ void kernBrightnessContrast(Texture inTex, float brightness, float contrast, Texture outTex)
+__global__ void kernBrightnessContrast(Texture inTex, Texture outTex, float brightness, float contrast)
 {
-    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
-    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-    if (x >= inTex.resolution.x || y >= inTex.resolution.y)
+    if (idx >= inTex.getNumPixels())
     {
         return;
     }
 
-    int idx = y * inTex.resolution.x + x;
     glm::vec4 outCol = applyBrightnessContrast(inTex.getColor<TextureType::MULTI>(idx), brightness, contrast);
     outTex.setColor<TextureType::MULTI>(idx, outCol);
 }
@@ -62,31 +60,19 @@ void NodeBrightnessContrast::_evaluate()
     if (inTex->isUniform()) {
         Texture* outTex = nodeEvaluator->requestUniformTexture();
 
-        if (constParams.brightness == 0.f && constParams.contrast == 0.f) {
-            outTex->setUniformColor(inTex->getUniformColor<TextureType::MULTI>());
-        }
-        else
-        {
-            glm::vec4 outCol = applyBrightnessContrast(inTex->getUniformColor<TextureType::MULTI>(), constParams.brightness, constParams.contrast);
-            outTex->setUniformColor(outCol);
-        }
+        glm::vec4 inCol = inTex->getUniformColor<TextureType::MULTI>();
+        glm::vec4 outCol = applyBrightnessContrast(inCol, constParams.brightness, constParams.contrast);
+        outTex->setUniformColor(outCol);
 
         outputPins[0].propagateTexture(outTex);
         return;
     }
 
-    // inTex is not uniform
-    if (constParams.brightness == 0.f && constParams.contrast == 0.f) {
-        outputPins[0].propagateTexture(inTex);
-        return;
-    }
-
-    // inTex is not uniform and backupExposure != 0.f
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
-    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
-    kernBrightnessContrast<<<blocksPerGrid, blockSize>>>(*inTex, constParams.brightness, constParams.contrast, *outTex);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->getNumPixels(), blockSize);
+    kernBrightnessContrast<<<blocksPerGrid, blockSize>>>(*inTex, *outTex, constParams.brightness, constParams.contrast);
 
     outputPins[0].propagateTexture(outTex);
 }

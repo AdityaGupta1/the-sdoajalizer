@@ -11,17 +11,15 @@ NodeExposure::NodeExposure()
     addPin(PinType::INPUT, "exposure").setNoConnect();
 }
 
-__global__ void kernExposure(Texture inTex, float multiplier, Texture outTex)
+__global__ void kernExposure(Texture inTex, Texture outTex, float multiplier)
 {
-    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
-    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-    if (x >= inTex.resolution.x || y >= inTex.resolution.y)
+    if (idx >= inTex.getNumPixels())
     {
         return;
     }
 
-    int idx = y * inTex.resolution.x + x;
     glm::vec4 col = inTex.getColor<TextureType::MULTI>(idx);
     outTex.setColor<TextureType::MULTI>(idx, glm::vec4(glm::vec3(col) * multiplier, col.a));
 }
@@ -53,32 +51,19 @@ void NodeExposure::_evaluate()
     if (inTex->isUniform()) {
         Texture* outTex = nodeEvaluator->requestUniformTexture();
 
-        if (constParams.exposure == 0.f) {
-            outTex->setUniformColor(inTex->getUniformColor<TextureType::MULTI>());
-        }
-        else
-        {
-            glm::vec4 inCol = inTex->getUniformColor<TextureType::MULTI>();
-            glm::vec4 outCol = glm::vec4(glm::vec3(inCol) * powf(2.f, constParams.exposure), inCol.a);
-            outTex->setUniformColor(outCol);
-        }
+        const glm::vec4 inCol = inTex->getUniformColor<TextureType::MULTI>();
+        glm::vec4 outCol = glm::vec4(glm::vec3(inCol) * powf(2.f, constParams.exposure), inCol.a);
+        outTex->setUniformColor(outCol);
 
         outputPins[0].propagateTexture(outTex);
         return;
     }
 
-    // inTex is not uniform
-    if (constParams.exposure == 0.f) {
-        outputPins[0].propagateTexture(inTex);
-        return;
-    }
-
-    // inTex is not uniform and constParams.exposure != 0.f
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
-    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
-    kernExposure<<<blocksPerGrid, blockSize>>>(*inTex, powf(2.f, constParams.exposure), *outTex);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->getNumPixels(), blockSize);
+    kernExposure<<<blocksPerGrid, blockSize>>>(*inTex, *outTex, powf(2.f, constParams.exposure));
 
     outputPins[0].propagateTexture(outTex);
 }

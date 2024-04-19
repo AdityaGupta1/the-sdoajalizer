@@ -171,15 +171,13 @@ bool NodeLUT::drawPinExtras(const Pin* pin, int pinNumber)
 
 __global__ void kernApplyLUT(Texture inTex, Texture outTex, cudaTextureObject_t lutTex)
 {
-    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
-    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-    if (x >= outTex.resolution.x && y >= outTex.resolution.y)
+    if (idx >= inTex.getNumPixels())
     {
         return;
     }
 
-    const int idx = y * outTex.resolution.x + x;
     glm::vec4 inColLinear = inTex.getColor<TextureType::MULTI>(idx);
 
     glm::vec3 inColSrgb = ColorUtils::linearToSrgb(glm::vec3(inColLinear));
@@ -209,10 +207,9 @@ void NodeLUT::_evaluate()
 
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
-    const dim3 blockSize2d(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid2d = calculateNumBlocksPerGrid(inTex->resolution, blockSize2d);
-
-    kernApplyLUT<<<blocksPerGrid2d, blockSize2d>>>(
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->getNumPixels(), blockSize);
+    kernApplyLUT<<<blocksPerGrid, blockSize>>>(
         *inTex, *outTex, lutTexObj
     );
 

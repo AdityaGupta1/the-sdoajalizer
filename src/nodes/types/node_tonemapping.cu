@@ -99,7 +99,7 @@ void NodeToneMapping::_evaluate()
 
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
-    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_2D_X, DEFAULT_BLOCK_SIZE_2D_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
     kernApplyToneMapping<<<blocksPerGrid, blockSize>>>(*inTex, selectedToneMapping, *outTex);
 

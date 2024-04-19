@@ -62,6 +62,11 @@ public:
         CUDA_CHECK(cudaFree(dev_pixelsMulti));
     }
 
+    __host__ __device__ inline int getNumPixels()
+    {
+        return resolution.x * resolution.y;
+    }
+
     template<TextureType type>
     __host__ __device__ auto getDevPixels() const
     {
@@ -94,7 +99,6 @@ public:
         return convertTo<type>(uniformColor);
     }
     void setUniformColor(glm::vec4 col);
-    void setUniformColor(glm::vec3 col);
     void setUniformColor(float col);
 
     __host__ __device__ inline bool isUniform()

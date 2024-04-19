@@ -32,15 +32,14 @@ __host__ __device__ glm::vec4 hdrToLdr(glm::vec4 col)
 
 __global__ void kernFillUniformColor(Texture outTex, glm::vec4 col)
 {
-    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
-    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-    if (x >= outTex.resolution.x || y >= outTex.resolution.y)
+    if (idx >= outTex.getNumPixels())
     {
         return;
     }
 
-    outTex.setColor<TextureType::MULTI>(x, y, col);
+    outTex.setColor<TextureType::MULTI>(idx, col);
 }
 
 __global__ void kernCopyToOutTex(Texture inTex, Texture outTex)
@@ -78,15 +77,18 @@ void NodeOutput::_evaluate()
 
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>();
 
-    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);
     if (inTex->isUniform())
     {
         glm::vec4 ldrCol = hdrToLdr(inTex->getUniformColor<TextureType::MULTI>());
+
+        const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
+        const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->getNumPixels(), blockSize);
         kernFillUniformColor<<<blocksPerGrid, blockSize>>>(*outTex, ldrCol);
     }
     else
     {
+        const dim3 blockSize(DEFAULT_BLOCK_SIZE_2D_X, DEFAULT_BLOCK_SIZE_2D_Y);
+        const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);
         kernCopyToOutTex<<<blocksPerGrid, blockSize>>>(*inTex, *outTex);
     }
 

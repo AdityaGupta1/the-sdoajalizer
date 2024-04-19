@@ -28,7 +28,7 @@ void NodeNoise::_evaluate()
 {
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::SINGLE>();
 
-    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_2D_X, DEFAULT_BLOCK_SIZE_2D_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);
     kernNoise<<<blocksPerGrid, blockSize>>>(*outTex);
 

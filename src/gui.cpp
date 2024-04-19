@@ -27,7 +27,8 @@ static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>
     { "bloom", std::make_unique<NodeBloom> },
     { "paint-inator", std::make_unique<NodePaintinator> },
     { "LUT", std::make_unique<NodeLUT> },
-    { "tone mapping", std::make_unique<NodeToneMapping> }
+    { "tone mapping", std::make_unique<NodeToneMapping> },
+    { "map range", std::make_unique<NodeMapRange> }
 };
 
 void Gui::init(GLFWwindow* window)

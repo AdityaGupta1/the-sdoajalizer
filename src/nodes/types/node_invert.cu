@@ -17,15 +17,13 @@ __host__ __device__ glm::vec4 invertCol(glm::vec4 col)
 
 __global__ void kernInvert(Texture inTex, Texture outTex)
 {
-    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
-    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-    if (x >= inTex.resolution.x || y >= inTex.resolution.y)
+    if (idx >= inTex.getNumPixels())
     {
         return;
     }
 
-    int idx = y * inTex.resolution.x + x;
     outTex.setColor<TextureType::MULTI>(idx, invertCol(inTex.getColor<TextureType::MULTI>(idx)));
 }
 
@@ -60,8 +58,8 @@ void NodeInvert::_evaluate()
 
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
-    const dim3 blockSize(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
-    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->resolution, blockSize);
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->getNumPixels(), blockSize);
     kernInvert<<<blocksPerGrid, blockSize>>>(*inTex, *outTex);
 
     outputPins[0].propagateTexture(outTex);

@@ -524,7 +524,7 @@ void NodePaintinator::_evaluate()
     float* dev_colorDiff;
     CUDA_CHECK(cudaMalloc(&dev_colorDiff, numPixels * sizeof(float)));
 
-    const dim3 blockSize2d(DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    const dim3 blockSize2d(DEFAULT_BLOCK_SIZE_2D_X, DEFAULT_BLOCK_SIZE_2D_Y);
     const dim3 blocksPerGrid2d = calculateNumBlocksPerGrid(inTex->resolution, blockSize2d);
 
     const auto& brushParams = constParams.getBrushParams();

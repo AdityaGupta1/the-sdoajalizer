@@ -62,7 +62,7 @@ Texture* Node::getPinTextureOrUniformColor(const Pin& pin, glm::vec4 col)
 
 Texture* Node::getPinTextureOrUniformColor(const Pin& pin, float col)
 {
-    return getPinTextureOrUniformColor(pin, glm::vec4(col, col, col, 1));
+    return getPinTextureOrUniformColor(pin, Texture::singleToMulti(col));
 }
 
 // can potentially add pre- and post-effects to this function

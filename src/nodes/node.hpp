@@ -2,8 +2,9 @@
 
 #define NODE_ID_STRIDE 32
 
-#define DEFAULT_BLOCK_SIZE_X 32
-#define DEFAULT_BLOCK_SIZE_Y 32
+#define DEFAULT_BLOCK_SIZE_1D 512
+#define DEFAULT_BLOCK_SIZE_2D_X 32
+#define DEFAULT_BLOCK_SIZE_2D_Y 32
 
 #include "pin.hpp"
 #include "node_enums.hpp"
