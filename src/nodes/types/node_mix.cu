@@ -9,7 +9,7 @@ NodeMix::NodeMix()
 
     addPin(PinType::INPUT, "image 1");
     addPin(PinType::INPUT, "image 2");
-    addPin(PinType::INPUT, "factor");
+    addPin(PinType::INPUT, "factor").setSingleChannel();
 }
 
 __host__ __device__ glm::vec4 mixCols(glm::vec4 col1, glm::vec4 col2, float factor)

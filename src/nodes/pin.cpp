@@ -79,14 +79,26 @@ void Pin::clearTextures()
     }
 }
 
-void Pin::setNoConnect()
+Pin& Pin::setNoConnect()
 {
     this->canConnect = false;
+    return *this;
 }
 
 bool Pin::getCanConnect() const
 {
     return this->canConnect;
+}
+
+Pin& Pin::setSingleChannel()
+{
+    this->textureType = TextureType::SINGLE;
+    return *this;
+}
+
+TextureType Pin::getTextureType() const
+{
+    return this->textureType;
 }
 
 PinCacheState Pin::getCacheState() const

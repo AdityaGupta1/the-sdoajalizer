@@ -114,6 +114,11 @@ void Node::setNodeEvaluator(NodeEvaluator* nodeEvaluator)
 
 void Node::drawPin(const Pin& pin, int pinNumber, bool& didParameterChange)
 {
+    ImNodes::PushColorStyle(ImNodesCol_Pin,
+        pin.getTextureType() == TextureType::SINGLE ? IM_COL32(175, 175, 175, 180) : IM_COL32(53, 150, 250, 180));
+    ImNodes::PushColorStyle(ImNodesCol_PinHovered,
+        pin.getTextureType() == TextureType::SINGLE ? IM_COL32(175, 175, 175, 255) : IM_COL32(53, 150, 250, 255));
+
     didParameterChange |= drawPinBeforeExtras(&pin, pinNumber);
 
     if (pin.getCanConnect())
@@ -144,6 +149,9 @@ void Node::drawPin(const Pin& pin, int pinNumber, bool& didParameterChange)
     }
 
     didParameterChange |= drawPinAfterExtras(&pin, pinNumber);
+
+    ImNodes::PopColorStyle();
+    ImNodes::PopColorStyle();
 }
 
 bool Node::draw()

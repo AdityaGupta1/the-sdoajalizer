@@ -17,6 +17,7 @@ private:
     std::unordered_set<Edge*> edges;
 
     bool canConnect{ true };
+    TextureType textureType{ TextureType::MULTI };
 
     PinCacheState cacheState{ PinCacheState::NO_CACHE };
     Texture* cachedTexture{ nullptr };
@@ -42,8 +43,11 @@ public:
     void propagateTexture(Texture* texture);
     void clearTextures();
 
-    void setNoConnect();
+    Pin& setNoConnect();
     bool getCanConnect() const;
+
+    Pin& setSingleChannel();
+    TextureType getTextureType() const;
 
     PinCacheState getCacheState() const;
     Texture* getCachedTexture() const;
