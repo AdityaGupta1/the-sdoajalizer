@@ -54,11 +54,12 @@ void NodeExposure::_evaluate()
         Texture* outTex = nodeEvaluator->requestUniformTexture();
 
         if (constParams.exposure == 0.f) {
-            outTex->setUniformColor(inTex->getUniformColor());
+            outTex->setUniformColor(inTex->getUniformColor<TextureType::MULTI>());
         }
         else
         {
-            glm::vec4 outCol = glm::vec4(glm::vec3(inTex->getUniformColor()) * powf(2.f, constParams.exposure), inTex->getUniformColor().a);
+            glm::vec4 inCol = inTex->getUniformColor<TextureType::MULTI>();
+            glm::vec4 outCol = glm::vec4(glm::vec3(inCol) * powf(2.f, constParams.exposure), inCol.a);
             outTex->setUniformColor(outCol);
         }
 

@@ -67,7 +67,11 @@ void NodeMix::_evaluate()
     if (inTex1->isUniform() && inTex2->isUniform() && inTexFactor->isUniform())
     {
         Texture* outTex = nodeEvaluator->requestUniformTexture();
-        outTex->setUniformColor(mixCols(inTex1->getUniformColor(), inTex2->getUniformColor(), inTexFactor->getUniformColor().r));
+        outTex->setUniformColor(mixCols(
+            inTex1->getUniformColor<TextureType::MULTI>(),
+            inTex2->getUniformColor<TextureType::MULTI>(),
+            inTexFactor->getUniformColor<TextureType::SINGLE>()
+        ));
 
         outputPins[0].propagateTexture(outTex);
         return;

@@ -82,7 +82,7 @@ void NodeOutput::_evaluate()
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->resolution, blockSize);
     if (inTex->isUniform())
     {
-        auto ldrCol = hdrToLdr(inTex->getUniformColor());
+        glm::vec4 ldrCol = hdrToLdr(inTex->getUniformColor<TextureType::MULTI>());
         kernFillUniformColor<<<blocksPerGrid, blockSize>>>(*outTex, ldrCol);
     }
     else

@@ -53,7 +53,7 @@ void NodeInvert::_evaluate()
     if (inTex->isUniform())
     {
         Texture* outTex = nodeEvaluator->requestUniformTexture();
-        outTex->setUniformColor(invertCol(inTex->getUniformColor()));
+        outTex->setUniformColor(invertCol(inTex->getUniformColor<TextureType::MULTI>()));
         outputPins[0].propagateTexture(outTex);
         return;
     }

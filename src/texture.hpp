@@ -88,9 +88,10 @@ public:
         }
     }
 
-    __host__ __device__ glm::vec4 getUniformColor()
+    template<TextureType type>
+    __host__ __device__ auto getUniformColor()
     {
-        return uniformColor;
+        return convertTo<type>(uniformColor);
     }
     void setUniformColor(glm::vec4 col);
     void setUniformColor(glm::vec3 col);
@@ -103,7 +104,7 @@ public:
 
 private:
     template<TextureType type>
-    __device__ inline auto convertTo(float inCol)
+    __host__ __device__ inline auto convertTo(float inCol)
     {
         if constexpr (type == TextureType::SINGLE)
         {
@@ -116,7 +117,7 @@ private:
     }
 
     template<TextureType type>
-    __device__ inline auto convertTo(glm::vec4 inCol)
+    __host__ __device__ inline auto convertTo(glm::vec4 inCol)
     {
         if constexpr (type == TextureType::MULTI)
         {

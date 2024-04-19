@@ -92,7 +92,7 @@ void NodeToneMapping::_evaluate()
     if (inTex->isUniform())
     {
         Texture* outTex = nodeEvaluator->requestUniformTexture();
-        outTex->setUniformColor(applyToneMapping(inTex->getUniformColor(), selectedToneMapping));
+        outTex->setUniformColor(applyToneMapping(inTex->getUniformColor<TextureType::MULTI>(), selectedToneMapping));
         outputPins[0].propagateTexture(outTex);
         return;
     }

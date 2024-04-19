@@ -63,11 +63,11 @@ void NodeBrightnessContrast::_evaluate()
         Texture* outTex = nodeEvaluator->requestUniformTexture();
 
         if (constParams.brightness == 0.f && constParams.contrast == 0.f) {
-            outTex->setUniformColor(inTex->getUniformColor());
+            outTex->setUniformColor(inTex->getUniformColor<TextureType::MULTI>());
         }
         else
         {
-            glm::vec4 outCol = applyBrightnessContrast(inTex->getUniformColor(), constParams.brightness, constParams.contrast);
+            glm::vec4 outCol = applyBrightnessContrast(inTex->getUniformColor<TextureType::MULTI>(), constParams.brightness, constParams.contrast);
             outTex->setUniformColor(outCol);
         }
 
