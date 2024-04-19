@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 #include "cuda_includes.hpp"
 
+#include "color_utils.hpp"
+
 #include <functional>
 
 struct ResolutionHash
@@ -20,6 +22,17 @@ enum class TextureType
 
 struct Texture
 {
+public:
+    __host__ __device__ static inline glm::vec4 singleToMulti(float single)
+    {
+        return glm::vec4(single, single, single, 1.f);
+    }
+
+    __host__ __device__ static inline float multiToSingle(glm::vec4 multi)
+    {
+        return ColorUtils::luminance(glm::vec3(multi));
+    }
+
 private:
     float* dev_pixelsSingle{ nullptr };
     glm::vec4* dev_pixelsMulti{ nullptr };
@@ -63,7 +76,7 @@ public:
     }
 
     template<TextureType type>
-    __host__ __device__ inline bool hasDevPixels() const
+    __host__ __device__ inline bool isType() const
     {
         if constexpr (type == TextureType::SINGLE)
         {
@@ -88,20 +101,72 @@ public:
         return this->resolution.x == 0;
     }
 
+private:
+    template<TextureType type>
+    __device__ inline auto convertTo(float inCol)
+    {
+        if constexpr (type == TextureType::SINGLE)
+        {
+            return inCol;
+        }
+        else
+        {
+            return singleToMulti(inCol);
+        }
+    }
+
+    template<TextureType type>
+    __device__ inline auto convertTo(glm::vec4 inCol)
+    {
+        if constexpr (type == TextureType::MULTI)
+        {
+            return inCol;
+        }
+        else
+        {
+            return multiToSingle(inCol);
+        }
+    }
+
+public:
+    template<TextureType type>
+    __device__ inline auto getColor(int idx)
+    {
+        return convertTo<type>(getDevPixels<type>()[idx]);
+    }
+
+    template<TextureType type>
+    __device__ inline auto getColor(int x, int y)
+    {
+        return getColor<type>(y * resolution.x + x);
+    }
+
+    template<TextureType type>
+    __device__ inline void setColor(int idx, glm::vec4 col)
+    {
+        getDevPixels<type>()[idx] = convertTo<type>(col);
+    }
+
+    template<TextureType type>
+    __device__ inline void setColor(int x, int y, glm::vec4 col)
+    {
+        setColor<type>(y * resolution.x + x, col);
+    }
+
     template<TextureType type>
     __device__ inline auto getColorClamp(int x, int y, glm::vec4 backup = glm::vec4(0, 0, 0, 1))
     {
         if (isUniform())
         {
-            return uniformColor;
+            return convertTo<type>(uniformColor);
         }
 
         if (x < resolution.x && y < resolution.y)
         {
-            return getDevPixels<type>()[y * resolution.x + x];
+            return getColor<type>(x, y);
         }
 
-        return backup;
+        return convertTo<type>(backup);
     }
 
     template<TextureType type>
@@ -109,37 +174,13 @@ public:
     {
         if (isUniform())
         {
-            return uniformColor;
+            return convertTo<type>(uniformColor);
         }
 
         x = glm::clamp(x, 0, resolution.x - 1);
         y = glm::clamp(y, 0, resolution.y - 1);
-        return getDevPixels<type>()[y * resolution.x + x];
+        return getColor<type>(x, y);
     }
 
-    template<TextureType type>
-    __device__ inline auto getColor(int idx)
-    {
-        return getDevPixels<type>()[idx];
-    }
-
-    template<TextureType type>
-    __device__ inline auto getColor(int x, int y)
-    {
-        return getDevPixels<type>()[y * resolution.x + x];
-    }
-
-    template<TextureType type>
-    __device__ inline void setColor(int idx, glm::vec4 col)
-    {
-        getDevPixels<type>()[idx] = col;
-    }
-
-    template<TextureType type>
-    __device__ inline void setColor(int x, int y, glm::vec4 col)
-    {
-        getDevPixels<type>()[y * resolution.x + x] = col;
-    }
-
-    static glm::ivec2 getFirstResolution(std::initializer_list<Texture*> textures);
+    static glm::ivec2 getFirstResolutionFromList(std::initializer_list<Texture*> textures);
 };

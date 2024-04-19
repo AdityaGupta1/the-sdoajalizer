@@ -15,7 +15,7 @@ void Texture::setUniformColor(float col)
     this->uniformColor = glm::vec4(col, col, col, 1);
 }
 
-glm::ivec2 Texture::getFirstResolution(std::initializer_list<Texture*> textures)
+glm::ivec2 Texture::getFirstResolutionFromList(std::initializer_list<Texture*> textures)
 {
     for (const auto& tex : textures)
     {

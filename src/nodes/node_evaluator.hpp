@@ -45,7 +45,7 @@ public:
         {
             for (const auto& texture : this->textures[resolution])
             {
-                if (texture->hasDevPixels<texType>() && texture->numReferences == 0)
+                if (texture->isType<texType>() && texture->numReferences == 0)
                 {
                     ++texture->numReferences;
                     requestedTextures.push_back(texture.get());

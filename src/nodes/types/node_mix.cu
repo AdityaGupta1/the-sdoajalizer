@@ -29,7 +29,7 @@ __global__ void kernMix(Texture inTex1, Texture inTex2, Texture inTexFactor, glm
 
     glm::vec4 col1 = inTex1.getColorClamp<TextureType::MULTI>(x, y);
     glm::vec4 col2 = inTex2.getColorClamp<TextureType::MULTI>(x, y);
-    float factor = inTexFactor.getColorClamp<TextureType::MULTI>(x, y).r;
+    float factor = inTexFactor.getColorClamp<TextureType::SINGLE>(x, y);
 
     outTex.setColor<TextureType::MULTI>(x, y, mixCols(col1, col2, factor));
 }
@@ -73,7 +73,7 @@ void NodeMix::_evaluate()
         return;
     }
 
-    glm::ivec2 outRes = Texture::getFirstResolution({ inTex1, inTex2, inTexFactor });
+    glm::ivec2 outRes = Texture::getFirstResolutionFromList({ inTex1, inTex2, inTexFactor });
 
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(outRes);
 
