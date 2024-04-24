@@ -15,24 +15,62 @@
 #include "stb_image_write.h"
 #include <filesystem>
 
-static std::vector<std::pair<std::string, std::function<std::unique_ptr<Node>()>>> nodeCreators = {
-    { "color", std::make_unique<NodeColor> },
-    { "file input", std::make_unique<NodeFileInput> },
-    { "invert", std::make_unique<NodeInvert> },
-    { "mix", std::make_unique<NodeMix> },
-    { "noise", std::make_unique<NodeNoise> },
-    { "uv gradient", std::make_unique<NodeUvGradient> },
-    { "exposure", std::make_unique<NodeExposure> },
-    { "brightness/contrast", std::make_unique<NodeBrightnessContrast> },
-    { "bloom", std::make_unique<NodeBloom> },
-    { "paint-inator", std::make_unique<NodePaintinator> },
-    { "LUT", std::make_unique<NodeLUT> },
-    { "tone mapping", std::make_unique<NodeToneMapping> },
-    { "map range", std::make_unique<NodeMapRange> }
-};
+void Gui::setupNodeCreators()
+{
+    nodeCreators = {
+        { "color", std::make_unique<NodeColor> },
+        { "file input", std::make_unique<NodeFileInput> },
+        { "invert", std::make_unique<NodeInvert> },
+        { "mix", std::make_unique<NodeMix> },
+        { "noise", std::make_unique<NodeNoise> },
+        { "uv gradient", std::make_unique<NodeUvGradient> },
+        { "exposure", std::make_unique<NodeExposure> },
+        { "brightness/contrast", std::make_unique<NodeBrightnessContrast> },
+        { "bloom", std::make_unique<NodeBloom> },
+        { "paint-inator", std::make_unique<NodePaintinator> },
+        { "LUT", std::make_unique<NodeLUT> },
+        { "tone mapping", std::make_unique<NodeToneMapping> },
+        { "map range", std::make_unique<NodeMapRange> }
+    };
+
+    struct
+    {
+        // case-insensitive string comparison
+        bool operator()(NodeCreator a, NodeCreator b) const
+        {
+            const char* str1 = a.first.c_str();
+            const char* str2 = b.first.c_str();
+
+            for (int i = 0; i < a.first.size(); ++i)
+            {
+                if (i >= b.first.size())
+                {
+                    return false;
+                }
+
+                int cmp = std::tolower(static_cast<unsigned char>(str1[i])) - std::tolower(static_cast<unsigned char>(str2[i]));
+                if (cmp < 0)
+                {
+                    return true;
+                }
+                else if (cmp > 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+    customLess;
+
+    std::sort(nodeCreators.data(), nodeCreators.data() + nodeCreators.size(), customLess);
+}
 
 void Gui::init(GLFWwindow* window)
 {
+    setupNodeCreators();
+
     this->window = window;
 
     IMGUI_CHECKVERSION();

@@ -42,7 +42,12 @@ private:
         int id{ 0 };
     } createWindowData;
 
+    using NodeCreator = std::pair<std::string, std::function<std::unique_ptr<Node>()>>;
+    std::vector<NodeCreator> nodeCreators;
+
 public:
+    void setupNodeCreators();
+
     void init(GLFWwindow* window);
     void deinit();
 
