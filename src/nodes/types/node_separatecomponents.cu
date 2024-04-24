@@ -49,7 +49,7 @@ __host__ __device__ glm::vec3 separateComponents(glm::vec3 color)
     }
     else
     {
-        return glm::vec3(0, 0.5, 1); // TODO return HSV values
+        return ColorUtils::rgbToHsv(color);
     }
 }
 

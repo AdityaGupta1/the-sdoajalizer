@@ -23,6 +23,8 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtx/component_wise.hpp>
+
 #include "cuda_includes.hpp"
 
 namespace ColorUtils
@@ -39,6 +41,51 @@ namespace ColorUtils
 	__host__ __device__ inline float luminance(glm::vec4 v)
 	{
 		return luminance(glm::vec3(v));
+	}
+
+	// https://mattlockyer.github.io/iat455/documents/rgb-hsv.pdf
+	__host__ __device__ inline glm::vec3 rgbToHsv(glm::vec3 v)
+	{
+		float m_max = glm::compMax(v);
+		float m_min = glm::compMin(v);
+		float delta = m_max - m_min;
+
+		float H;
+		if (delta == 0.f)
+		{
+			H = 0.f;
+		}
+		else
+		{
+			if (m_max == v.r)
+			{
+				H = fmodf((v.g - v.b) / delta, 6.f);
+			}
+			else if (m_max == v.g)
+			{
+				H = (v.b - v.r) / delta + 2.f;
+			}
+			else
+			{
+				H = (v.r - v.g) / delta + 4.f;
+			}
+
+			H /= 6.f;
+		}
+
+		float V = m_max;
+
+		float S;
+		if (V == 0.f)
+		{
+			S = 0.f;
+		}
+		else
+		{
+			S = delta / V;
+		}
+
+		return glm::vec3(H, S, V);
 	}
 
 	// ==================================================================
