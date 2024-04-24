@@ -6,7 +6,7 @@
 
 int Node::nextId = 0;
 
-Node::Node(std::string name)
+Node::Node(const std::string& name)
     : name(name), id(Node::nextId)
 {
     Node::nextId += NODE_ID_STRIDE;

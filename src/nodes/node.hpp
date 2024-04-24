@@ -38,7 +38,7 @@ protected:
     NodeEvaluator* nodeEvaluator{ nullptr };
     bool isBeingEvaluated{ false };
 
-    Node(std::string name);
+    Node(const std::string& name);
 
 public:
     virtual ~Node();

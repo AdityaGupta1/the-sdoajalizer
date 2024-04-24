@@ -26,7 +26,7 @@ namespace NodeUI
     bool FilePicker(std::string* filePath, const std::vector<std::string>& filters);
 
     bool Dropdown(int& selectedItem, const std::vector<const char*>& items);
-    template <typename T>
+    template<typename T>
     bool Dropdown(T*& selectedItem, std::vector<T>& items, std::function<const char* (const T&)> converter)
     {
         ImGui::PushID(&selectedItem);

@@ -17,3 +17,4 @@
 #include "types/node_lut.hpp"
 #include "types/node_tonemapping.hpp"
 #include "types/node_maprange.hpp"
+#include "types/node_separatecomponents.hpp"

@@ -30,7 +30,9 @@ void Gui::setupNodeCreators()
         { "paint-inator", std::make_unique<NodePaintinator> },
         { "LUT", std::make_unique<NodeLUT> },
         { "tone mapping", std::make_unique<NodeToneMapping> },
-        { "map range", std::make_unique<NodeMapRange> }
+        { "map range", std::make_unique<NodeMapRange> },
+        { "separate RGB", []() { return std::make_unique<NodeSeparateComponents<ComponentsType::RGB>>("separate RGB"); }},
+        { "separate HSV", []() { return std::make_unique<NodeSeparateComponents<ComponentsType::HSV>>("separate HSV"); }}
     };
 
     struct
