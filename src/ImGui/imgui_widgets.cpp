@@ -5142,7 +5142,7 @@ bool ImGui::ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flag
     const ImGuiStyle& style = g.Style;
     const float square_sz = GetFrameHeight();
     const char* label_display_end = FindRenderedTextEnd(label);
-    float w_full = CalcItemWidth();
+    float w_full = CalcItemWidth() + 50;
     g.NextItemData.ClearFlags();
 
     BeginGroup();
@@ -5204,19 +5204,19 @@ bool ImGui::ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flag
         // RGB/HSV 0..255 Sliders
         const float w_items = w_inputs - style.ItemInnerSpacing.x * (components - 1);
 
-        const bool hide_prefix = (IM_TRUNC(w_items / components) <= CalcTextSize((flags & ImGuiColorEditFlags_Float) ? "M:0.000" : "M:000").x);
+        const bool hide_prefix = (IM_TRUNC(w_items / components) <= CalcTextSize((flags & ImGuiColorEditFlags_Float) ? "M: 0.000" : "M: 000").x);
         static const char* ids[4] = { "##X", "##Y", "##Z", "##W" };
         static const char* fmt_table_int[3][4] =
         {
-            {   "%3d",   "%3d",   "%3d",   "%3d" }, // Short display
-            { "R:%3d", "G:%3d", "B:%3d", "A:%3d" }, // Long display for RGBA
-            { "H:%3d", "S:%3d", "V:%3d", "A:%3d" }  // Long display for HSVA
+            {    "%3d",    "%3d",    "%3d",    "%3d" }, // Short display
+            { "R: %3d", "G: %3d", "B: %3d", "A: %3d" }, // Long display for RGBA
+            { "H: %3d", "S: %3d", "V: %3d", "A: %3d" }  // Long display for HSVA
         };
         static const char* fmt_table_float[3][4] =
         {
-            {   "%0.3f",   "%0.3f",   "%0.3f",   "%0.3f" }, // Short display
-            { "R:%0.3f", "G:%0.3f", "B:%0.3f", "A:%0.3f" }, // Long display for RGBA
-            { "H:%0.3f", "S:%0.3f", "V:%0.3f", "A:%0.3f" }  // Long display for HSVA
+            {    "%0.3f",    "%0.3f",    "%0.3f",    "%0.3f" }, // Short display
+            { "R: %0.3f", "G: %0.3f", "B: %0.3f", "A: %0.3f" }, // Long display for RGBA
+            { "H: %0.3f", "S: %0.3f", "V: %0.3f", "A: %0.3f" }  // Long display for HSVA
         };
         const int fmt_idx = hide_prefix ? 0 : (flags & ImGuiColorEditFlags_DisplayHSV) ? 2 : 1;
 
@@ -5234,7 +5234,7 @@ bool ImGui::ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flag
                 float maxValue;
                 if (hdr)
                 {
-                    // cap at 1.0 for alpha, and hue/saturation
+                    // cap at 1.0 for alpha and hue/saturation
                     // no upper cap for RGB and value
                     maxValue = (n == 3 || ((flags & ImGuiColorEditFlags_DisplayHSV) != 0 && n != 2)) ? 1.f : FLT_MAX;
                 }
@@ -5242,8 +5242,12 @@ bool ImGui::ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flag
                 {
                     maxValue = 1.f;
                 }
-                value_changed |= DragFloat(ids[n], &f[n], 1.0f / 255.0f, 0.0f, maxValue, fmt_table_float[fmt_idx][n], ImGuiSliderFlags_AlwaysClamp);
-                value_changed_as_float |= value_changed;
+
+                if (!(n == 3 && (flags & ImGuiColorEditFlags_DisplayHSV))) // don't show alpha for HSV
+                {
+                    value_changed |= DragFloat(ids[n], &f[n], 1.0f / 255.0f, 0.0f, maxValue, fmt_table_float[fmt_idx][n], ImGuiSliderFlags_AlwaysClamp);
+                    value_changed_as_float |= value_changed;
+                }
             }
             else
             {

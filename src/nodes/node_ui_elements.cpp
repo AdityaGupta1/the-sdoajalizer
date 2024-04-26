@@ -18,7 +18,8 @@ void NodeUI::Separator(const std::string& text)
     ImGui::GetWindowDrawList()->AddLine(
         lineStart, lineEnd,
         ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]),
-        1.0f);
+        1.0f
+    );
 }
 
 // somewhat hacky way to limit true values to using the slider or confirming after typing into temp input (i.e. not for each individual character typed into temp input)
