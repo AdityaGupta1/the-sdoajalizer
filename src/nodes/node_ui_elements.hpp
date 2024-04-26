@@ -23,6 +23,8 @@ namespace NodeUI
     bool FloatEdit(float& v, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f");
     bool IntEdit(int& v, float v_speed = 1.0f, int v_min = 0, int v_max = 0, const char* format = "%d");
 
+    bool Checkbox(bool& v, const std::string& label = "");
+
     bool FilePicker(std::string* filePath, const std::vector<std::string>& filters);
 
     bool Dropdown(int& selectedItem, const std::vector<const char*>& items);

@@ -75,6 +75,17 @@ bool NodeUI::IntEdit(int& v, float v_speed, int v_min, int v_max, const char* fo
     return didParameterChange;
 }
 
+bool NodeUI::Checkbox(bool& v, const std::string& label)
+{
+    ImGui::PushID(&v);
+
+    bool didParameterChange = ImGui::Checkbox(label.c_str(), &v);
+
+    ImGui::PopID();
+
+    return didParameterChange;
+}
+
 bool NodeUI::FilePicker(std::string* filePath, const std::vector<std::string>& filters)
 {
     ImGui::PushItemWidth(160);

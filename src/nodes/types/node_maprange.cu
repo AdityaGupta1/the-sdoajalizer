@@ -14,29 +14,14 @@ NodeMapRange::NodeMapRange()
     addPin(PinType::INPUT, "new max").setNoConnect();
 }
 
-__host__ __device__ float mapRange(float v, float oldMin, float oldMax, float newMin, float newMax)
+bool NodeMapRange::drawPinBeforeExtras(const Pin* pin, int pinNumber)
 {
-    float denom = oldMax - oldMin;
-    if (denom == 0.f)
+    if (pin->pinType == PinType::INPUT && pinNumber == 0) // value
     {
-        return 0.f;
+        return NodeUI::Checkbox(constParams.clamp, "clamp");
     }
 
-    float t = (v - oldMin) / denom;
-    return newMin + t * newMax;
-}
-
-__global__ void kernMapRange(Texture inTex, Texture outTex, float oldMin, float oldMax, float newMin, float newMax)
-{
-    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-    if (idx >= inTex.getNumPixels())
-    {
-        return;
-    }
-
-    float outValue = mapRange(inTex.getColor<TextureType::SINGLE>(idx), oldMin, oldMax, newMin, newMax);
-    outTex.setColor<TextureType::SINGLE>(idx, outValue);
+    return false;
 }
 
 bool NodeMapRange::drawPinExtras(const Pin* pin, int pinNumber)
@@ -68,6 +53,36 @@ bool NodeMapRange::drawPinExtras(const Pin* pin, int pinNumber)
     }
 }
 
+__host__ __device__ float mapRange(float v, float oldMin, float oldMax, float newMin, float newMax, bool clamp)
+{
+    float denom = oldMax - oldMin;
+    if (denom == 0.f)
+    {
+        return 0.f;
+    }
+
+    float t = (v - oldMin) / denom;
+    v = newMin + t * newMax;
+    if (clamp)
+    {
+        v = glm::clamp(v, fminf(newMin, newMax), fmaxf(newMin, newMax));
+    }
+    return v;
+}
+
+__global__ void kernMapRange(Texture inTex, Texture outTex, float oldMin, float oldMax, float newMin, float newMax, bool clamp)
+{
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+    if (idx >= inTex.getNumPixels())
+    {
+        return;
+    }
+
+    float outValue = mapRange(inTex.getColor<TextureType::SINGLE>(idx), oldMin, oldMax, newMin, newMax, clamp);
+    outTex.setColor<TextureType::SINGLE>(idx, outValue);
+}
+
 void NodeMapRange::_evaluate()
 {
     Texture* inTex = getPinTextureOrUniformColor(inputPins[0], constParams.value);
@@ -77,7 +92,12 @@ void NodeMapRange::_evaluate()
         Texture* outTex = nodeEvaluator->requestUniformTexture();
 
         const float inValue = constParams.value;
-        float outValue = mapRange(inValue, constParams.oldMin, constParams.oldMax, constParams.newMin, constParams.newMax);
+        float outValue = mapRange(
+            inValue,
+            constParams.oldMin, constParams.oldMax,
+            constParams.newMin, constParams.newMax,
+            constParams.clamp
+        );
         outTex->setUniformColor(outValue);
 
         outputPins[0].propagateTexture(outTex);
@@ -90,8 +110,9 @@ void NodeMapRange::_evaluate()
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->getNumPixels(), blockSize);
     kernMapRange<<<blocksPerGrid, blockSize>>>(
         *inTex, *outTex, 
-        constParams.oldMin, constParams.oldMax, 
-        constParams.newMin, constParams.newMax
+        constParams.oldMin, constParams.oldMax,
+        constParams.newMin, constParams.newMax,
+        constParams.clamp
     );
 
     outputPins[0].propagateTexture(outTex);
