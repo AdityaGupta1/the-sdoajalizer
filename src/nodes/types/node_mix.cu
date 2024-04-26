@@ -12,28 +12,6 @@ NodeMix::NodeMix()
     addPin(PinType::INPUT, "factor").setSingleChannel();
 }
 
-__host__ __device__ glm::vec4 mixCols(glm::vec4 col1, glm::vec4 col2, float factor)
-{
-    return glm::mix(col1, col2, factor);
-}
-
-__global__ void kernMix(Texture inTex1, Texture inTex2, Texture inTexFactor, glm::ivec2 outRes, Texture outTex)
-{
-    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
-    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
-
-    if (x >= outRes.x || y >= outRes.y)
-    {
-        return;
-    }
-
-    glm::vec4 col1 = inTex1.getColorClamp<TextureType::MULTI>(x, y);
-    glm::vec4 col2 = inTex2.getColorClamp<TextureType::MULTI>(x, y);
-    float factor = inTexFactor.getColorClamp<TextureType::SINGLE>(x, y);
-
-    outTex.setColor<TextureType::MULTI>(x, y, mixCols(col1, col2, factor));
-}
-
 bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
 {
     if (pin->pinType == PinType::OUTPUT || pin->hasEdge())
@@ -57,6 +35,28 @@ bool NodeMix::drawPinExtras(const Pin* pin, int pinNumber)
     }
 }
 
+__host__ __device__ glm::vec4 mixCols(glm::vec4 col1, glm::vec4 col2, float factor)
+{
+    return glm::mix(col1, col2, factor);
+}
+
+__global__ void kernMix(Texture inTex1, Texture inTex2, Texture inTexFactor, Texture outTex)
+{
+    const int x = (blockIdx.x * blockDim.x) + threadIdx.x;
+    const int y = (blockIdx.y * blockDim.y) + threadIdx.y;
+
+    if (x >= outTex.resolution.x || y >= outTex.resolution.y)
+    {
+        return;
+    }
+
+    glm::vec4 col1 = inTex1.getColorClamp<TextureType::MULTI>(x, y);
+    glm::vec4 col2 = inTex2.getColorClamp<TextureType::MULTI>(x, y);
+    float factor = inTexFactor.getColorClamp<TextureType::SINGLE>(x, y);
+
+    outTex.setColor<TextureType::MULTI>(x, y, mixCols(col1, col2, factor));
+}
+
 // should work for differing resolutions but that hasn't been tested yet
 void NodeMix::_evaluate()
 {
@@ -78,12 +78,11 @@ void NodeMix::_evaluate()
     }
 
     glm::ivec2 outRes = Texture::getFirstResolutionFromList({ inTex1, inTex2, inTexFactor });
-
     Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(outRes);
 
     const dim3 blockSize(DEFAULT_BLOCK_SIZE_2D_X, DEFAULT_BLOCK_SIZE_2D_Y);
     const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outRes, blockSize);
-    kernMix<<<blocksPerGrid, blockSize>>>(*inTex1, *inTex2, *inTexFactor, outRes, *outTex);
+    kernMix<<<blocksPerGrid, blockSize>>>(*inTex1, *inTex2, *inTexFactor, *outTex);
 
     outputPins[0].propagateTexture(outTex);
 }
