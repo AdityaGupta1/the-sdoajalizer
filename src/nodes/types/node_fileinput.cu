@@ -14,6 +14,8 @@ NodeFileInput::NodeFileInput()
     addPin(PinType::OUTPUT, "image");
 
     addPin(PinType::INPUT, "color space").setNoConnect();
+
+    setExpensive();
 }
 
 unsigned int NodeFileInput::getTitleBarColor() const
@@ -24,6 +26,43 @@ unsigned int NodeFileInput::getTitleBarColor() const
 unsigned int NodeFileInput::getTitleBarHoveredColor() const
 {
     return IM_COL32(47, 153, 53, 255);
+}
+
+bool NodeFileInput::drawPinExtras(const Pin* pin, int pinNumber)
+{
+    ImGui::SameLine();
+
+    if (pin->pinType == PinType::INPUT)
+    {
+        switch (pinNumber)
+        {
+        case 0: // color space
+            return NodeUI::Dropdown(selectedColorSpace, colorSpaceOptions);
+        default:
+            throw std::runtime_error("invalid pin number");
+        }
+    }
+    else
+    {
+        switch (pinNumber)
+        {
+        case 0: // file input
+        {
+            bool didParameterChange = NodeUI::FilePicker(&filePath, { "Image Files (.png, .jpg, .jpeg, .exr)", "*.png *.jpg *.jpeg *.exr" });
+
+            if (didParameterChange)
+            {
+                selectedColorSpace = isFileExr() ? 0 : 1; // linear if EXR, sRGB otherwise
+            }
+
+            return didParameterChange;
+        }
+        default:
+            throw std::runtime_error("invalid pin number");
+        }
+    }
+
+    return false;
 }
 
 __global__ void kernSrgbToLinear(Texture tex)
@@ -38,13 +77,13 @@ __global__ void kernSrgbToLinear(Texture tex)
     tex.setColor<TextureType::MULTI>(idx, ColorUtils::srgbToLinear(tex.getColor<TextureType::MULTI>(idx)));
 }
 
-void NodeFileInput::reloadFile()
+bool NodeFileInput::isFileExr() const
 {
-    if (texFile != nullptr) {
-        --texFile->numReferences;
-        texFile = nullptr;
-    }
+    return std::filesystem::path(filePath).extension().string() == ".exr";
+}
 
+void NodeFileInput::_evaluate()
+{
     bool isExr = isFileExr();
 
     float* host_pixels = nullptr;
@@ -74,12 +113,13 @@ void NodeFileInput::reloadFile()
         host_pixels = stbi_loadf(filePath.c_str(), &width, &height, &channels, 4);
     }
 
-    if (host_pixels == nullptr) {
+    if (host_pixels == nullptr)
+    {
         return;
     }
 
-    texFile = nodeEvaluator->requestTexture<TextureType::MULTI>(glm::ivec2(width, height));
-    CUDA_CHECK(cudaMemcpy(texFile->getDevPixels<TextureType::MULTI>(), host_pixels, width * height * 4 * sizeof(float), cudaMemcpyHostToDevice));
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(glm::ivec2(width, height));
+    CUDA_CHECK(cudaMemcpy(outTex->getDevPixels<TextureType::MULTI>(), host_pixels, width * height * 4 * sizeof(float), cudaMemcpyHostToDevice));
 
     if (isExr)
     {
@@ -88,83 +128,14 @@ void NodeFileInput::reloadFile()
         if (selectedColorSpace == 1) // sRGB
         {
             const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
-            const dim3 blocksPerGrid = calculateNumBlocksPerGrid(texFile->getNumPixels(), blockSize);
-            kernSrgbToLinear<<<blocksPerGrid, blockSize>>>(*texFile);
+            const dim3 blocksPerGrid = calculateNumBlocksPerGrid(outTex->getNumPixels(), blockSize);
+            kernSrgbToLinear<<<blocksPerGrid, blockSize>>>(*outTex);
         }
     }
     else
     {
         stbi_image_free(host_pixels);
     }
-}
 
-bool NodeFileInput::isFileExr() const
-{
-    return std::filesystem::path(filePath).extension().string() == ".exr";
-}
-
-bool NodeFileInput::drawPinExtras(const Pin* pin, int pinNumber)
-{
-    ImGui::SameLine();
-
-    bool didParameterChange;
-
-    if (pin->pinType == PinType::INPUT)
-    {
-        switch (pinNumber)
-        {
-        case 0: // color space
-            didParameterChange = NodeUI::Dropdown(selectedColorSpace, colorSpaceOptions);
-            break;
-        default:
-            throw std::runtime_error("invalid pin number");
-        }
-    }
-    else
-    {
-        switch (pinNumber)
-        {
-        case 0: // file input
-            didParameterChange = NodeUI::FilePicker(&filePath, { "Image Files (.png, .jpg, .jpeg, .exr)", "*.png *.jpg *.jpeg *.exr" });
-
-            if (didParameterChange)
-            {
-                selectedColorSpace = isFileExr() ? 0 : 1; // linear if EXR, sRGB otherwise
-            }
-
-            break;
-        default:
-            throw std::runtime_error("invalid pin number");
-        }
-    }
-
-    if (didParameterChange) {
-        needsReloadFile = true;
-    }
-    return didParameterChange;
-}
-
-void NodeFileInput::_evaluate()
-{
-    if (needsReloadFile) {
-        reloadFile();
-    }
-
-    Texture* outTex;
-    if (texFile == nullptr)
-    {
-        outTex = nodeEvaluator->requestUniformTexture();
-        outTex->setUniformColor(glm::vec4(0, 0, 0, 1));
-    }
-    else
-    {
-        outTex = texFile;
-    }
-
-    if (needsReloadFile)
-    {
-        ++outTex->numReferences; // cache this texture; numReferences is decremented by reloadFile()
-        needsReloadFile = false;
-    }
     outputPins[0].propagateTexture(outTex);
 }
