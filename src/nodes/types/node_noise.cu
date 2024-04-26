@@ -7,7 +7,7 @@
 NodeNoise::NodeNoise()
     : Node("noise")
 {
-    addPin(PinType::OUTPUT, "image").setSingleChannel();
+    addPin(PinType::OUTPUT, "value").setSingleChannel();
 }
 
 __global__ void kernNoise(Texture outTex)

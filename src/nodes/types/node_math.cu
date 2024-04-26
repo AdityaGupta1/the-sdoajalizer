@@ -19,8 +19,8 @@ NodeMath::NodeMath()
 
     addPin(PinType::OUTPUT, "output").setSingleChannel();
 
-    addPin(PinType::INPUT, "input A").setSingleChannel();
-    addPin(PinType::INPUT, "input B").setSingleChannel();
+    addPin(PinType::INPUT, "input a").setSingleChannel();
+    addPin(PinType::INPUT, "input b").setSingleChannel();
 }
 
 bool NodeMath::drawPinBeforeExtras(const Pin* pin, int pinNumber)
@@ -50,10 +50,10 @@ bool NodeMath::drawPinExtras(const Pin* pin, int pinNumber)
 
     switch (pinNumber)
     {
-    case 0: // input A
+    case 0: // input a
         ImGui::SameLine();
         return NodeUI::FloatEdit(constParams.inputA, 0.01f);
-    case 1: // input B
+    case 1: // input b
         ImGui::SameLine();
         return NodeUI::FloatEdit(constParams.inputB, 0.01f);
     default:

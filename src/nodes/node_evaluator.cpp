@@ -58,8 +58,10 @@ bool NodeEvaluator::hasOutputTexture() const
 // this might be unnecessarily complicated but strikes a good balance between memory usage and performance
 // - caching everything would lead to significantly higher memory usage
 // - not caching means bad performance on editing nodes later on in a chain
-void NodeEvaluator::setChangedNode(Node* changedNode)
+bool NodeEvaluator::setChangedNode(Node* changedNode)
 {
+    bool outputNodeReachable = false;
+
     // delete cache of any pins reachable from changed node
     std::queue<Node*> frontier;
     std::unordered_set<Node*> visited;
@@ -77,14 +79,22 @@ void NodeEvaluator::setChangedNode(Node* changedNode)
             for (const auto& edge : thisOutputPin.getEdges())
             {
                 Node* otherNode = edge->endPin->getNode();
+
                 if (!visited.contains(otherNode))
                 {
                     visited.insert(otherNode);
                     frontier.push(otherNode);
                 }
+
+                if (otherNode == this->outputNode)
+                {
+                    outputNodeReachable = true;
+                }
             }
         }
     }
+
+    return outputNodeReachable;
 }
 
 void NodeEvaluator::evaluate()

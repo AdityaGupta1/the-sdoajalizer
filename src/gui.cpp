@@ -230,8 +230,10 @@ void Gui::addEdge(int startPinId, int endPinId)
     endPin.addEdge(edgePtr.get());
     this->edges[edgePtr->id] = std::move(edgePtr);
 
-    this->isNetworkDirty = true;
-    nodeEvaluator.setChangedNode(endPin.getNode());
+    if (nodeEvaluator.setChangedNode(startPin.getNode()))
+    {
+        isNetworkDirty = true;
+    }
 }
 
 void Gui::deleteNode(int nodeId)
@@ -462,8 +464,7 @@ void Gui::drawNodeEditor()
         bool wasParameterChanged = node->draw();
         if (wasParameterChanged)
         {
-            nodeEvaluator.setChangedNode(node.get());
-            if (node->getIsBeingEvaluated())
+            if (nodeEvaluator.setChangedNode(node.get()))
             {
                 isNetworkDirty = true;
             }

@@ -5,7 +5,7 @@
 NodeUvGradient::NodeUvGradient()
     : Node("uv gradient")
 {
-    addPin(PinType::OUTPUT, "image");
+    addPin(PinType::OUTPUT, "coords");
 }
 
 __global__ void kernUvGradient(Texture outTex)

@@ -88,7 +88,7 @@ public:
     void setOutputTexture(Texture* texture);
     bool hasOutputTexture() const;
 
-    void setChangedNode(Node* changedNode);
+    bool setChangedNode(Node* changedNode); // returns true iff this->outputNode is reachable from changedNode
 
     void evaluate();
 };
