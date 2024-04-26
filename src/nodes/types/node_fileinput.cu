@@ -118,8 +118,11 @@ void NodeFileInput::_evaluate()
         return;
     }
 
-    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(glm::ivec2(width, height));
-    CUDA_CHECK(cudaMemcpy(outTex->getDevPixels<TextureType::MULTI>(), host_pixels, width * height * 4 * sizeof(float), cudaMemcpyHostToDevice));
+    glm::ivec2 resolution = glm::ivec2(width, height);
+    int numPixels = width * height;
+
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(resolution);
+    CUDA_CHECK(cudaMemcpy(outTex->getDevPixels<TextureType::MULTI>(), host_pixels, numPixels * 4 * sizeof(float), cudaMemcpyHostToDevice));
 
     if (isExr)
     {
