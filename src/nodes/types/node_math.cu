@@ -15,8 +15,6 @@ std::vector<OperationName> NodeMath::operationNames = {
 NodeMath::NodeMath()
     : Node("math")
 {
-    constParams.operationNamePtr = &operationNames[0];
-
     addPin(PinType::OUTPUT, "output").setSingleChannel();
 
     addPin(PinType::INPUT, "input a").setSingleChannel();

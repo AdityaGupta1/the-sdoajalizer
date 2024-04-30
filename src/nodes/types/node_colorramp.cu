@@ -2,11 +2,20 @@
 
 #include "cuda_includes.hpp"
 
+std::vector<InterpolationName> NodeColorRamp::interpolationNames = {
+    { ImGG::Interpolation::Linear, "linear" },
+    { ImGG::Interpolation::Ease, "ease" },
+    { ImGG::Interpolation::Constant, "constant" }
+};
+
 NodeColorRamp::NodeColorRamp()
     : Node("color ramp")
 {
+    gradientWidget.gradient().interpolation_mode() = constParams.interpolationNamePtr->interpolation;
+
     addPin(PinType::OUTPUT, "color");
 
+    addPin(PinType::INPUT, "interpolation").setNoConnect();
     addPin(PinType::INPUT, "factor").setSingleChannel();
 }
 
@@ -18,7 +27,7 @@ bool NodeColorRamp::drawPinBeforeExtras(const Pin* pin, int pinNumber)
     }
 
     ImGG::Settings settings{};
-    settings.flags = ImGG::Flag::NoLabel | ImGG::Flag::NoDragDownToDelete | ImGG::Flag::NoBorder;
+    settings.flags = ImGG::Flag::NoLabel | ImGG::Flag::NoDragDownToDelete | ImGG::Flag::NoBorder | ImGG::Flag::NoTooltip;
     settings.color_edit_flags = NodeUI::colorEditFlags;
     
     ImGui::Dummy({ settings.gradient_width + 20, 0.5f });
@@ -34,7 +43,27 @@ bool NodeColorRamp::drawPinExtras(const Pin* pin, int pinNumber)
 
     switch (pinNumber)
     {
-    case 0: // factor
+    case 0: // interpolation
+    {
+        ImGui::SameLine();
+
+        bool didParameterChange = NodeUI::Dropdown<InterpolationName>(
+            constParams.interpolationNamePtr,
+            interpolationNames,
+            [](const InterpolationName& interpolationName) -> const char*
+            {
+                return interpolationName.name.c_str();
+            }
+        );
+
+        if (didParameterChange)
+        {
+            gradientWidget.gradient().interpolation_mode() = constParams.interpolationNamePtr->interpolation;
+        }
+
+        return didParameterChange;
+    }
+    case 1: // factor
         ImGui::SameLine();
         return NodeUI::FloatEdit(constParams.factor, 0.01f, 0.f, 1.f);
     default:

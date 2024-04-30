@@ -26,7 +26,7 @@ private:
 
     struct
     {
-        OperationName* operationNamePtr;
+        OperationName* operationNamePtr{ &operationNames[0] };
         float inputA{ 0.5f };
         float inputB{ 0.5f };
     } constParams;

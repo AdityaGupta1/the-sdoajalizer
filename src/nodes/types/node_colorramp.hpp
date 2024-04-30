@@ -4,13 +4,22 @@
 
 #include <imgui_gradient/imgui_gradient.hpp>
 
+struct InterpolationName
+{
+    const ImGG::Interpolation interpolation;
+    const std::string name;
+};
+
 class NodeColorRamp : public Node
 {
 private:
+    static std::vector<InterpolationName> interpolationNames;
+
     ImGG::GradientWidget gradientWidget{};
 
     struct
     {
+        InterpolationName* interpolationNamePtr{ &interpolationNames[0] };
         float factor{ 0.5f };
     } constParams;
 

@@ -22,11 +22,18 @@ __host__ __device__ static glm::vec4 interpolateColors(const glm::vec4& col1, co
     switch (interpolationMode)
     {
     case Interpolation::Linear:
-        return glm::mix(col1, col2, t);
+        break;
+    case Interpolation::Ease:
+        t = t * t * (3.f - 2.f * t);
+        break;
+#ifndef NDEBUG
     default:
         printf("interpolateColors() broke\n");
         return glm::vec4(0, 0, 0, 1);
+#endif
     }
+
+    return glm::mix(col1, col2, t);
 }
 
 __host__ __device__ static glm::vec4 rampInterpolate(const RawMark* lower, const RawMark* upper, float pos, Interpolation interpolationMode)
