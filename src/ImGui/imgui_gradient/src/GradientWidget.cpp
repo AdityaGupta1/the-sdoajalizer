@@ -66,9 +66,12 @@ static auto delete_button(const bool disable, const char* reason_for_disabling, 
     return b;
 }
 
-static auto add_button(const bool should_show_tooltip, Settings const& settings) -> bool
+static auto add_button(const bool disable, const char* reason_for_disabling, const bool should_show_tooltip, Settings const& settings) -> bool
 {
-    bool const b = settings.plus_button_widget();
+    bool b = false;
+    maybe_disabled(disable, reason_for_disabling, [&]() {
+        b |= settings.plus_button_widget();
+    });
     if (should_show_tooltip)
         ImGui::SetItemTooltip("%s", "Add a mark here\nor click on the gradient to choose its position.");
     return b;
@@ -445,7 +448,9 @@ auto GradientWidget::widget(
         {
             ImGui::SameLine();
         }
-        if (add_button(is_there_a_tooltip, settings))
+
+        bool disableAddButton = _gradient.get_marks().size() >= IMGG_GRADIENT_MAX_MARKS;
+        if (add_button(disableAddButton, "Maximum number of marks reached", is_there_a_tooltip, settings))
         {
             const auto position = RelativePosition{position_where_to_add_next_mark(_gradient), WrapMode::Clamp};
             add_mark_with_chosen_mode(position, rng, settings.should_use_a_random_color_for_the_new_marks);

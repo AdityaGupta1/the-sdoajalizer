@@ -51,8 +51,8 @@ static void draw_gradient_between_two_colors(
     glm::vec4 col1 = ColorUtils::srgbToLinear(ColorUtils::convert(color_left));
     glm::vec4 col2 = ColorUtils::srgbToLinear(ColorUtils::convert(color_right));
 
-    const float x1 = top_left_corner.x;
-    const float x2 = bottom_right_corner.x;
+    const float x1 = top_left_corner.x - 0.5f;
+    const float x2 = bottom_right_corner.x + 0.5f;
     const int numSegments = (int)((x2 - x1) / 20.f) + 1;
     glm::vec4 prevCol;
     for (int segmentIdx = 0; segmentIdx < numSegments; ++segmentIdx)

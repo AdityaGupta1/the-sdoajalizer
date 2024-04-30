@@ -8,6 +8,8 @@
 #include "MarkId.hpp"
 #include "Settings.hpp"
 
+#define IMGG_GRADIENT_MAX_MARKS 16
+
 namespace ImGG {
 
 /// A function that returns a random number between 0.f and 1.f whenever it is called.
