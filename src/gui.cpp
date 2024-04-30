@@ -33,7 +33,8 @@ void Gui::setupNodeCreators()
         { "map range", std::make_unique<NodeMapRange> },
         { "separate RGB", []() { return std::make_unique<NodeSeparateComponents<ComponentsType::RGB>>("separate RGB"); }},
         { "separate HSV", []() { return std::make_unique<NodeSeparateComponents<ComponentsType::HSV>>("separate HSV"); }},
-        { "math", std::make_unique<NodeMath> }
+        { "math", std::make_unique<NodeMath> },
+        { "color ramp", std::make_unique<NodeColorRamp> }
     };
 
     struct

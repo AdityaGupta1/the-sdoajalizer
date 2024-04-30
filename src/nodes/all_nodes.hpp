@@ -19,3 +19,4 @@
 #include "types/node_maprange.hpp"
 #include "types/node_separatecomponents.hpp"
 #include "types/node_math.hpp"
+#include "types/node_colorramp.hpp"
