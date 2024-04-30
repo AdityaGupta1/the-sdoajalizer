@@ -25,6 +25,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/component_wise.hpp>
 
+#include <imgui.h>
+
 #include "cuda_includes.hpp"
 
 namespace ColorUtils
@@ -111,6 +113,20 @@ namespace ColorUtils
 	__host__ __device__ inline glm::vec4 srgbToLinear(glm::vec4 srgbCol)
 	{
 		return glm::vec4(srgbToLinear(glm::vec3(srgbCol)), srgbCol.a);
+	}
+
+	// ==================================================================
+	// TYPE CONVERSION
+	// ==================================================================
+
+	inline ImVec4 convert(glm::vec4 v)
+	{
+		return ImVec4(v.r, v.g, v.b, v.a);
+	}
+
+	inline glm::vec4 convert(ImVec4 v)
+	{
+		return glm::vec4(v.x, v.y, v.z, v.w);
 	}
 
 	// ==================================================================

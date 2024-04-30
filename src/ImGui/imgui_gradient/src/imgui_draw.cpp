@@ -3,6 +3,7 @@
 #include "Settings.hpp"
 #include "color_conversions.hpp"
 #include "internal.hpp"
+#include "color_utils.hpp"
 
 namespace ImGG {
 
@@ -43,26 +44,43 @@ static void draw_gradient_between_two_colors(
     ImDrawList&   draw_list,
     ImVec2 const  top_left_corner,
     ImVec2 const  bottom_right_corner,
-    ImVec4 const& color_left, ImVec4 const& color_right
+    ImVec4 const& color_left, ImVec4 const& color_right,
+    Interpolation interpolationMode
 )
 {
-    auto const color_middle = internal::sRGB_Straight_from_Oklab_Premultiplied(
-        (
-            internal::Oklab_Premultiplied_from_sRGB_Straight(color_left)
-            + internal::Oklab_Premultiplied_from_sRGB_Straight(color_right)
-        )
-        * ImVec4{0.5f, 0.5f, 0.5f, 0.5f}
-    );
-    auto const color_left_as_ImU32   = ImGui::ColorConvertFloat4ToU32(color_left);
-    auto const color_middle_as_ImU32 = ImGui::ColorConvertFloat4ToU32(color_middle);
-    auto const color_right_as_ImU32  = ImGui::ColorConvertFloat4ToU32(color_right);
+    glm::vec4 col1 = ColorUtils::srgbToLinear(ColorUtils::convert(color_left));
+    glm::vec4 col2 = ColorUtils::srgbToLinear(ColorUtils::convert(color_right));
 
-    auto const middle_x             = (top_left_corner.x + bottom_right_corner.x) * 0.5f;
-    auto const bottom_middle_corner = ImVec2{middle_x, bottom_right_corner.y};
-    auto const top_middle_corner    = ImVec2{middle_x, top_left_corner.y};
+    const float x1 = top_left_corner.x;
+    const float x2 = bottom_right_corner.x;
+    const int numSegments = (int)((x2 - x1) / 20.f) + 1;
+    glm::vec4 prevCol;
+    for (int segmentIdx = 0; segmentIdx < numSegments; ++segmentIdx)
+    {
+        float t1 = segmentIdx / ((float)numSegments);
+        float t2 = (segmentIdx + 1) / ((float)numSegments);
+        ImVec2 corner1 = { glm::mix(x1, x2, t1), top_left_corner.y };
+        ImVec2 corner2 = { glm::mix(x1, x2, t2), bottom_right_corner.y };
 
-    draw_naive_gradient_between_two_colors(draw_list, top_left_corner, bottom_middle_corner, color_left_as_ImU32, color_middle_as_ImU32);
-    draw_naive_gradient_between_two_colors(draw_list, top_middle_corner, bottom_right_corner, color_middle_as_ImU32, color_right_as_ImU32);
+        glm::vec4 segmentCol1;
+        if (segmentIdx == 0)
+        {
+            segmentCol1 = ColorUtils::linearToSrgb(interpolateColors(col1, col2, t1, interpolationMode));
+        }
+        else
+        {
+            segmentCol1 = prevCol;
+        }
+        glm::vec4 segmentCol2 = ColorUtils::linearToSrgb(interpolateColors(col1, col2, t2, interpolationMode));
+
+        draw_naive_gradient_between_two_colors(
+            draw_list,
+            corner1, corner2,
+            ImGui::ColorConvertFloat4ToU32(ColorUtils::convert(segmentCol1)), ImGui::ColorConvertFloat4ToU32(ColorUtils::convert(segmentCol2))
+        );
+
+        prevCol = segmentCol2;
+    }
 }
 
 void draw_gradient(
@@ -88,27 +106,26 @@ void draw_gradient(
                                         ? std::prev(mark_iterator)->color
                                         : color_right;
 
-            if (gradient.interpolation_mode() == Interpolation::Linear)
+            Interpolation interpolationMode = gradient.interpolation_mode();
+            switch (interpolationMode)
             {
-                draw_gradient_between_two_colors(
-                    draw_list,
-                    ImVec2{from, gradient_position.y},
-                    ImVec2{to, gradient_position.y + size.y},
-                    color_left, color_right
-                );
-            }
-            else if (gradient.interpolation_mode() == Interpolation::Constant)
-            {
+            case Interpolation::Constant:
                 draw_uniform_square(
                     draw_list,
                     ImVec2{from, gradient_position.y},
                     ImVec2{to, gradient_position.y + size.y},
                     ImGui::ColorConvertFloat4ToU32(color_left)
                 );
-            }
-            else
-            {
-                assert(false && "Unknown Interpolation enum value.");
+                break;
+            default:
+                draw_gradient_between_two_colors(
+                    draw_list,
+                    ImVec2{from, gradient_position.y},
+                    ImVec2{to, gradient_position.y + size.y},
+                    color_left, color_right,
+                    interpolationMode
+                );
+                break;
             }
         }
         current_starting_x = to;

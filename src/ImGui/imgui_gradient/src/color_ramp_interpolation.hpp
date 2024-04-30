@@ -17,18 +17,27 @@ struct RawMark
     {}
 };
 
-__host__ __device__ static glm::vec4 rampInterpolate(const RawMark* lower, const RawMark* upper, float pos, Interpolation interpolationMode)
+__host__ __device__ static glm::vec4 interpolateColors(const glm::vec4& col1, const glm::vec4& col2, float t, Interpolation interpolationMode)
 {
     switch (interpolationMode)
     {
     case Interpolation::Linear:
-    {
-        float t = (pos - lower->pos) / (upper->pos - lower->pos);
-        return glm::mix(lower->color, upper->color, t);
+        return glm::mix(col1, col2, t);
+    default:
+        printf("interpolateColors() broke\n");
+        return glm::vec4(0, 0, 0, 1);
     }
-    case Interpolation::Constant:
+}
+
+__host__ __device__ static glm::vec4 rampInterpolate(const RawMark* lower, const RawMark* upper, float pos, Interpolation interpolationMode)
+{
+    if (interpolationMode == Interpolation::Constant)
+    {
         return lower->color;
     }
+
+    float t = (pos - lower->pos) / (upper->pos - lower->pos);
+    return interpolateColors(lower->color, upper->color, t, interpolationMode);
 }
 
 } // namespace ImGG
