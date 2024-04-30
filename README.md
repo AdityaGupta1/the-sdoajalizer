@@ -9,6 +9,7 @@ GUI:
 - https://github.com/Nelarius/imnodes
 - https://github.com/samhocevar/portable-file-dialogs/
 - https://github.com/khlorz/imgui-combo-filter/
+- https://github.com/CoolLibs/imgui_gradient
 
 Image loading:
 - https://github.com/nothings/stb

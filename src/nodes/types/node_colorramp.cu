@@ -17,7 +17,12 @@ bool NodeColorRamp::drawPinBeforeExtras(const Pin* pin, int pinNumber)
         return false;
     }
 
-    return gradientWidget.widget("a");
+    ImGG::Settings settings{};
+    settings.flags = ImGG::Flag::NoLabel | ImGG::Flag::NoDragDownToDelete | ImGG::Flag::NoBorder;
+    settings.color_edit_flags = NodeUI::colorEditFlags;
+    
+    ImGui::Dummy({ settings.gradient_width + 20, 0.5f });
+    return gradientWidget.widget("", settings);
 }
 
 bool NodeColorRamp::drawPinExtras(const Pin* pin, int pinNumber)
@@ -37,23 +42,83 @@ bool NodeColorRamp::drawPinExtras(const Pin* pin, int pinNumber)
     }
 }
 
+__host__ __device__ static glm::vec4 getRampColor(float pos, const ImGG::RawMark* marksStart, int numMarks, ImGG::Interpolation interpolationMode)
+{
+    pos = glm::clamp(pos, 0.f, 1.f);
+
+    const ImGG::RawMark* marksEnd = marksStart + numMarks;
+    const ImGG::RawMark* upper{ nullptr };
+    const ImGG::RawMark* lower{ nullptr };
+    while (marksStart < marksEnd)
+    {
+        if (marksStart->pos >= pos && (!upper || marksStart->pos < upper->pos))
+        {
+            upper = marksStart;
+        }
+        if (marksStart->pos <= pos && (!lower || marksStart->pos > lower->pos))
+        {
+            lower = marksStart;
+        }
+
+        marksStart++;
+    }
+
+    if (!lower && !upper)
+    {
+        return { 0.f, 0.f, 0.f, 1.f };
+    }
+    else if (upper && !lower)
+    {
+        return upper->color;
+    }
+    else if (!upper && lower)
+    {
+        return lower->color;
+    }
+    else if (upper == lower)
+    {
+        return upper->color;
+    }
+
+    return ImGG::rampInterpolate(lower, upper, pos, interpolationMode);
+}
+
 void NodeColorRamp::_evaluate()
 {
-    //Texture* inTex = getPinTextureOrUniformColor(inputPins[0], ColorUtils::srgbToLinear(constParams.color));
+    const auto& gradient = gradientWidget.gradient();
+    const auto& marks = gradient.get_marks();
 
-    //if (inTex->isUniform())
-    //{
-    //    Texture* outTex = nodeEvaluator->requestUniformTexture();
-    //    outTex->setUniformColor(invertCol(inTex->getUniformColor<TextureType::MULTI>()));
-    //    outputPins[0].propagateTexture(outTex);
-    //    return;
-    //}
+    if (marks.size() == 0)
+    {
+        Texture* outTex = nodeEvaluator->requestUniformTexture();
+        outTex->setUniformColor(glm::vec4(0, 0, 0, 1));
+        outputPins[0].propagateTexture(outTex);
+        return;
+    }
+
+    std::vector<ImGG::RawMark> rawMarks;
+    for (const auto& mark : marks)
+    {
+        float pos = mark.position.get();
+        glm::vec4 color = ColorUtils::srgbToLinear(glm::vec4(mark.color.x, mark.color.y, mark.color.z, mark.color.w));
+        rawMarks.emplace_back(pos, color);
+    }
+
+    Texture* inTex = getPinTextureOrUniformColor(inputPins[0], constParams.factor);
+
+    if (inTex->isUniform())
+    {
+        Texture* outTex = nodeEvaluator->requestUniformTexture();
+        outTex->setUniformColor(getRampColor(inTex->getUniformColor<TextureType::SINGLE>(), rawMarks.data(), rawMarks.size(), gradient.interpolation_mode()));
+        outputPins[0].propagateTexture(outTex);
+        return;
+    }
 
     //Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
 
     //const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
     //const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->getNumPixels(), blockSize);
-    //kernInvert << <blocksPerGrid, blockSize >> > (*inTex, *outTex);
+    //kernInvert<<<blocksPerGrid, blockSize>>>(*inTex, *outTex);
 
     //outputPins[0].propagateTexture(outTex);
 }

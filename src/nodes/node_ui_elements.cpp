@@ -23,21 +23,12 @@ void NodeUI::Separator(const std::string& text)
 }
 
 // somewhat hacky way to limit true values to using the slider or confirming after typing into temp input (i.e. not for each individual character typed into temp input)
-bool changeGate(bool didParameterChange)
+bool NodeUI::changeGate(bool didParameterChange)
 {
     bool tempActive = ImGui::TempInputIsOrWasActive(ImGui::GetItemID());
     return (didParameterChange && !tempActive) // slider
         || (!didParameterChange && tempActive && ImGui::IsItemDeactivatedAfterEdit()); // temp input
 }
-
-constexpr unsigned int colorEditFlags =
-ImGuiColorEditFlags_NoOptions |
-ImGuiColorEditFlags_NoInputs |
-ImGuiColorEditFlags_AlphaBar |
-ImGuiColorEditFlags_AlphaPreview |
-ImGuiColorEditFlags_HDR |
-ImGuiColorEditFlags_Float |
-ImGuiColorEditFlags_PickerHueWheel;
 
 bool NodeUI::ColorEdit4(glm::vec4& col)
 {

@@ -84,11 +84,12 @@ void draw_gradient(
         const auto to{gradient_position.x + mark.position.get() * (size.x)};
         if (mark.position.get() != 0.f)
         {
+            const auto color_left = (mark_iterator != gradient.get_marks().begin())
+                                        ? std::prev(mark_iterator)->color
+                                        : color_right;
+
             if (gradient.interpolation_mode() == Interpolation::Linear)
             {
-                const auto color_left = (mark_iterator != gradient.get_marks().begin())
-                                            ? std::prev(mark_iterator)->color
-                                            : color_right;
                 draw_gradient_between_two_colors(
                     draw_list,
                     ImVec2{from, gradient_position.y},
@@ -102,7 +103,7 @@ void draw_gradient(
                     draw_list,
                     ImVec2{from, gradient_position.y},
                     ImVec2{to, gradient_position.y + size.y},
-                    ImGui::ColorConvertFloat4ToU32(color_right)
+                    ImGui::ColorConvertFloat4ToU32(color_left)
                 );
             }
             else

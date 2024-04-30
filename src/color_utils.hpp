@@ -98,6 +98,11 @@ namespace ColorUtils
 		return glm::pow(linearCol, glm::vec3(0.454545454545454545454545f));
 	}
 
+	__host__ __device__ inline glm::vec4 linearToSrgb(glm::vec4 linearCol)
+	{
+		return glm::vec4(linearToSrgb(glm::vec3(linearCol)), linearCol.a);
+	}
+
 	__host__ __device__ inline glm::vec3 srgbToLinear(glm::vec3 srgbCol)
 	{
 		return glm::pow(srgbCol, glm::vec3(2.2f));

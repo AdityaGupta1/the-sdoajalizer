@@ -7,6 +7,8 @@
 #include "internal.hpp"
 #include "maybe_disabled.hpp"
 
+#include "nodes/node_ui_elements.hpp"
+
 namespace ImGG {
 
 static auto new_mark_id(const Gradient& new_gradient, const Gradient& old_gradient, MarkId old_mark_id) -> MarkId
@@ -78,11 +80,12 @@ static auto color_button(
     const ImGuiColorEditFlags flags = 0
 ) -> bool
 {
-    return ImGui::ColorEdit4(
+    bool didParameterChange = ImGui::ColorEdit4(
         "##colorpicker1",
         reinterpret_cast<float*>(&selected_mark.color),
         flags | ImGuiColorEditFlags_NoInputs | (should_show_tooltip ? 0 : ImGuiColorEditFlags_NoTooltip)
     );
+    return NodeUI::changeGate(didParameterChange);
 }
 
 static auto open_color_picker_popup(
@@ -95,13 +98,13 @@ static auto open_color_picker_popup(
     if (ImGui::BeginPopup("SelectedMarkColorPicker"))
     {
         ImGui::SetNextItemWidth(popup_size);
-        const bool modified = ImGui::ColorPicker4(
+        const bool didParameterChange = ImGui::ColorPicker4(
             "##colorpicker2",
             reinterpret_cast<float*>(&selected_mark.color),
             flags | (should_show_tooltip ? 0 : ImGuiColorEditFlags_NoTooltip)
         );
         ImGui::EndPopup();
-        return modified;
+        return NodeUI::changeGate(didParameterChange);
     }
     else
     {
@@ -379,14 +382,14 @@ auto GradientWidget::widget(
     const auto mark_hitbox_is_hovered = res.hitbox_is_hovered;
     modified |= res.selected_mark_changed;
 
-    if (wants_to_add_mark && !mark_hitbox_is_hovered)
-    {
-        const auto position{(ImGui::GetIO().MousePos.x - gradient_bar_position.x) / gradient_size.x};
-        add_mark_with_chosen_mode({position, WrapMode::Clamp}, rng, settings.should_use_a_random_color_for_the_new_marks);
-        _dragged_mark.reset();
-        modified = true;
-        // ImGui::OpenPopup("SelectedMarkColorPicker");
-    }
+    //if (wants_to_add_mark && !mark_hitbox_is_hovered)
+    //{
+    //    const auto position{(ImGui::GetIO().MousePos.x - gradient_bar_position.x) / gradient_size.x};
+    //    add_mark_with_chosen_mode({position, WrapMode::Clamp}, rng, settings.should_use_a_random_color_for_the_new_marks);
+    //    _dragged_mark.reset();
+    //    modified = true;
+    //    // ImGui::OpenPopup("SelectedMarkColorPicker");
+    //}
 
     modified |= mouse_dragging_interactions(gradient_bar_position, gradient_size, settings);
     if (!(settings.flags & Flag::NoDragDownToDelete))
@@ -536,7 +539,8 @@ auto GradientWidget::widget(
             0.f,
             !(settings.flags & Flag::NoLabel)
                 ? ImGui::GetStyle().ItemSpacing.y * 2.f
-                : ImGui::GetStyle().ItemSpacing.y * 3.f,
+                : ImGui::GetStyle().ItemSpacing.y * 3.f
+            - 13.f,
         }
     );
     ImGuiContext& g = *GImGui;

@@ -16,7 +16,18 @@ namespace NodeUI
     static const glm::vec3 defaultBackupVec3 = { 0.5f, 0.5f, 0.5f };
     static const glm::vec4 defaultBackupVec4 = { 0.5f, 0.5f, 0.5f, 1.f };
 
+    static constexpr unsigned int colorEditFlags =
+        ImGuiColorEditFlags_NoOptions |
+        ImGuiColorEditFlags_NoInputs |
+        ImGuiColorEditFlags_AlphaBar |
+        ImGuiColorEditFlags_AlphaPreview |
+        ImGuiColorEditFlags_HDR |
+        ImGuiColorEditFlags_Float |
+        ImGuiColorEditFlags_PickerHueWheel;
+
     void Separator(const std::string& text);
+
+    bool changeGate(bool didParameterChange);
 
     bool ColorEdit4(glm::vec4& col);
 

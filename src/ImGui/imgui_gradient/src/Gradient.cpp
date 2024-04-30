@@ -1,6 +1,7 @@
 #include "Gradient.hpp"
 #include "color_conversions.hpp"
 #include "imgui_internal.hpp"
+#include "color_utils.hpp"
 
 namespace ImGG {
 
@@ -138,32 +139,32 @@ static auto get_marks_surrounding(const RelativePosition position, const std::li
     return SurroundingMarks{lower, upper};
 }
 
-static auto interpolate(const Mark& lower, const Mark& upper, const RelativePosition position, Interpolation interpolation_mode) -> ColorRGBA
-{
-    switch (interpolation_mode)
-    {
-    case Interpolation::Linear:
-    {
-        const float mix_factor = (position.get() - lower.position.get())
-                                 / (upper.position.get() - lower.position.get());
-        // Do the interpolation in Lab space with premultiplied alpha because it looks much better.
-        return internal::sRGB_Straight_from_Oklab_Premultiplied(ImLerp(
-            internal::Oklab_Premultiplied_from_sRGB_Straight(lower.color),
-            internal::Oklab_Premultiplied_from_sRGB_Straight(upper.color),
-            mix_factor
-        ));
-    }
-
-    case Interpolation::Constant:
-    {
-        return upper.color;
-    }
-
-    default:
-        assert(false && "[ImGuiGradient::interpolate] Invalid enum value");
-        return {-1.f, -1.f, -1.f, -1.f};
-    }
-}
+//static auto interpolate(const Mark& lower, const Mark& upper, const RelativePosition position, Interpolation interpolation_mode) -> ColorRGBA
+//{
+//    switch (interpolation_mode)
+//    {
+//    case Interpolation::Linear:
+//    {
+//        const float mix_factor = (position.get() - lower.position.get())
+//                                 / (upper.position.get() - lower.position.get());
+//        // Do the interpolation in Lab space with premultiplied alpha because it looks much better.
+//        return internal::sRGB_Straight_from_Oklab_Premultiplied(ImLerp(
+//            internal::Oklab_Premultiplied_from_sRGB_Straight(lower.color),
+//            internal::Oklab_Premultiplied_from_sRGB_Straight(upper.color),
+//            mix_factor
+//        ));
+//    }
+//
+//    case Interpolation::Constant:
+//    {
+//        return upper.color;
+//    }
+//
+//    default:
+//        assert(false && "[ImGuiGradient::interpolate] Invalid enum value");
+//        return {-1.f, -1.f, -1.f, -1.f};
+//    }
+//}
 
 auto Gradient::at(const RelativePosition position) const -> ColorRGBA
 {
@@ -189,7 +190,18 @@ auto Gradient::at(const RelativePosition position) const -> ColorRGBA
     }
     else
     {
-        return interpolate(*lower, *upper, position, _interpolation_mode);
+        const RawMark rawLower = {
+            lower->position.get(),
+            ColorUtils::srgbToLinear(glm::vec4(lower->color.x, lower->color.y, lower->color.z, lower->color.w))
+        };
+        const RawMark rawUpper = {
+            upper->position.get(),
+            ColorUtils::srgbToLinear(glm::vec4(upper->color.x, upper->color.y, upper->color.z, upper->color.w))
+        };
+
+        glm::vec4 col = rampInterpolate(&rawLower, &rawUpper, position.get(), _interpolation_mode);
+        col = ColorUtils::linearToSrgb(col);
+        return { col.r, col.g, col.b, col.a };
     }
 }
 
