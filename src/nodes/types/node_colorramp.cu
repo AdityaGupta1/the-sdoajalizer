@@ -133,7 +133,7 @@ void NodeColorRamp::_evaluate()
         rawMarks.emplace_back(pos, color);
     }
 
-    Texture* inTex = getPinTextureOrUniformColor(inputPins[0], constParams.factor);
+    Texture* inTex = getPinTextureOrUniformColor(inputPins[1], constParams.factor);
 
     if (inTex->isUniform())
     {
