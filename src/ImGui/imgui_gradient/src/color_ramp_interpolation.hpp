@@ -15,6 +15,10 @@ struct RawMark
     RawMark(float pos, glm::vec4 color)
         : pos(pos), color(color)
     {}
+
+    RawMark()
+        : pos(0.f), color(0, 0, 0, 1)
+    {}
 };
 
 __host__ __device__ static glm::vec4 interpolateColors(const glm::vec4& col1, const glm::vec4& col2, float t, Interpolation interpolationMode)

@@ -16,6 +16,7 @@ private:
     static std::vector<InterpolationName> interpolationNames;
 
     ImGG::GradientWidget gradientWidget{};
+    ImGG::RawMark* dev_rawMarks{ nullptr };
 
     struct
     {
@@ -25,6 +26,7 @@ private:
 
 public:
     NodeColorRamp();
+    ~NodeColorRamp() override;
 
 protected:
     bool drawPinBeforeExtras(const Pin* pin, int pinNumber) override;

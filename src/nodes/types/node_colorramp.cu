@@ -19,6 +19,11 @@ NodeColorRamp::NodeColorRamp()
     addPin(PinType::INPUT, "factor").setSingleChannel();
 }
 
+NodeColorRamp::~NodeColorRamp()
+{
+    CUDA_CHECK(cudaFree(dev_rawMarks));
+}
+
 bool NodeColorRamp::drawPinBeforeExtras(const Pin* pin, int pinNumber)
 {
     if (pin->pinType == PinType::OUTPUT || pin->hasEdge() || pinNumber != 0) // factor
@@ -112,6 +117,29 @@ __host__ __device__ static glm::vec4 getRampColor(float pos, const ImGG::RawMark
     return ImGG::rampInterpolate(lower, upper, pos, interpolationMode);
 }
 
+__global__ void kernApplyColorRamp(Texture inTex, ImGG::RawMark* rawMarks, int numRawMarks, ImGG::Interpolation interpolationMode, Texture outTex)
+{
+    __shared__ ImGG::RawMark shared_rawMarks[IMGG_GRADIENT_MAX_MARKS];
+
+    if (threadIdx.x < numRawMarks)
+    {
+        shared_rawMarks[threadIdx.x] = rawMarks[threadIdx.x];
+    }
+
+    __syncthreads();
+
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+    if (idx >= inTex.getNumPixels())
+    {
+        return;
+    }
+
+    float pos = inTex.getColor<TextureType::SINGLE>(idx);
+    glm::vec4 outColor = getRampColor(pos, shared_rawMarks, numRawMarks, interpolationMode);
+    outTex.setColor<TextureType::MULTI>(idx, outColor);
+}
+
 void NodeColorRamp::_evaluate()
 {
     const auto& gradient = gradientWidget.gradient();
@@ -143,11 +171,23 @@ void NodeColorRamp::_evaluate()
         return;
     }
 
-    //Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
+    if (dev_rawMarks == nullptr)
+    {
+        CUDA_CHECK(cudaMalloc(&dev_rawMarks, IMGG_GRADIENT_MAX_MARKS * sizeof(ImGG::RawMark)));
+    }
 
-    //const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
-    //const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->getNumPixels(), blockSize);
-    //kernInvert<<<blocksPerGrid, blockSize>>>(*inTex, *outTex);
+    const int numRawMarks = rawMarks.size();
+    cudaMemcpy(dev_rawMarks, rawMarks.data(), numRawMarks * sizeof(ImGG::RawMark), cudaMemcpyHostToDevice); // TODO: no memcpy if parameters haven't changed?
 
-    //outputPins[0].propagateTexture(outTex);
+    Texture* outTex = nodeEvaluator->requestTexture<TextureType::MULTI>(inTex->resolution);
+
+    const dim3 blockSize(DEFAULT_BLOCK_SIZE_1D);
+    const dim3 blocksPerGrid = calculateNumBlocksPerGrid(inTex->getNumPixels(), blockSize);
+    kernApplyColorRamp<<<blocksPerGrid, blockSize>>>(
+        *inTex,
+        dev_rawMarks, numRawMarks, gradient.interpolation_mode(),
+        *outTex
+    );
+
+    outputPins[0].propagateTexture(outTex);
 }
