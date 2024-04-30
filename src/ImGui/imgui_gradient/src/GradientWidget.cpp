@@ -449,8 +449,11 @@ auto GradientWidget::widget(
             ImGui::SameLine();
         }
 
+#define STRINGIZE(x) #x
+#define TO_STRING(x) STRINGIZE(x)
+
         bool disableAddButton = _gradient.get_marks().size() >= IMGG_GRADIENT_MAX_MARKS;
-        if (add_button(disableAddButton, "Maximum number of marks reached", is_there_a_tooltip, settings))
+        if (add_button(disableAddButton, "Maximum number of marks reached: " TO_STRING(IMGG_GRADIENT_MAX_MARKS), is_there_a_tooltip, settings))
         {
             const auto position = RelativePosition{position_where_to_add_next_mark(_gradient), WrapMode::Clamp};
             add_mark_with_chosen_mode(position, rng, settings.should_use_a_random_color_for_the_new_marks);
