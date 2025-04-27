@@ -64,7 +64,7 @@ public:
 
         if (!isUniform)
         {
-            tex->malloc<texType>(resolution);
+            tex->malloc(texType, resolution);
         }
 
         Texture* texPtr = tex.get();

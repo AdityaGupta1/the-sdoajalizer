@@ -23,7 +23,7 @@ private:
     std::unordered_map<int, std::unique_ptr<Edge>> edges;
 
     Node* outputNode;
-    NodeEvaluator nodeEvaluator{ glm::ivec2(1080, 1350) }; // TODO: allow user to set this
+    NodeEvaluator nodeEvaluator{ glm::ivec2(1920, 1080) * 2 }; // TODO: allow user to set this
 
     bool isFirstRender{ true };
     bool isNetworkDirty{ true };

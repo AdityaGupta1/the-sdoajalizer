@@ -42,11 +42,10 @@ public:
     glm::ivec2 resolution{ 0, 0 };
     int numReferences{ 0 };
 
-    template<TextureType type>
-    __host__ inline void malloc(glm::ivec2 resolution)
+    __host__ inline void malloc(TextureType type, glm::ivec2 resolution)
     {
         this->resolution = resolution;
-        if constexpr (type == TextureType::SINGLE)
+        if (type == TextureType::SINGLE)
         {
             CUDA_CHECK(cudaMalloc(&dev_pixelsSingle, resolution.x * resolution.y * sizeof(float)));
         }
